@@ -8,8 +8,8 @@ sample_json: '/projects/barthf/GLASS-WG/data/ref/TCGA_WGS_GDC_legacy_UUIDs.json'
 ## Full path
 cluster_json: '/projects/barthf/GLASS-WG/cluster.json'
 
-## Picard jar file
-picard_jar: xx
+## GATK jar file
+gatk_jar: xx
 
 ## Working directory
 workdir: "/fastscratch/barthf/GLASS-WG"
@@ -17,4 +17,12 @@ workdir: "/fastscratch/barthf/GLASS-WG"
 ## Temporary directory
 tempdir: "/fastscratch/barthf/GLASS-WG/tmp"
 
+
+
+## Reference genome
+fasta: "/projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta"
+
+## JAVA options
 java_opt: "-Xmx8G"
+samtofastq_java_opt: "-Dsamjdk.buffer_size=131072 -Dsamjdk.compression_level=1 -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Xmx128m"
+mergebamalignment_java_opt: "-Dsamjdk.buffer_size=131072 -Dsamjdk.use_async_io=true -Dsamjdk.compression_level=1 -XX:+UseStringCache -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Xmx5000m"

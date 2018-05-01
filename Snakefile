@@ -42,7 +42,8 @@ rule all:
 rule download:
     output:
         "download/{uuid}/{filename}.bam"
-    threads: CLUSTER_META["download"]["ppn"]
+    threads:
+    	CLUSTER_META["download"]["ppn"]
     message:
     	"Downloading UUID {wildcards.uuid} (file {wildcards.filename}) from GDC"
     log:
@@ -64,10 +65,10 @@ rule revertsam:
  		dir = "revertsam/{sample_id}"
  	log: 
  		"logs/revertsam/{sample_id}.log"
- 	threads: CLUSTER_META["revertsam"]["ppn"]
+ 	threads:
+ 		CLUSTER_META["revertsam"]["ppn"]
  	shell:
- 		"java {config[java_opt]} \
- 			-jar {config[gatk_jar]} RevertSam \
+ 		"gatk --java-options {config[java_opt]} RevertSam \
  			--INPUT={input} \
  			--OUTPUT=${params.dir} \
  			--OUTPUT_BY_READGROUP=true \
@@ -100,82 +101,55 @@ rule markadapters:
  		metric 	= "markadapters/{sample_id}/{sample_id}.{rg}.markadapters.metrics.txt"
  	log: 
  		"logs/markadapters/{sample_id}.{rg}.log"
- 	threads: CLUSTER_META["markadapters"]["ppn"]
+ 	threads:
+ 		CLUSTER_META["markadapters"]["ppn"]
  	shell:
- 		"java {config[java_opt]} \
- 			-jar {config[gatk_jar]} MarkIlluminaAdapters \
- 			I={input} \
- 			O={output.bam} \
- 			M={output.metric} \
- 			TMP_DIR={config[tempdir]} \
+ 		"gatk --java-options {config[java_opt]} MarkIlluminaAdapters \
+ 			--INPUT={input} \
+ 			--OUTPUT={output.bam} \
+ 			--METRICS={output.metric} \
+ 			--TMP_DIR={config[tempdir]} \
  			2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## BAM to FASTQ
+## (1) BAM to FASTQ
 ## Converts cleaned-up uBAM to FASTQ format, one FASTQ pair per readgroup
+##
+## (2) Align reads using BWA-MEM
+## This is optimzed for >70 bp PE reads and this pipeline will need update if we intend
+## to use it with shorter reads
+##
+## (3) Merge BAM Alignment
+## Restore altered data and apply and adjust meta information lost during alignment
+##
 ## See: https://gatkforums.broadinstitute.org/gatk/discussion/6483/how-to-map-and-clean-up-short-read-sequence-data-efficiently
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule samtofastq:
+rule samtofastq_bwa_mergebamalignment:
 	input:
 		"markadapters/{sample_id}/{sample_id}.{rg}.revertsam.markadapters.bam"
 	output:
-		"fq/{sample_id}/{sample_id}.{rg}.fq.gz"
+		"bwa/{sample_id}/{sample_id}.{rg}.bam"
 	log: 
- 		"logs/samtofastq/{sample_id}.{rg}.log"
- 	threads: CLUSTER_META["samtofastq"]["ppn"]
+ 		"logs/samtofastq_bwa_mergebamalignment/{sample_id}.{rg}.log"
+ 	threads:
+ 		CLUSTER_META["samtofastq_bwa_mergebamalignment"]["ppn"]
 	shell:
-		"java {config[java_opt]} \
- 			-jar {config[gatk_jar]} SamToFastq \
+		"gatk --java-options {config[samtofastq_java_opt]} SamToFastq \
 			INPUT={input} \
-			FASTQ={output.r1} \
+			FASTQ=/dev/stdout \
 			CLIPPING_ATTRIBUTE=XT \
 			CLIPPING_ACTION=2 \
 			INTERLEAVE=true \
 			NON_PF=true \
 			VALIDATION_STRINGENCY=SILENT \
-			TMP_DIR={config[tempdir]} \
-			2> {log}"
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Align reads using BWA-MEM
-## This is optimzed for >70 bp PE reads and this pipeline will need update if we intend
-## to use it with shorter reads
-## See: https://gatkforums.broadinstitute.org/gatk/discussion/6483/how-to-map-and-clean-up-short-read-sequence-data-efficiently
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule bwa:
-	input:
-		"fq/{sample_id}/{sample_id}.{rg}.fq.gz",
-	output:
-		"bwa/{sample_id}.{rg}.bam"
-	log: 
- 		"logs/bwa/{sample_id}.{rg}.log"
-	threads: CLUSTER_META["bwa"]["ppn"]
-	shell:
-		"bwa mem -M -t {threads} -p -R {rg} {config[fasta]} {input} > {output} 2> {log}"
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Merge BAM Alignment
-## Restore altered data and apply and adjust meta information lost during alignment
-## See: https://gatkforums.broadinstitute.org/gatk/discussion/6483/how-to-map-and-clean-up-short-read-sequence-data-efficiently
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule mergebamalignment:
-	input:
-		"fq/{sample_id}/{sample_id}.{rg}.fq.gz",
-	output:
-		"bwa/{sample_id}.{rg}.bam"
-	log: 
- 		"logs/bwa/{sample_id}.{rg}.log"
-	threads: CLUSTER_META["bwa"]["ppn"]
-	shell:
-		"java {config[java_opt]} \
-			-jar {config[gatk_jar]} MergeBamAlignment \
-			--R={config[fasta]} \
+			TMP_DIR={config[tempdir]} | \
+		bwa mem -M -t {threads} -p {config[fasta]} /dev/stdin | \
+		gatk --java-options {config[mergebamalignment_java_opt]} MergeBamAlignment \
+			--REFERENCE_SEQUENCE={config[fasta]} \
 			--UNMAPPED_BAM={input} \
-			--ALIGNED_BAM={...} \
-			--O={output} \
+			--ALIGNED_BAM=/dev/stdin \
+			--OUTPUT={output} \
 			--CREATE_INDEX=true \
 			--ADD_MATE_CIGAR=true \
 			--CLIP_ADAPTERS=false \
@@ -187,54 +161,28 @@ rule mergebamalignment:
 			--TMP_DIR={config[tempdir]} \
 			2> {log}"
 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Mark Duplicates & merge readgroups
+## This step marks duplicate reads
+## See: https://gatkforums.broadinstitute.org/gatk/discussion/2799
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# rule samtools_sort:
-#     input:
-#         "mapped_reads/{sample}.bam"
-#     output:
-#         "sorted_reads/{sample}.bam"
-#     shell:
-#         "samtools sort -T sorted_reads/{wildcards.sample} "
-#         "-O bam {input} > {output}"
+rule markduplicates:
+	input:
+		expand("bwa/{sample_id}/{sample_id}.{rg}.bam", rg=READGROUPS[sample_id])
+	output:
+		bam = "markduplicates/{sample_id}.dedup.bam",
+		metrics = "markduplicates/{sample_id}.metrics.txt"
+	log:
+		"logs/markduplicates/{sample_id}.log"
+	threads:
+		CLUSTER_META["markduplicates"]["ppn"]
+	shell:
+		"gatk --java-options {config[samtofastq_java_opt]} MarkDuplicates \
+			--INPUT={input} \
+			--OUTPUT={output.bam} \
+			--METRICS_FILE={output.metrics} \
+			--CREATE_INDEX=true \
+			2> {log}"
 
-# rule samtools_index:
-#     input:
-#         "sorted_reads/{sample}.bam"
-#     output:
-#         "sorted_reads/{sample}.bam.bai"
-#     shell:
-#         "samtools index {input}"
-
-# rule bcftools_call:
-#     input:
-#         fa="data/genome.fa",
-#         bam=expand("sorted_reads/{sample}.bam", sample=SAMPLES),
-#         bai=expand("sorted_reads/{sample}.bam.bai", sample=SAMPLES)
-#     output:
-#         "calls/all.vcf"
-#     log:
-#     	"logs/bcftools/all_calls.log"
-#     shell:
-#         "samtools mpileup -g -f {input.fa} {input.bam} | "
-#         "bcftools call -mv - > {output} 2> {log}"
-
-# rule report:
-#     input:
-#         "calls/all.vcf"
-#     output:
-#         "report.html"
-#     run:
-#         from snakemake.utils import report
-#         with open(input[0]) as vcf:
-#             n_calls = sum(1 for l in vcf if not l.startswith("#"))
-
-#         report("""
-#         An example variant calling workflow
-#         ===================================
-
-#         Reads were mapped to the Yeast
-#         reference genome and variants were called jointly with
-#         SAMtools/BCFtools.
-
-#         This resulted in {n_calls} variants (see Table T1_).
-#         """, output[0], T1=input[0])
+## END ##
