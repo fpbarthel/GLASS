@@ -1,0 +1,21 @@
+{
+    "__default__" :
+    {
+        "name" : "{rule}.{wildcards.sample}",
+        "j" : "oe",
+        "m" : "a",
+        "M" : "floris.barthel@jax.org",
+        "nodes" : 1,
+        "ppn" : 1,
+        "walltime" : "12:00:00",
+        "mem" : "6gb",
+        "queu" : "batch",
+        "stdout" : "logs/cluster/{rule}.{wildcards.sample}.out",
+        "stderr" : "logs/cluster/{rule}.{wildcards.sample}.err"
+    },
+    "download" :
+    {
+        "ppn" : 4,
+        "mem" : "24gb"
+    }
+}

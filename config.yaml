@@ -1,0 +1,9 @@
+
+## Full path to GDC keyfile
+gdc_token: "/home/barthf/gdc_token.key"
+
+## Full path to sample list JSON
+sample_json: '/projects/barthf/GLASS-WG/data/ref/TCGA_WGS_GDC_legacy_UUIDs.json'
+
+## Full path
+cluster_json: '/projects/barthf/GLASS-WG/cluster.json'
