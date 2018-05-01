@@ -17,5 +17,20 @@
     {
         "ppn" : 4,
         "mem" : "24gb"
+    },
+    "revertsam" :
+    {
+        "ppn" : 4,
+        "mem" : "24gb"
+    },
+    "markadapters" :
+    {
+        "ppn" : 4,
+        "mem" : "24gb"
+    },
+    "samtofastq" :
+    {
+        "ppn" : 4,
+        "mem" : "24gb"
     }
 }

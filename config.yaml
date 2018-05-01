@@ -7,3 +7,14 @@ sample_json: '/projects/barthf/GLASS-WG/data/ref/TCGA_WGS_GDC_legacy_UUIDs.json'
 
 ## Full path
 cluster_json: '/projects/barthf/GLASS-WG/cluster.json'
+
+## Picard jar file
+picard_jar: xx
+
+## Working directory
+workdir: "/fastscratch/barthf/GLASS-WG"
+
+## Temporary directory
+tempdir: "/fastscratch/barthf/GLASS-WG/tmp"
+
+java_opt: "-Xmx8G"

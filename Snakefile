@@ -8,7 +8,7 @@ configfile: "config.yaml"
 
 ## Although this statement goes against all coding conventions, we want it here because we want to run
 ## everything on a temporary storage while we keep this script safe on a permanent drive
-workdir: "/fastscratch/barthf/GLASS-WG"
+workdir: config["workdir"]
 
 ## GDC token file for authentication
 KEYFILE 	= config["gdc_token"]
@@ -42,7 +42,7 @@ rule all:
 rule download:
     output:
         "download/{uuid}/{filename}.bam"
-    threads: CLUSTER["download"]["ppn"]
+    threads: CLUSTER_META["download"]["ppn"]
     message:
     	"Downloading UUID {wildcards.uuid} (file {wildcards.filename}) from GDC"
     log:
@@ -53,26 +53,36 @@ rule download:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Revert GDC-aligned legacy BAM to unaligned SAM file
 ## Clear BAM attributes, such as re-calibrated base quality scores, alignment information
+## Moreover, BAM file is split into per-readgroup BAM files
 ## See: https://gatkforums.broadinstitute.org/gatk/discussion/6484
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule revertsam:
  	input:
  		"download/{uuid}/{filename}.bam"
- 	output:
- 		"revertsam/{sample_id}.revertsam.bam"
+ 	params:
+ 		dir = "revertsam/{sample_id}"
  	log: 
  		"logs/revertsam/{sample_id}.log"
- 	threads: CLUSTER["revertsam"]["ppn"]
+ 	threads: CLUSTER_META["revertsam"]["ppn"]
  	shell:
- 		"java -jar {PICARDJR} RevertSam \
- 			INPUT={input} \
- 			OUTPUT=${output} \
- 			VALIDATION_STRINGENCY=SILENT \
- 			ATTRIBUTE_TO_CLEAR=FT \
- 			ATTRIBUTE_TO_CLEAR=CO \
- 			SANITIZE=true \
- 			SORT_ORDER=queryname \
+ 		"java {config[java_opt]} \
+ 			-jar {config[gatk_jar]} RevertSam \
+ 			--INPUT={input} \
+ 			--OUTPUT=${params.dir} \
+ 			--OUTPUT_BY_READGROUP=true \
+ 			--RESTORE_ORIGINAL_QUALITIES=true \
+ 			--VALIDATION_STRINGENCY=SILENT \
+ 			--ATTRIBUTE_TO_CLEAR=AS \
+ 			--ATTRIBUTE_TO_CLEAR=FT \
+ 			--ATTRIBUTE_TO_CLEAR=CO \
+ 			--ATTRIBUTE_TO_CLEAR=XT \
+ 			--ATTRIBUTE_TO_CLEAR=XN \
+ 			--ATTRIBUTE_TO_CLEAR=OC \
+ 			--ATTRIBUTE_TO_CLEAR=OP \
+ 			--SANITIZE=true \
+ 			--SORT_ORDER=queryname \
+ 			--TMP_DIR={config[tempdir]} \
  			2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -84,26 +94,61 @@ rule revertsam:
 
 rule markadapters:
 	input:
- 		"revertsam/{sample_id}.revertsam.bam"
+ 		"revertsam/{sample_id}/{sample_id}.{rg}.revertsam.bam"
  	output:
- 		bam 	= "markadapters/{sample_id}.revertsam.markadapters.bam",
- 		metric 	= "markadapters/{sample_id}.markadapters.metrics.txt"
+ 		bam 	= "markadapters/{sample_id}/{sample_id}.{rg}.revertsam.markadapters.bam",
+ 		metric 	= "markadapters/{sample_id}/{sample_id}.{rg}.markadapters.metrics.txt"
  	log: 
- 		"logs/markadapters/{sample_id}.log"
- 	threads: CLUSTER["markadapters"]["ppn"]
+ 		"logs/markadapters/{sample_id}.{rg}.log"
+ 	threads: CLUSTER_META["markadapters"]["ppn"]
  	shell:
+ 		"java {config[java_opt]} \
+ 			-jar {config[gatk_jar]} MarkIlluminaAdapters \
+ 			I={input} \
+ 			O={output.bam} \
+ 			M={output.metric} \
+ 			TMP_DIR={config[tempdir]} \
+ 			2> {log}"
 
-# rule sam2fq:
-# 	input:
-# 	shell:
-# 		"java -jar "${PICARDJR}" SamToFastq \
-# 				INPUT="${REV_FILE}" \
-# 				VALIDATION_STRINGENCY=SILENT \
-# 				FASTQ="${FASTQ_R1}" \
-# 				SECOND_END_FASTQ="${FASTQ_R2}" \
-# 				UNPAIRED_FASTQ="${FASTQ_UN}""
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## BAM to FASTQ
+## Converts cleaned-up uBAM to FASTQ format, one FASTQ pair per readgroup
+## See: https://gatkforums.broadinstitute.org/gatk/discussion/6483/how-to-map-and-clean-up-short-read-sequence-data-efficiently
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# rule aln:
+rule samtofastq:
+	input:
+		"markadapters/{sample_id}/{sample_id}.{rg}.revertsam.markadapters.bam"
+	output:
+		r1 = "fq/{sample_id}/{sample_id}.{rg}_R1.fq.gz",
+		r2 = "fq/{sample_id}/{sample_id}.{rg}_R2.fq.gz"
+		un = "fq/{sample_id}/{sample_id}.{rg}_unpaired.fq.gz"
+	shell:
+		"java {config[java_opt]} \
+ 			-jar {config[gatk_jar]} SamToFastq \
+			INPUT={input} \
+			VALIDATION_STRINGENCY=SILENT \
+			FASTQ={output.r1} \
+			SECOND_END_FASTQ={output.r2} \
+			UNPAIRED_FASTQ={output.un} \
+			TMP_DIR={config[tempdir]} \
+			2> {log}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Align reads using BWA-MEM
+## This is optimzed for >70 bp PE reads and this pipeline will need update if we intend
+## to use it with shorter reads
+## See: https://gatkforums.broadinstitute.org/gatk/discussion/6483/how-to-map-and-clean-up-short-read-sequence-data-efficiently
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule aln:
+	input:
+		r1 = "fq/{sample_id}/{sample_id}.{rg}_R1.fq.gz",
+		r2 = "fq/{sample_id}/{sample_id}.{rg}_R2.fq.gz"
+	output:
+		"bwa/{sample_id}.bam"
+	shell:
+		"bwa mem -M -t {threads} -R {config[fasta]} {input.r1} {input.r2} > {output} 2> {log}"
 
 # rule samtools_sort:
 #     input:
