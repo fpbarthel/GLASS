@@ -120,17 +120,20 @@ rule samtofastq:
 	input:
 		"markadapters/{sample_id}/{sample_id}.{rg}.revertsam.markadapters.bam"
 	output:
-		r1 = "fq/{sample_id}/{sample_id}.{rg}_R1.fq.gz",
-		r2 = "fq/{sample_id}/{sample_id}.{rg}_R2.fq.gz"
-		un = "fq/{sample_id}/{sample_id}.{rg}_unpaired.fq.gz"
+		"fq/{sample_id}/{sample_id}.{rg}.fq.gz"
+	log: 
+ 		"logs/samtofastq/{sample_id}.{rg}.log"
+ 	threads: CLUSTER_META["samtofastq"]["ppn"]
 	shell:
 		"java {config[java_opt]} \
  			-jar {config[gatk_jar]} SamToFastq \
 			INPUT={input} \
-			VALIDATION_STRINGENCY=SILENT \
 			FASTQ={output.r1} \
-			SECOND_END_FASTQ={output.r2} \
-			UNPAIRED_FASTQ={output.un} \
+			CLIPPING_ATTRIBUTE=XT \
+			CLIPPING_ACTION=2 \
+			INTERLEAVE=true \
+			NON_PF=true \
+			VALIDATION_STRINGENCY=SILENT \
 			TMP_DIR={config[tempdir]} \
 			2> {log}"
 
@@ -141,14 +144,49 @@ rule samtofastq:
 ## See: https://gatkforums.broadinstitute.org/gatk/discussion/6483/how-to-map-and-clean-up-short-read-sequence-data-efficiently
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule aln:
+rule bwa:
 	input:
-		r1 = "fq/{sample_id}/{sample_id}.{rg}_R1.fq.gz",
-		r2 = "fq/{sample_id}/{sample_id}.{rg}_R2.fq.gz"
+		"fq/{sample_id}/{sample_id}.{rg}.fq.gz",
 	output:
-		"bwa/{sample_id}.bam"
+		"bwa/{sample_id}.{rg}.bam"
+	log: 
+ 		"logs/bwa/{sample_id}.{rg}.log"
+	threads: CLUSTER_META["bwa"]["ppn"]
 	shell:
-		"bwa mem -M -t {threads} -R {config[fasta]} {input.r1} {input.r2} > {output} 2> {log}"
+		"bwa mem -M -t {threads} -p -R {rg} {config[fasta]} {input} > {output} 2> {log}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Merge BAM Alignment
+## Restore altered data and apply and adjust meta information lost during alignment
+## See: https://gatkforums.broadinstitute.org/gatk/discussion/6483/how-to-map-and-clean-up-short-read-sequence-data-efficiently
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule mergebamalignment:
+	input:
+		"fq/{sample_id}/{sample_id}.{rg}.fq.gz",
+	output:
+		"bwa/{sample_id}.{rg}.bam"
+	log: 
+ 		"logs/bwa/{sample_id}.{rg}.log"
+	threads: CLUSTER_META["bwa"]["ppn"]
+	shell:
+		"java {config[java_opt]} \
+			-jar {config[gatk_jar]} MergeBamAlignment \
+			--R={config[fasta]} \
+			--UNMAPPED_BAM={input} \
+			--ALIGNED_BAM={...} \
+			--O={output} \
+			--CREATE_INDEX=true \
+			--ADD_MATE_CIGAR=true \
+			--CLIP_ADAPTERS=false \
+			--CLIP_OVERLAPPING_READS=true \
+			--INCLUDE_SECONDARY_ALIGNMENTS=true \
+			--MAX_INSERTIONS_OR_DELETIONS=-1 \
+			--PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
+			--ATTRIBUTES_TO_RETAIN=XS \
+			--TMP_DIR={config[tempdir]} \
+			2> {log}"
+
 
 # rule samtools_sort:
 #     input:
