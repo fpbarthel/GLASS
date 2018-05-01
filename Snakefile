@@ -1,6 +1,7 @@
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Snakefile for GLASS-WG pipeline
 ## Floris Barthel 2018
+## Development branch
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 configfile: "config.yaml"
