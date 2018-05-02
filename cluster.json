@@ -1,7 +1,7 @@
 {
     "__default__" :
     {
-        "name" : "{rule}.{wildcards.sample}",
+        "name" : "{rule}.{wildcards.sample_id}",
         "j" : "oe",
         "m" : "a",
         "M" : "floris.barthel@jax.org",
@@ -10,8 +10,8 @@
         "walltime" : "12:00:00",
         "mem" : "6gb",
         "queu" : "batch",
-        "stdout" : "logs/cluster/{rule}.{wildcards.sample}.out",
-        "stderr" : "logs/cluster/{rule}.{wildcards.sample}.err"
+        "stdout" : "logs/cluster/{rule}.{wildcards.sample_id}.out",
+        "stderr" : "logs/cluster/{rule}.{wildcards.sample_id}.err"
     },
     "download" :
     {
@@ -28,7 +28,12 @@
         "ppn" : 4,
         "mem" : "24gb"
     },
-    "samtofastq" :
+    "samtofastq_bwa_mergebamalignment" :
+    {
+        "ppn" : 4,
+        "mem" : "24gb"
+    },
+    "markduplicates" :
     {
         "ppn" : 4,
         "mem" : "24gb"
