@@ -1,6 +1,7 @@
 {
     "__default__" :
     {
+        "_comment" : "Cluster parameters taken from GLASS pipeline on GitHub (https://github.com/TheJacksonLaboratory/hourglass/blob/master/glass_alignments/wgs_wes/flowr/flowr_aln_fqs.def) and from GATK forum (https://gatkforums.broadinstitute.org/gatk/discussion/1975/how-can-i-use-parallelism-to-make-gatk-tools-run-faster)",
         "name" : "{rule}.{wildcards.sample_id}",
         "j" : "oe",
         "m" : "a",
@@ -15,27 +16,42 @@
     },
     "download" :
     {
-        "ppn" : 4,
-        "mem" : "24gb"
+        "ppn" : 2,
+        "mem" : "12gb",
+        "walltime" : "24:00:00"
     },
     "revertsam" :
     {
-        "ppn" : 4,
-        "mem" : "24gb"
+        "ppn" : 2,
+        "mem" : "12gb"
     },
     "markadapters" :
     {
-        "ppn" : 4,
-        "mem" : "24gb"
+        "ppn" : 2,
+        "mem" : "12gb"
     },
     "samtofastq_bwa_mergebamalignment" :
     {
-        "ppn" : 4,
-        "mem" : "24gb"
+        "ppn" : 12,
+        "walltime" : "44:00:00",
+        "mem" : "72gb"
     },
     "markduplicates" :
     {
-        "ppn" : 4,
-        "mem" : "24gb"
+        "ppn" : 2,
+        "walltime" : "46:00:00",
+        "mem" : "12gb"
+    },
+    "baserecalibrator" :
+    {
+        "ppn" : 2,
+        "walltime" : "40:00:00",
+        "mem" : "12gb"
+    },
+    "applybqsr" :
+    {
+        "ppn" : 2,
+        "walltime" : "40:00:00",
+        "mem" : "12gb"
     }
 }

@@ -22,18 +22,12 @@ FILENAMES   = [item['file_name'] for item in SAMPLES_META]
 UUIDS       = [item['id'] for item in SAMPLES_META]
 SAMPLES     = [item['sample_id'] for item in SAMPLES_META]
 
-## Targets
-#DOWNLOAD_TARGETS   = ["download/{}/{}".format(uuid, filename) for uuid, filename in zip(UUIDS, FILENAMES)] 
-#REVERTSAM_TARGETS  = ["revertsam/{}.revertsam.bam".format(sample_id) for sample_id in zip(SAMPLES)] 
-
-## Set targets to final set of targets (as to skip intermediate steps if already complete)
-#TARGETS = REVERTSAM_TARGETS
-
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 rule all:
-    input: "markduplicates/TCGA-FG-A4MT-02A.realn.dedup.bam" #expand("markduplicates/{ID}.dedup.bam", ID=SAMPLES) # #"markadapters/TCGA-06-0211-10A/TCGA-06-0211-10A.test.revertsam.markadapters.bam"
+    input: expand("bqsr/{ID}.realn.dedup.bqsr.bam", ID=SAMPLES)
   
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download BAM file from GDC
@@ -49,33 +43,18 @@ rule download:
     log:
         "logs/download/{uuid}.log"
     shell:
-        "gdc-client download -d download -n {threads} -t ~/gdc_token.key {wildcards.uuid} 2> {log}"
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Function that retrieves readgroups from given BAM file
-## Modified from Ming Tang (Tommy) DNAseq pipeline
-## See: https://gitlab.com/tangming2005/snakemake_DNAseq_pipeline/blob/multiRG/Snakefile
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-# def get_read_group_from_bam(bamfile):
-#    rgs = check_output("samtools view -H {bam} | grep ^@RG | sed 's/.*ID:\([^\t]*\).*/\1/g'".format(bam = bamfile), shell = True).decode('utf8').strip('\n')
-#    rgs = rgs.split('\n')
-#    return rgs
+        "gdc-client download \
+            -d download -n {threads} \
+            -t ~/gdc_token.key {wildcards.uuid} \
+            2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Function that resolves UUID and FILENAME from SAMPLE_ID
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 def get_gdc_bam_filename(wildcards):
     i = SAMPLES.index(wildcards.sample_id)
     return "download/{}/{}".format(UUIDS[i], FILENAMES[i])
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Function resolves output filenames per readgroup for a given sample_id
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-# def get_per_readgroup_bams(wildcards):
-#   i = SAMPLES.index(wildcards.sample_id)
-#   bamfile = "download/{}/{}".format(UUIDS[i], FILENAMES[i])
-#   readgroups = get_read_group_from_bam(bamfile)
-#   return expand("bwa/{sample_id}/{sample_id}.{readgroup}.bam".format(sample_id = wildcards.sample_id), readgroup = readgroups)
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Revert GDC-aligned legacy BAM to unaligned SAM file
@@ -96,7 +75,9 @@ rule revertsam:
     threads:
         CLUSTER_META["revertsam"]["ppn"]
     message:
-        "Reverting {wildcards.sample_id} back to unaligned BAM file, stripping any previous pre-processing and restoring original base quality scores. Output files are split by readgroup."
+        "Reverting {wildcards.sample_id} back to unaligned BAM file, stripping any previous "
+        "pre-processing and restoring original base quality scores. Output files are split "
+        "by readgroup."
     shell:
         "gatk --java-options {config[java_opt]} RevertSam \
             --INPUT={input} \
@@ -134,6 +115,9 @@ rule markadapters:
         CLUSTER_META["markadapters"]["ppn"]
     log: 
         dynamic("logs/markadapters/{sample_id}.{readgroup}.log")
+    message:
+        "Adding XT tags to {wildcards.sample_id} RGID: {wildcards.readgroup}. This marks Illumina "
+        "Adapters and allows them to be removed in later steps."
     shell:
         "gatk --java-options {config[java_opt]} MarkIlluminaAdapters \
             --INPUT={input} \
@@ -166,6 +150,13 @@ rule samtofastq_bwa_mergebamalignment:
         CLUSTER_META["samtofastq_bwa_mergebamalignment"]["ppn"]
     log: 
         "logs/samtofastq_bwa_mergebamalignment/{sample_id}.{readgroup}.log"
+    message:
+        "BAM to FASTQ --> BWA-MEM --> Merge BAM Alignment.\n"
+        "Sample: {wildcards.sample_id}\n"
+        "Readgroup: {wildcards.readgroup}\n"
+        "The first step converts the reverted BAM to an interleaved FASTQ, removing Illumina "
+        "adapters. The output is then piped to BWA-MEM and aligned. Aligned reads are merged "
+        "with the original pre-aligned BAM to preserve original metadata, including read groups"
     shell:
         "gatk --java-options {config[samtofastq_java_opt]} SamToFastq \
             --INPUT={input} \
@@ -203,12 +194,15 @@ rule markduplicates:
     input:
         dynamic("bwa/{sample_id}/{sample_id}.{readgroup}.realn.bam") 
     output:
-        bam = temp("markduplicates/{sample_id}.realn.dedup.bam"),
+        bam = "markduplicates/{sample_id}.realn.dedup.bam",
         metrics = "markduplicates/{sample_id}.metrics.txt"
     threads:
         CLUSTER_META["markduplicates"]["ppn"]
     log:
         "logs/markduplicates/{sample_id}.log"
+    message:
+        "Readgroup-specific BAM files are combined into a single BAM for {wildcards.sample_id}. "
+        "Potential PCR duplicates are marked."
     run:
         multi_input = " ".join(["--INPUT=" + s for s in input])
         shell("gatk --java-options {config[java_opt]} MarkDuplicates \
@@ -227,6 +221,8 @@ rule baserecalibrator:
         CLUSTER_META["baserecalibrator"]["ppn"]
     log:
         "logs/bqsr/{sample_id}.recal.log"
+    message:
+        "Calculating base recalibration scores for {wildcards.sample_id}."
     shell:
         "gatk --java-options {config[java_opt]} BaseRecalibrator \
             -R {config[fasta]} \
@@ -244,6 +240,9 @@ rule applybqsr:
         CLUSTER_META["applybqsr"]["ppn"]
     log:
         "logs/bqsr/{sample_id}.apply.log"
+    message:
+        "Applying base recalibration scores to {wildcards.sample_id} and generating final "
+        "aligned BAM file"
     shell:
         "gatk --java-options {config[java_opt]} ApplyBQSR \
             -R {config[fasta]} \
