@@ -16,7 +16,7 @@
     },
     "download" :
     {
-        "ppn" : 2,
+        "ppn" : 6,
         "mem" : "12gb",
         "walltime" : "24:00:00"
     },

@@ -35,17 +35,21 @@ rule all:
 
 rule download:
     output:
-        temp("download/{uuid}/{filename}.bam")
+        "download/{uuid}/{filename}.bam"
     threads:
         CLUSTER_META["download"]["ppn"]
     message:
         "Downloading UUID {wildcards.uuid} (file {wildcards.filename}) from GDC"
     log:
         "logs/download/{uuid}.log"
+    benchmark:
+        "benchmarks/download/{uuid}.txt"
     shell:
         "gdc-client download \
-            -d download -n {threads} \
-            -t ~/gdc_token.key {wildcards.uuid} \
+            -d download \
+            -n {threads} \
+            -t ~/gdc_token.key \
+            {wildcards.uuid} \
             2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -74,12 +78,14 @@ rule revertsam:
         "logs/revertsam/{sample_id}.log"
     threads:
         CLUSTER_META["revertsam"]["ppn"]
+    benchmark:
+        "benchmarks/revertsam/{sample_id}.txt"
     message:
         "Reverting {wildcards.sample_id} back to unaligned BAM file, stripping any previous "
         "pre-processing and restoring original base quality scores. Output files are split "
         "by readgroup."
     shell:
-        "gatk --java-options {config[java_opt]} RevertSam \
+        "gatk --java-options {config[standard_java_opt]} RevertSam \
             --INPUT={input} \
             --OUTPUT={params.dir} \
             --OUTPUT_BY_READGROUP=true \
@@ -115,11 +121,13 @@ rule markadapters:
         CLUSTER_META["markadapters"]["ppn"]
     log: 
         dynamic("logs/markadapters/{sample_id}.{readgroup}.log")
+    benchmark:
+        "benchmarks/markadapters/{sample_id}.{readgroup}.txt"
     message:
         "Adding XT tags to {wildcards.sample_id} RGID: {wildcards.readgroup}. This marks Illumina "
         "Adapters and allows them to be removed in later steps."
     shell:
-        "gatk --java-options {config[java_opt]} MarkIlluminaAdapters \
+        "gatk --java-options {config[standard_java_opt]} MarkIlluminaAdapters \
             --INPUT={input} \
             --OUTPUT={output.bam} \
             --METRICS={output.metric} \
@@ -150,6 +158,8 @@ rule samtofastq_bwa_mergebamalignment:
         CLUSTER_META["samtofastq_bwa_mergebamalignment"]["ppn"]
     log: 
         "logs/samtofastq_bwa_mergebamalignment/{sample_id}.{readgroup}.log"
+    benchmark:
+        "benchmarks/revertsam/{sample_id}.{readgroup}.txt"
     message:
         "BAM to FASTQ --> BWA-MEM --> Merge BAM Alignment.\n"
         "Sample: {wildcards.sample_id}\n"
@@ -167,9 +177,9 @@ rule samtofastq_bwa_mergebamalignment:
             --NON_PF=true \
             --VALIDATION_STRINGENCY=SILENT \
             --TMP_DIR={config[tempdir]} | \
-        bwa mem -M -t {threads} -p {config[fasta]} /dev/stdin | \
+        bwa mem -M -t {threads} -p {config[reference_fasta]} /dev/stdin | \
         gatk --java-options {config[mergebamalignment_java_opt]} MergeBamAlignment \
-            --REFERENCE_SEQUENCE={config[fasta]} \
+            --REFERENCE_SEQUENCE={config[reference_fasta]} \
             --UNMAPPED_BAM={input} \
             --ALIGNED_BAM=/dev/stdin \
             --OUTPUT={output} \
@@ -200,12 +210,14 @@ rule markduplicates:
         CLUSTER_META["markduplicates"]["ppn"]
     log:
         "logs/markduplicates/{sample_id}.log"
+    benchmark:
+        "benchmarks/markduplicates/{sample_id}.txt"
     message:
         "Readgroup-specific BAM files are combined into a single BAM for {wildcards.sample_id}. "
         "Potential PCR duplicates are marked."
     run:
         multi_input = " ".join(["--INPUT=" + s for s in input])
-        shell("gatk --java-options {config[java_opt]} MarkDuplicates \
+        shell("gatk --java-options {config[standard_java_opt]} MarkDuplicates \
             {multi_input} \
             --OUTPUT={output.bam} \
             --METRICS_FILE={output.metrics} \
@@ -221,11 +233,13 @@ rule baserecalibrator:
         CLUSTER_META["baserecalibrator"]["ppn"]
     log:
         "logs/bqsr/{sample_id}.recal.log"
+    benchmark:
+        "benchmarks/bqsr/{sample_id}.recal.txt"
     message:
         "Calculating base recalibration scores for {wildcards.sample_id}."
     shell:
-        "gatk --java-options {config[java_opt]} BaseRecalibrator \
-            -R {config[fasta]} \
+        "gatk --java-options {config[standard_java_opt]} BaseRecalibrator \
+            -R {config[reference_fasta]} \
             -I {input} \
             -O {output} \
             --known-sites {config[gnomad_vcf]}"
@@ -240,12 +254,14 @@ rule applybqsr:
         CLUSTER_META["applybqsr"]["ppn"]
     log:
         "logs/bqsr/{sample_id}.apply.log"
+    benchmark:
+        "benchmarks/bqsr/{sample_id}.apply.txt"
     message:
         "Applying base recalibration scores to {wildcards.sample_id} and generating final "
         "aligned BAM file"
     shell:
-        "gatk --java-options {config[java_opt]} ApplyBQSR \
-            -R {config[fasta]} \
+        "gatk --java-options {config[standard_java_opt]} ApplyBQSR \
+            -R {config[reference_fasta]} \
             -I {input.bam} \
             -OQ true \
             -O {output} \
