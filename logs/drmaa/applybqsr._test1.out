@@ -1,0 +1,64 @@
+[Thu May 10 15:10:20 2018] Building DAG of jobs...
+[Thu May 10 15:10:20 2018] Using shell: /bin/bash
+[Thu May 10 15:10:20 2018] Provided cores: 56
+[Thu May 10 15:10:20 2018] Rules claiming more threads will be scaled down.
+[Thu May 10 15:10:20 2018] Job counts:
+[Thu May 10 15:10:20 2018] 	count	jobs
+[Thu May 10 15:10:20 2018] 	1	applybqsr
+[Thu May 10 15:10:20 2018] 	1
+
+[Thu May 10 15:10:20 2018] Job 0: Applying base recalibration scores to _test1 and generating final aligned BAM file
+
+Using GATK jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=1 -Xmx12G -jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar ApplyBQSR -R /projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta -I markduplicates/_test1.realn.dedup.bam -OQ true -O bqsr/_test1.realn.dedup.bqsr.bam -bqsr bqsr/_test1.bqsr.txt --create-output-bam-md5 true
+15:10:23.494 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+15:10:23.596 INFO  ApplyBQSR - ------------------------------------------------------------
+15:10:23.596 INFO  ApplyBQSR - The Genome Analysis Toolkit (GATK) v4.0.2.1
+15:10:23.596 INFO  ApplyBQSR - For support and documentation go to https://software.broadinstitute.org/gatk/
+15:10:23.597 INFO  ApplyBQSR - Executing as barthf@helix135 on Linux v2.6.32-696.18.7.el6.x86_64 amd64
+15:10:23.597 INFO  ApplyBQSR - Java runtime: Java HotSpot(TM) 64-Bit Server VM v1.8.0_73-b02
+15:10:23.597 INFO  ApplyBQSR - Start Date/Time: May 10, 2018 3:10:23 PM EDT
+15:10:23.597 INFO  ApplyBQSR - ------------------------------------------------------------
+15:10:23.597 INFO  ApplyBQSR - ------------------------------------------------------------
+15:10:23.597 INFO  ApplyBQSR - HTSJDK Version: 2.14.3
+15:10:23.597 INFO  ApplyBQSR - Picard Version: 2.17.2
+15:10:23.598 INFO  ApplyBQSR - HTSJDK Defaults.COMPRESSION_LEVEL : 1
+15:10:23.598 INFO  ApplyBQSR - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+15:10:23.598 INFO  ApplyBQSR - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+15:10:23.598 INFO  ApplyBQSR - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+15:10:23.598 INFO  ApplyBQSR - Deflater: IntelDeflater
+15:10:23.598 INFO  ApplyBQSR - Inflater: IntelInflater
+15:10:23.598 INFO  ApplyBQSR - GCS max retries/reopens: 20
+15:10:23.598 INFO  ApplyBQSR - Using google-cloud-java patch 6d11bef1c81f885c26b2b56c8616b7a705171e4f from https://github.com/droazen/google-cloud-java/tree/dr_all_nio_fixes
+15:10:23.598 INFO  ApplyBQSR - Initializing engine
+WARNING: BAM index file /projects/barthf/GLASS-WG/markduplicates/_test1.realn.dedup.bai is older than BAM /projects/barthf/GLASS-WG/markduplicates/_test1.realn.dedup.bam
+15:10:24.212 INFO  ApplyBQSR - Done initializing engine
+15:10:24.235 INFO  ProgressMeter - Starting traversal
+15:10:24.235 INFO  ProgressMeter -        Current Locus  Elapsed Minutes       Reads Processed     Reads/Minute
+15:10:25.103 INFO  ApplyBQSR - No reads filtered by: WellformedReadFilter
+15:10:25.104 INFO  ProgressMeter -             19:94381              0.0                  4532         313271.9
+15:10:25.104 INFO  ProgressMeter - Traversal complete. Processed 4532 total reads in 0.0 minutes.
+15:10:25.128 INFO  ApplyBQSR - Shutting down engine
+[May 10, 2018 3:10:25 PM EDT] org.broadinstitute.hellbender.tools.walkers.bqsr.ApplyBQSR done. Elapsed time: 0.03 minutes.
+Runtime.totalMemory()=2292711424
+[Thu May 10 15:10:25 2018] Write-protecting output file bqsr/_test1.realn.dedup.bqsr.bam.
+[Thu May 10 15:10:25 2018] Finished job 0.
+[Thu May 10 15:10:25 2018] 1 of 1 steps (100%) done
+[Thu May 10 15:10:25 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-10T151020.345681.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6142319.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=01:00:00
+|  Resources Consumed:
+|      cput=00:00:16,mem=0kb,vmem=0kb,walltime=00:00:06
+|  Walltime accuracy: 0.2%
+|
+| Epilogue Host (TORQUE Mother Superior): helix135
+|
+--------------------------------------------------------------------------------

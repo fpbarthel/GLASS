@@ -1,0 +1,202 @@
+[Thu May 10 15:07:28 2018] Building DAG of jobs...
+[Thu May 10 15:07:28 2018] Using shell: /bin/bash
+[Thu May 10 15:07:28 2018] Provided cores: 56
+[Thu May 10 15:07:28 2018] Rules claiming more threads will be scaled down.
+[Thu May 10 15:07:28 2018] Job counts:
+[Thu May 10 15:07:28 2018] 	count	jobs
+[Thu May 10 15:07:28 2018] 	1	markadapters
+[Thu May 10 15:07:28 2018] 	1
+
+[Thu May 10 15:07:28 2018] Job 0: Adding XT tags to _test2 RGID: QTL190044_B05B0ABXX_L3. This marks Illumina Adapters and allows them to be removed in later steps.
+
+ers and allows them to be removed in later steps.
+
+[Thu May 10 15:07:28 2018] Using shell: /bin/bash
+[Thu May 10 15:07:28 2018] Provided cores: 56
+[Thu May 10 15:07:28 2018] Rules claiming more threads will be scaled down.
+[Thu May 10 15:07:28 2018] Job counts:
+[Thu May 10 15:07:28 2018] 	count	jobs
+[Thu May 10 15:07:28 2018] 	1	markadapters
+[Thu May 10 15:07:28 2018] 	1
+
+[Thu May 10 15:07:28 2018] Job 0: Adding XT tags to _test2 RGID: QTL190044_B05B0ABXX_L6. This marks Illumina Adapters and allows them to be removed in later steps.
+
+[Thu May 10 15:07:32 2018] Building DAG of jobs...
+[Thu May 10 15:07:32 2018] Using shell: /bin/bash
+[Thu May 10 15:07:32 2018] Provided cores: 56
+[Thu May 10 15:07:32 2018] Rules claiming more threads will be scaled down.
+[Thu May 10 15:07:32 2018] Job counts:
+[Thu May 10 15:07:32 2018] 	count	jobs
+[Thu May 10 15:07:32 2018] 	1	markadapters
+[Thu May 10 15:07:32 2018] 	1
+
+[Thu May 10 15:07:32 2018] Job 0: Adding XT tags to _test2 RGID: QTL190044_B05B0ABXX_L8. This marks Illumina Adapters and allows them to be removed in later steps.
+
+ay 10 15:07:31 2018] 	1	markadapters
+[Thu May 10 15:07:31 2018] 	1
+
+[Thu May 10 15:07:31 2018] Job 0: Adding XT tags to _test2 RGID: QTL190044_B05B0ABXX_L2. This marks Illumina Adapters and allows them to be removed in later steps.
+
+Tool returned:
+0
+[Thu May 10 15:07:31 2018] Finished job 0.
+[Thu May 10 15:07:31 2018] 1 of 1 steps (100%) done
+[Thu May 10 15:07:31 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-10T150728.484288.snakemake.log
+Tool returned:
+0
+-----------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6142269.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=01:00:00
+|  Resources Consumed:
+|      cput=00:00:06,mem=26224kb,vmem=409320kb,walltime=00:00:04
+|  Walltime accuracy: 0.1%
+|
+| Epilogue Host (TORQUE Mother Superior): helix135
+|
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6142267.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=01:00:00
+|  Resources Consumed:
+|      cput=00:00:06,mem=0kb,vmem=0kb,walltime=00:00:04
+|  Walltime accuracy: 0.1%
+|
+| Epilogue Host (TORQUE Mother Superior): helix135
+|
+--------------------------------------------------------------------------------
+Tool returned:
+0
+Tool returned:
+0
+:32 2018] Finished job 0.
+[Thu May 10 15:07:32 2018] 1 of 1 steps (100%) done
+[Thu May 10 15:07:32 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-10T150728.803230.snakemake.log
+Tool returned:
+0
+-----------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6142268.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=01:00:00
+|  Resources Consumed:
+|      cput=00:00:06,mem=567964kb,vmem=19109892kb,walltime=00:00:05
+|  Walltime accuracy: 0.1%
+|
+| Epilogue Host (TORQUE Mother Superior): helix112
+|
+--------------------------------------------------------------------------------
+Tool returned:
+0
+:34 2018] Finished job 0.
+[Thu May 10 15:07:34 2018] 1 of 1 steps (100%) done
+[Thu May 10 15:07:34 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-10T150731.423570.snakemake.log
+[Thu May 10 15:07:34 2018] Finished job 0.
+[Thu May 10 15:07:34 2018] 1 of 1 steps (100%) done
+[Thu May 10 15:07:34 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-10T150731.702926.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6142284.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=01:00:00
+|  Resources Consumed:
+|      cput=00:00:06,mem=129972kb,vmem=19020528kb,walltime=00:00:04
+|  Walltime accuracy: 0.1%
+|
+| Epilogue Host (TORQUE Mother Superior): helix135
+|
+--------------------------------------------------------------------------------
+[Thu May 10 15:07:34 2018] Finished job 0.
+[Thu May 10 15:07:34 2018] 1 of 1 steps (100%) done
+[Thu May 10 15:07:34 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-10T150731.826890.snakemake.log
+[Thu May 10 15:07:34 2018] Finished job 0.
+[Thu May 10 15:07:34 2018] 1 of 1 steps (100%) done
+[Thu May 10 15:07:34 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-10T150731.523187.snakemake.log
+time=01:00:00
+|  Resources Consumed:
+|      cput=00:00:07,mem=160852kb,vmem=19026748kb,walltime=00:00:03
+|  Walltime accuracy: 0.1%
+|
+| Epilogue Host (TORQUE Mother Superior): helix112
+|
+--------------------------------------------------------------------------------
+[Thu May 10 15:07:34 2018] Finished job 0.
+[Thu May 10 15:07:34 2018] 1 of 1 steps (100%) done
+[Thu May 10 15:07:34 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-10T150731.688074.snakemake.log
+time=01:00:00
+|  Resources Consumed:
+|      cput=00:00:06,mem=0kb,vmem=0kb,walltime=00:00:04
+|  Walltime accuracy: 0.1%
+|
+| Epilogue Host (TORQUE Mother Superior): helix111
+|
+--------------------------------------------------------------------------------
+[Thu May 10 15:07:35 2018] Finished job 0.
+[Thu May 10 15:07:35 2018] 1 of 1 steps (100%) done
+[Thu May 10 15:07:35 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-10T150731.969564.snakemake.log
+[Thu May 10 15:07:35 2018] Finished job 0.
+[Thu May 10 15:07:35 2018] 1 of 1 steps (100%) done
+[Thu May 10 15:07:35 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-10T150731.825287.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6142282.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=01:00:00
+|  Resources Consumed:
+|      cput=00:00:06,mem=554768kb,vmem=19039032kb,walltime=00:00:04
+|  Walltime accuracy: 0.1%
+|
+| Epilogue Host (TORQUE Mother Superior): helix124
+|
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6142280.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=01:00:00
+|  Resources Consumed:
+|      cput=00:00:07,mem=143124kb,vmem=19024704kb,walltime=00:00:04
+|  Walltime accuracy: 0.1%
+|
+| Epilogue Host (TORQUE Mother Superior): helix138
+|
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6142285.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=01:00:00
+|  Resources Consumed:
+|      cput=00:00:08,mem=144448kb,vmem=18946796kb,walltime=00:00:05
+|  Walltime accuracy: 0.1%
+|
+| Epilogue Host (TORQUE Mother Superior): helix133
+|
+--------------------------------------------------------------------------------

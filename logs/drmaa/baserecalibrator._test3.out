@@ -1,0 +1,83 @@
+[Thu May 10 15:09:20 2018] Building DAG of jobs...
+[Thu May 10 15:09:20 2018] Using shell: /bin/bash
+[Thu May 10 15:09:20 2018] Provided cores: 56
+[Thu May 10 15:09:20 2018] Rules claiming more threads will be scaled down.
+[Thu May 10 15:09:20 2018] Job counts:
+[Thu May 10 15:09:20 2018] 	count	jobs
+[Thu May 10 15:09:20 2018] 	1	baserecalibrator
+[Thu May 10 15:09:20 2018] 	1
+
+[Thu May 10 15:09:20 2018] Job 0: Calculating base recalibration scores for _test3.
+
+Using GATK jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=1 -Xmx12G -jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar BaseRecalibrator -R /projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta -I markduplicates/_test3.realn.dedup.bam -O bqsr/_test3.bqsr.txt --known-sites /projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz
+15:09:23.474 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+15:09:23.946 INFO  BaseRecalibrator - ------------------------------------------------------------
+15:09:23.946 INFO  BaseRecalibrator - The Genome Analysis Toolkit (GATK) v4.0.2.1
+15:09:23.946 INFO  BaseRecalibrator - For support and documentation go to https://software.broadinstitute.org/gatk/
+15:09:23.947 INFO  BaseRecalibrator - Executing as barthf@helix112 on Linux v2.6.32-696.18.7.el6.x86_64 amd64
+15:09:23.947 INFO  BaseRecalibrator - Java runtime: Java HotSpot(TM) 64-Bit Server VM v1.8.0_73-b02
+15:09:23.947 INFO  BaseRecalibrator - Start Date/Time: May 10, 2018 3:09:23 PM EDT
+15:09:23.947 INFO  BaseRecalibrator - ------------------------------------------------------------
+15:09:23.947 INFO  BaseRecalibrator - ------------------------------------------------------------
+15:09:23.948 INFO  BaseRecalibrator - HTSJDK Version: 2.14.3
+15:09:23.948 INFO  BaseRecalibrator - Picard Version: 2.17.2
+15:09:23.948 INFO  BaseRecalibrator - HTSJDK Defaults.COMPRESSION_LEVEL : 1
+15:09:23.948 INFO  BaseRecalibrator - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+15:09:23.948 INFO  BaseRecalibrator - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+15:09:23.948 INFO  BaseRecalibrator - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+15:09:23.948 INFO  BaseRecalibrator - Deflater: IntelDeflater
+15:09:23.948 INFO  BaseRecalibrator - Inflater: IntelInflater
+15:09:23.949 INFO  BaseRecalibrator - GCS max retries/reopens: 20
+15:09:23.949 INFO  BaseRecalibrator - Using google-cloud-java patch 6d11bef1c81f885c26b2b56c8616b7a705171e4f from https://github.com/droazen/google-cloud-java/tree/dr_all_nio_fixes
+15:09:23.949 INFO  BaseRecalibrator - Initializing engine
+WARNING: BAM index file /projects/barthf/GLASS-WG/markduplicates/_test3.realn.dedup.bai is older than BAM /projects/barthf/GLASS-WG/markduplicates/_test3.realn.dedup.bam
+15:09:24.696 INFO  FeatureManager - Using codec VCFCodec to read file file:///projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz
+15:09:24.992 WARN  IndexUtils - Feature file "/projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz" appears to contain no sequence dictionary. Attempting to retrieve a sequence dictionary from the associated index file
+15:09:25.122 INFO  BaseRecalibrator - Done initializing engine
+15:09:25.142 INFO  BaseRecalibrationEngine - The covariates being used here: 
+15:09:25.142 INFO  BaseRecalibrationEngine - 	ReadGroupCovariate
+15:09:25.142 INFO  BaseRecalibrationEngine - 	QualityScoreCovariate
+15:09:25.142 INFO  BaseRecalibrationEngine - 	ContextCovariate
+15:09:25.142 INFO  BaseRecalibrationEngine - 	CycleCovariate
+15:09:25.148 INFO  ProgressMeter - Starting traversal
+15:09:25.149 INFO  ProgressMeter -        Current Locus  Elapsed Minutes       Reads Processed     Reads/Minute
+15:09:26.357 INFO  BaseRecalibrator - 5861 read(s) filtered by: ((((((MappingQualityNotZeroReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND WellformedReadFilter)
+  5861 read(s) filtered by: (((((MappingQualityNotZeroReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter)
+      5861 read(s) filtered by: ((((MappingQualityNotZeroReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter)
+          5852 read(s) filtered by: (((MappingQualityNotZeroReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter)
+              5852 read(s) filtered by: ((MappingQualityNotZeroReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter)
+                  5852 read(s) filtered by: (MappingQualityNotZeroReadFilter AND MappingQualityAvailableReadFilter)
+                      5852 read(s) filtered by: MappingQualityNotZeroReadFilter 
+          9 read(s) filtered by: NotDuplicateReadFilter 
+
+15:09:26.358 INFO  ProgressMeter -             unmapped              0.0                   191           9486.8
+15:09:26.358 INFO  ProgressMeter - Traversal complete. Processed 191 total reads in 0.0 minutes.
+15:09:26.405 INFO  BaseRecalibrator - Calculating quantized quality scores...
+15:09:26.434 INFO  BaseRecalibrator - Writing recalibration report...
+15:09:26.775 INFO  BaseRecalibrator - ...done!
+15:09:26.775 INFO  BaseRecalibrator - Shutting down engine
+[May 10, 2018 3:09:26 PM EDT] org.broadinstitute.hellbender.tools.walkers.bqsr.BaseRecalibrator done. Elapsed time: 0.06 minutes.
+Runtime.totalMemory()=2157969408
+Tool returned:
+191
+[Thu May 10 15:09:26 2018] Finished job 0.
+[Thu May 10 15:09:26 2018] 1 of 1 steps (100%) done
+[Thu May 10 15:09:26 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-10T150920.511037.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6142313.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=01:00:00
+|  Resources Consumed:
+|      cput=00:00:18,mem=0kb,vmem=0kb,walltime=00:00:07
+|  Walltime accuracy: 0.2%
+|
+| Epilogue Host (TORQUE Mother Superior): helix112
+|
+--------------------------------------------------------------------------------
