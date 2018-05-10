@@ -2,20 +2,27 @@
 ## Full path to GDC keyfile
 gdc_token: "/home/barthf/gdc_token.key"
 
+## Extra args for revertsam, testing purpose only
+revertsam_extra_args : "--MAX_DISCARD_FRACTION=0.05 "
+
 ## Full path to sample list JSON
-sample_json: "/projects/barthf/GLASS-WG/data/ref/TCGA_WGS_GDC_legacy_UUIDs.json"
+#sample_json: "/projects/barthf/GLASS-WG/data/ref/TCGA_WGS_GDC_legacy_UUIDs.json"
+
+sample_json: "/projects/barthf/GLASS-WG/data/ref/test_samples.json" 
 
 ## Full path
-cluster_json: "/projects/barthf/GLASS-WG/cluster.json"
+#cluster_json: "/projects/barthf/GLASS-WG/cluster.json"
+
+cluster_json: "/projects/barthf/GLASS-WG/test_cluster.json"
 
 ## Working directory
-workdir: "/fastscratch/barthf/GLASS-WG"
+workdir: "/projects/barthf/GLASS-WG"
 
 ## Temporary directory
 tempdir: "/fastscratch/barthf/GLASS-WG/tmp"
 
 ## GnomAD VCF file
-gnomad_vcf: "/projects/barthf/GTex/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz"
+gnomad_vcf: "/projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz"
 
 ## Reference genome
 reference_fasta: "/projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta"

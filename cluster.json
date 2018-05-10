@@ -11,47 +11,53 @@
         "walltime" : "12:00:00",
         "mem" : "6gb",
         "queu" : "batch",
-        "stdout" : "logs/cluster/{rule}.{wildcards.sample_id}.out",
-        "stderr" : "logs/cluster/{rule}.{wildcards.sample_id}.err"
+        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.sample_id}.out",
+        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.sample_id}.err",
+        "d" : "/fastscratch/barthf/GLASS-WG"
     },
     "download" :
     {
+        "name" : "{rule}.{wildcards.uuid}",
+        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.out",
+        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.err",
         "ppn" : 6,
         "mem" : "12gb",
-        "walltime" : "24:00:00"
+        "walltime" : "70:00:00"
     },
     "revertsam" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : "12gb",
+        "walltime" : "70:00:00"
     },
     "markadapters" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : "12gb",
+        "walltime" : "70:00:00"
     },
     "samtofastq_bwa_mergebamalignment" :
     {
         "ppn" : 12,
-        "walltime" : "44:00:00",
+        "walltime" : "70:00:00",
         "mem" : "72gb"
     },
     "markduplicates" :
     {
         "ppn" : 2,
-        "walltime" : "46:00:00",
+        "walltime" : "70:00:00",
         "mem" : "12gb"
     },
     "baserecalibrator" :
     {
         "ppn" : 2,
-        "walltime" : "40:00:00",
+        "walltime" : "70:00:00",
         "mem" : "12gb"
     },
     "applybqsr" :
     {
         "ppn" : 2,
-        "walltime" : "40:00:00",
+        "walltime" : "70:00:00",
         "mem" : "12gb"
     }
 }

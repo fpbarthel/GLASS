@@ -1,0 +1,60 @@
+{
+    "__default__" :
+    {
+        "_comment" : "CLUSTER SETTINGS FOR TEST SAMPLES - DO NOT USE",
+        "name" : "{rule}.{wildcards.sample_id}",
+        "j" : "oe",
+        "m" : "a",
+        "M" : "floris.barthel@jax.org",
+        "nodes" : 1,
+        "ppn" : 1,
+        "walltime" : "1:00:00",
+        "mem" : "6gb",
+        "queu" : "batch",
+        "stdout" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.sample_id}.out",
+        "stderr" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.sample_id}.err"
+    },
+    "download" :
+    {
+        "name" : "{rule}.{wildcards.uuid}",
+        "stdout" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.out",
+        "stderr" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.err",
+        "ppn" : 6,
+        "mem" : "12gb"
+    },
+    "revertsam" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "fq2ubam" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "markadapters" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "samtofastq_bwa_mergebamalignment" :
+    {
+        "ppn" : 12,
+        "mem" : "72gb"
+    },
+    "markduplicates" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "baserecalibrator" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "applybqsr" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    }
+}

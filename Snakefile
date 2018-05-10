@@ -18,39 +18,39 @@ SAMPLES_META    = json.load(open(config["sample_json"]))
 CLUSTER_META    = json.load(open(config["cluster_json"]))
 
 ## Variables
-FILENAMES   = [item['file_name'] for item in SAMPLES_META]
-UUIDS       = [item['id'] for item in SAMPLES_META]
-SAMPLES     = [item['sample_id'] for item in SAMPLES_META]
+#FILENAMES   = [item['file_name'] for item in SAMPLES_META]
+#UUIDS       = [item['id'] for item in SAMPLES_META]
+#SAMPLES     = [item['sample_id'] for item in SAMPLES_META]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule all:
-    input: expand("bqsr/{ID}.realn.dedup.bqsr.bam", ID=SAMPLES)
+#rule all:
+#    input: expand("bqsr/{ID}.realn.dedup.bqsr.bam", ID=SAMPLES)
   
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download BAM file from GDC
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##
 
-rule download:
-    output:
-        "download/{uuid}/{filename}.bam"
-    threads:
-        CLUSTER_META["download"]["ppn"]
-    message:
-        "Downloading UUID {wildcards.uuid} (file {wildcards.filename}) from GDC"
-    log:
-        "logs/download/{uuid}.log"
-    benchmark:
-        "benchmarks/download/{uuid}.txt"
-    shell:
-        "gdc-client download \
-            -d download \
-            -n {threads} \
-            -t ~/gdc_token.key \
-            {wildcards.uuid} \
-            2> {log}"
+# rule download:
+#     output:
+#         "download/{uuid}/{filename}.bam"
+#     threads:
+#         CLUSTER_META["download"]["ppn"]
+#     message:
+#         "Downloading UUID {wildcards.uuid} (file {wildcards.filename}) from GDC"
+#     log:
+#         "logs/download/{uuid}.log"
+#     benchmark:
+#         "benchmarks/download/{uuid}.txt"
+#     shell:
+#         "gdc-client download \
+#             -d download \
+#             -n {threads} \
+#             -t ~/gdc_token.key \
+#             {wildcards.uuid} \
+#             2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Function that resolves UUID and FILENAME from SAMPLE_ID
@@ -66,43 +66,78 @@ def get_gdc_bam_filename(wildcards):
 ## Moreover, BAM file is split into per-readgroup BAM files
 ## See: https://gatkforums.broadinstitute.org/gatk/discussion/6484
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## NOTE THAT
+## --MAX_DISCARD_FRACTION=0.05
+## SHOULD BE USED FOR TESTING PURPOSES ONLY!!
+## This has now been added to "config[revertsam_extra_args]"
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule revertsam:
+# rule revertsam:
+#     input:
+#         get_gdc_bam_filename
+#     output:
+#         dynamic("ubam/{sample_id}/{readgroup}.bam")
+#     params:
+#         dir = "ubam/{sample_id}"
+#     log: 
+#         "logs/revertsam/{sample_id}.log"
+#     threads:
+#         CLUSTER_META["revertsam"]["ppn"]
+#     benchmark:
+#         "benchmarks/revertsam/{sample_id}.txt"
+#     message:
+#         "Reverting {wildcards.sample_id} back to unaligned BAM file, stripping any previous "
+#         "pre-processing and restoring original base quality scores. Output files are split "
+#         "by readgroup."
+#     shell:
+#         "gatk --java-options {config[standard_java_opt]} RevertSam \
+#             --INPUT={input} \
+#             --OUTPUT={params.dir} \
+#             --OUTPUT_BY_READGROUP=true \
+#             --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
+#             --RESTORE_ORIGINAL_QUALITIES=true \
+#             --VALIDATION_STRINGENCY=SILENT \
+#             --ATTRIBUTE_TO_CLEAR=AS \
+#             --ATTRIBUTE_TO_CLEAR=FT \
+#             --ATTRIBUTE_TO_CLEAR=CO \
+#             --ATTRIBUTE_TO_CLEAR=XT \
+#             --ATTRIBUTE_TO_CLEAR=XN \
+#             --ATTRIBUTE_TO_CLEAR=OC \
+#             --ATTRIBUTE_TO_CLEAR=OP \
+#             --SANITIZE=true \
+#             --SORT_ORDER=queryname {config[revertsam_extra_args]}\
+#             --TMP_DIR={config[tempdir]} \
+#             2> {log}"
+
+
+## See: https://gatkforums.broadinstitute.org/gatk/discussion/6472/read-groups
+rule fq2ubam:
     input:
-        get_gdc_bam_filename
+        R1 = "fastq/{sample_id}/{sample_id}_{library}_{flowcell}_L{lane}_R1.fq",
+        R2 = "fastq/{sample_id}/{sample_id}_{library}_{flowcell}_L{lane}_R2.fq"
     output:
-        temp(dynamic("revertsam/{sample_id}/{readgroup}.bam"))
+        "ubam/{sample_id}/{readgroup}.bam"
     params:
-        dir = "revertsam/{sample_id}"
-    log: 
-        "logs/revertsam/{sample_id}.log"
+        uuid = "XXXX",
+        readgroup = "{flowcell}.{lane}.{params.uuid}"
+    log:
+        "logs/fq2ubam/{sample_id}.{params.readgroup}.log"
     threads:
-        CLUSTER_META["revertsam"]["ppn"]
+        CLUSTER_META["fq2ubam"]["ppn"]
     benchmark:
-        "benchmarks/revertsam/{sample_id}.txt"
+        "benchmarks/fq2ubam/{sample_id}.{params.readgroup}.txt"
     message:
-        "Reverting {wildcards.sample_id} back to unaligned BAM file, stripping any previous "
-        "pre-processing and restoring original base quality scores. Output files are split "
-        "by readgroup."
+        "Converting FASTQ file {wildcards.sample_id}, flowcell {params.readgroup} and "
+        "lane {wildcards.mate} to uBAM format."
     shell:
-        "gatk --java-options {config[standard_java_opt]} RevertSam \
-            --INPUT={input} \
-            --OUTPUT={params.dir} \
-            --OUTPUT_BY_READGROUP=true \
-            --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
-            --RESTORE_ORIGINAL_QUALITIES=true \
-            --VALIDATION_STRINGENCY=SILENT \
-            --ATTRIBUTE_TO_CLEAR=AS \
-            --ATTRIBUTE_TO_CLEAR=FT \
-            --ATTRIBUTE_TO_CLEAR=CO \
-            --ATTRIBUTE_TO_CLEAR=XT \
-            --ATTRIBUTE_TO_CLEAR=XN \
-            --ATTRIBUTE_TO_CLEAR=OC \
-            --ATTRIBUTE_TO_CLEAR=OP \
-            --SANITIZE=true \
-            --SORT_ORDER=queryname \
-            --TMP_DIR={config[tempdir]} \
-            2> {log}"
+        "fastqtobam \
+            -I={input.R1} \
+            -i={input.R2} \
+            RGID=\"{flowcell}.{lane}.{params.uuid}\" \
+            RGPU=\"{flowcell}.{lane}.{params.uuid}\" \
+            RGSM=\"{sample_id}\" \
+            RGPL=\"ILLUMINA\" \
+            RGLB=\"{library}\""
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Mark Illumina Adapters
@@ -113,7 +148,7 @@ rule revertsam:
 
 rule markadapters:
     input:
-        "revertsam/{sample_id}/{readgroup}.bam"
+        "ubam/{sample_id}/{readgroup}.bam"
     output:
         bam = temp("markadapters/{sample_id}/{sample_id}.{readgroup}.revertsam.markadapters.bam"),
         metric = "markadapters/{sample_id}/{sample_id}.{readgroup}.markadapters.metrics.txt"
@@ -204,7 +239,7 @@ rule markduplicates:
     input:
         dynamic("bwa/{sample_id}/{sample_id}.{readgroup}.realn.bam") 
     output:
-        bam = "markduplicates/{sample_id}.realn.dedup.bam",
+        bam = temp("markduplicates/{sample_id}.realn.dedup.bam"),
         metrics = "markduplicates/{sample_id}.metrics.txt"
     threads:
         CLUSTER_META["markduplicates"]["ppn"]
@@ -265,7 +300,8 @@ rule applybqsr:
             -I {input.bam} \
             -OQ true \
             -O {output} \
-            -bqsr {input.bqsr}"
+            -bqsr {input.bqsr} \
+            --create-output-bam-md5 true"
 
 # rule coverage:
 #     input:
