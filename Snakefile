@@ -39,8 +39,13 @@ for value in SAMPLES_META:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule all:
-    input: expand("bqsr/{ID}.realn.dedup.bqsr.bam", ID=SAMPLES)
-  
+    input: "qc/multiqc/multiqc_report.html" #expand("bqsr/{ID}.realn.dedup.bqsr.bam", ID=SAMPLES)
+
+
+
+rule download_only:
+    input: expand("download/{file}", file=BAM_FILES)
+ 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download BAM file from GDC
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##
@@ -164,16 +169,44 @@ rule fq2ubam:
         library = regex.group(1)
         flowcell = regex.group(2)
         lane = regex.group(3)
-        shell("fastqtobam \
-            -I={input.R1} \
-            -i={input.R2} \
-            RGID=\"{flowcell}.{lane}\" \
-            RGPU=\"{flowcell}.{lane}.{wildcards.sample_id}\" \
-            RGSM=\"{wildcards.sample_id}\" \
-            RGPL=\"ILLUMINA\" \
-            RGLB=\"{library}\" \
-            1> {output} \
+        shell("ISODATE=`date +%Y-%m-%dT%H:%M:%S%z`; \
+            gatk --java-options {config[standard_java_opt]} FastqToSam \
+            --FASTQ={input.R1} \
+            --FASTQ2={input.R2} \
+            --OUTPUT={output} \
+            --READ_GROUP_NAME=\"{flowcell}.{lane}\" \
+            --PLATFORM_UNIT=\"{flowcell}.{lane}.{wildcards.sample_id}\" \
+            --SAMPLE_NAME=\"{wildcards.sample_id}\" \
+            --PLATFORM=\"ILLUMINA\" \
+            --LIBRARY_NAME=\"{library}\" \
+            --SEQUENCING_CENTER=\"test\" \
+            --SORT_ORDER=queryname \
+            --RUN_DATE \"$ISODATE\"  \
             2> {log}")
+
+        #
+
+rule fastqc:
+    input:
+        "ubam/{sample_id}/{readgroup}.bam"
+    output:
+        "qc/{sample_id}/{readgroup}_fastqc.html"
+    params:
+        dir = "qc/{sample_id}"
+    threads:
+        CLUSTER_META["fastqc"]["ppn"]
+    log:
+        "logs/fastqc/{sample_id}.{readgroup}.log"
+    benchmark:
+        "benchmarks/fastqc/{sample_id}.{readgroup}.txt"
+    message:
+        "Running FASTQC for {wildcards.sample_id} {wildcards.readgroup}"
+    shell:
+        "fastqc \
+            -o {params.dir} \
+            -f bam \
+            {input} \
+            2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Mark Illumina Adapters
@@ -313,7 +346,8 @@ rule baserecalibrator:
             -R {config[reference_fasta]} \
             -I {input} \
             -O {output} \
-            --known-sites {config[gnomad_vcf]}"
+            --known-sites {config[gnomad_vcf]} \
+            2> {log}"
 
 rule applybqsr:
     input:
@@ -337,7 +371,70 @@ rule applybqsr:
             -OQ true \
             -O {output} \
             -bqsr {input.bqsr} \
-            --create-output-bam-md5 true"
+            --create-output-bam-md5 true \
+            2> {log}"
+
+rule wgsmetrics:
+    input:
+        "bqsr/{sample_id}.realn.dedup.bqsr.bam"
+    output:
+        "qc/{sample_id}.WgsMetrics.txt"
+    threads:
+        CLUSTER_META["wgsmetrics"]["ppn"]
+    log:
+        "logs/wgsmetrics/{sample_id}.WgsMetrics.log"
+    benchmark:
+        "benchmarks/wgsmetrics/{sample_id}.WgsMetrics.txt"
+    message:
+        "Computing WGS Metrics for {wildcards.sample_id}"
+    shell:
+        "gatk --java-options {config[standard_java_opt]} CollectWgsMetrics \
+            -R {config[reference_fasta]} \
+            -I {input} \
+            -O {output} \
+            --USE_FAST_ALGORITHM true \
+            2> {log}"
+
+rule validatebam:
+    input:
+        "bqsr/{sample_id}.realn.dedup.bqsr.bam"
+    output:
+        "qc/{sample_id}.ValidateSamFile.txt"
+    threads:
+        CLUSTER_META["validatebam"]["ppn"]
+    log:
+        "logs/validatebam/{sample_id}.ValidateSamFile.log"
+    benchmark:
+        "benchmarks/validatebam/{sample_id}.ValidateSamFile.txt"
+    message:
+        "Validating BAM file {wildcards.sample_id}"
+    shell:
+        "gatk --java-options {config[standard_java_opt]} ValidateSamFile \
+            -I {input} \
+            -O {output} \
+            -M SUMMARY \
+            2> {log}"
+
+rule multiqc:
+    input:
+        expand("qc/{sample_id}.ValidateSamFile.txt", sample_id=SAMPLES),
+        expand("qc/{sample_id}.WgsMetrics.txt", sample_id=SAMPLES),
+        dynamic("qc/{sample_id}/{readgroup}_fastqc.html")
+    output:
+        "qc/multiqc/multiqc_report.html"
+    params:
+        dir = "qc/multiqc"
+    threads:
+        CLUSTER_META["multiqc"]["ppn"]
+    log:
+        "logs/multiqc/multiqc.log"
+    benchmark:
+        "benchmarks/multiqc/multiqc.txt"
+    message:
+        "Running MultiQC"
+    shell:
+        "multiqc -o {params.dir} {config[workdir]}"
+
 
 # rule coverage:
 #     input:

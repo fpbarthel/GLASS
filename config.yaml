@@ -3,20 +3,25 @@
 gdc_token: "/home/barthf/gdc_token.key"
 
 ## Extra args for revertsam, testing purpose only
-revertsam_extra_args : "--MAX_DISCARD_FRACTION=0.05 "
+## COMMENT FOR ACTUAL RUN
+#revertsam_extra_args : "--MAX_DISCARD_FRACTION=0.05 "
 
 ## Full path to sample list JSON
-#sample_json: "/projects/barthf/GLASS-WG/data/ref/TCGA_WGS_GDC_legacy_UUIDs.json"
+sample_json: "/projects/barthf/GLASS-WG/data/ref/TCGA_WGS_GDC_legacy_UUIDs.json"
 
-sample_json: "/projects/barthf/GLASS-WG/data/ref/test_samples.json" 
+## COMMENT FOR ACTUAL RUN
+#sample_json: "/projects/barthf/GLASS-WG/data/ref/test_samples.json" 
 
 ## Full path
-#cluster_json: "/projects/barthf/GLASS-WG/cluster.json"
+cluster_json: "/projects/barthf/GLASS-WG/cluster.json"
 
-cluster_json: "/projects/barthf/GLASS-WG/test_cluster.json"
+## COMMENT FOR ACTUAL RUN
+#cluster_json: "/projects/barthf/GLASS-WG/test_cluster.json"
 
 ## Working directory
-workdir: "/projects/barthf/GLASS-WG"
+#workdir: "/projects/barthf/GLASS-WG"
+
+workdir: "/fastscratch/barthf/GLASS-WG"
 
 ## Temporary directory
 tempdir: "/fastscratch/barthf/GLASS-WG/tmp"

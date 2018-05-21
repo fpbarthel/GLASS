@@ -32,6 +32,11 @@
         "ppn" : 2,
         "mem" : "12gb"
     },
+    "fastqc" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
     "markadapters" :
     {
         "ppn" : 2,
@@ -53,6 +58,21 @@
         "mem" : "12gb"
     },
     "applybqsr" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "wgsmetrics" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "validatebam" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "multiqc" :
     {
         "ppn" : 2,
         "mem" : "12gb"
