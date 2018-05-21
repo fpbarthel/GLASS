@@ -11,7 +11,7 @@ library(listviewer)
 
 #######################################################
 # An example of tabular data containing read groups, file locations, and basic subject covariate information.
-metadf <- read_tsv("/Users/johnsk/Documents/Life-History/GLASS-WG/data/table_to_json_test.tsv")
+metadf <- read_tsv("/Users/johnsk/Documents/Life-History/GLASS-WG/data/ref/table_to_json_test.tsv")
 
 # Some columns did not need to be included in JSON.
 # This is a fabricated test that included a few BAM files 
