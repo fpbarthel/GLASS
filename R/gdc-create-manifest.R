@@ -5,6 +5,8 @@ library(GenomicDataCommons)
 library(listviewer)
 library(tidyverse)
 
+setwd("/Volumes/Helix-Projects/GLASS-WG")
+
 unpaired_json = "data/ref/TCGA_WGS_GDC_legacy_UUIDs.json"
 
 ## Make sure to include case ids
@@ -44,7 +46,8 @@ df = as.data.frame(fres[-which(names(fres) %in% c("cases", "acl", "analysis"))],
   select(id, aliquot_id, project, sample_type, experimental_strategy, file_size, md5sum, file_name, created_datetime, updated_datetime) %>%
   filter(grepl("TCGA", project)) %>%
   mutate(sample_id = substr(aliquot_id,1,16),
-         case_id = substr(aliquot_id,1,12))
+         case_id = substr(aliquot_id,1,12),
+         format = "BAM")
 
 ## Pair primary-recurrent-2ndrecurrence samples
 filtered_files = df %>% 
@@ -55,7 +58,8 @@ filtered_files = df %>%
   mutate(hasRec = any(sample_type == "Recurrent Tumor")) %>%
   ungroup() %>%
   filter(hasRec, p == 1) %>%
-  select(-hasRec, -p, -created_datetime, -updated_datetime, -experimental_strategy)
+  select(-hasRec, -p, -created_datetime, -updated_datetime, -experimental_strategy) %>%
+  mutate(file_size_readable = gdata::humanReadable(file_size, standard="Unix"))
 
 paired_files = filtered_files %>%
   mutate(sample_type_numeric = recode_factor(substr(aliquot_id, 14,16), "01A" = "P", "01B" = "P", "02A" = "R1", "02B" = "R2", "10A" = "N", "10B" = "N", "10D" = "N")) %>%

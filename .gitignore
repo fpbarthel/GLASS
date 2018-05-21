@@ -1,3 +1,5 @@
 sandbox/**
 archive/**
+documents/**
 .snakemake/**
+.Rhistory

@@ -1,7 +1,8 @@
 {
     "__default__" :
     {
-        "name" : "{rule}.{wildcards.sample}",
+        "_comment" : "Cluster parameters taken from GLASS pipeline on GitHub (https://github.com/TheJacksonLaboratory/hourglass/blob/master/glass_alignments/wgs_wes/flowr/flowr_aln_fqs.def) and from GATK forum (https://gatkforums.broadinstitute.org/gatk/discussion/1975/how-can-i-use-parallelism-to-make-gatk-tools-run-faster)",
+        "name" : "{rule}.{wildcards.sample_id}",
         "j" : "oe",
         "m" : "a",
         "M" : "floris.barthel@jax.org",
@@ -10,12 +11,53 @@
         "walltime" : "12:00:00",
         "mem" : "6gb",
         "queu" : "batch",
-        "stdout" : "logs/cluster/{rule}.{wildcards.sample}.out",
-        "stderr" : "logs/cluster/{rule}.{wildcards.sample}.err"
+        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.sample_id}.out",
+        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.sample_id}.err",
+        "d" : "/fastscratch/barthf/GLASS-WG"
     },
     "download" :
     {
-        "ppn" : 4,
-        "mem" : "24gb"
+        "name" : "{rule}.{wildcards.uuid}",
+        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.out",
+        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.err",
+        "ppn" : 6,
+        "mem" : "12gb",
+        "walltime" : "70:00:00"
+    },
+    "revertsam" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb",
+        "walltime" : "70:00:00"
+    },
+    "markadapters" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb",
+        "walltime" : "70:00:00"
+    },
+    "samtofastq_bwa_mergebamalignment" :
+    {
+        "ppn" : 12,
+        "walltime" : "70:00:00",
+        "mem" : "72gb"
+    },
+    "markduplicates" :
+    {
+        "ppn" : 2,
+        "walltime" : "70:00:00",
+        "mem" : "12gb"
+    },
+    "baserecalibrator" :
+    {
+        "ppn" : 2,
+        "walltime" : "70:00:00",
+        "mem" : "12gb"
+    },
+    "applybqsr" :
+    {
+        "ppn" : 2,
+        "walltime" : "70:00:00",
+        "mem" : "12gb"
     }
 }
