@@ -59,13 +59,21 @@ filtered_files = df %>%
   ungroup() %>%
   filter(hasRec, p == 1) %>%
   select(-hasRec, -p, -created_datetime, -updated_datetime, -experimental_strategy) %>%
-  mutate(file_size_readable = gdata::humanReadable(file_size, standard="Unix"))
+  mutate(file_size_readable = gdata::humanReadable(file_size, standard="Unix"),
+         sample_type_code = recode_factor(substr(aliquot_id, 14,16), "01A" = "TP", "01B" = "TP", "02A" = "R1", "02B" = "R2", "10A" = "NB", "10B" = "NB", "10D" = "NB"))
 
-paired_files = filtered_files %>%
-  mutate(sample_type_numeric = recode_factor(substr(aliquot_id, 14,16), "01A" = "P", "01B" = "P", "02A" = "R1", "02B" = "R2", "10A" = "N", "10B" = "N", "10D" = "N")) %>%
-  select(case_id, project, sample_type_numeric, id) %>%
-  spread(sample_type_numeric, id)
-  
-write(jsonlite::toJSON(filtered_files, pretty = T), file = unpaired_json)
+nested_filtered_files = filtered_files %>% ### filter(case_id == "TCGA-DU-6404") %>% ## CONSIDER INCLUDING FOR EASIER TEST
+  nest(-case_id, -project, .key = samples) %>%
+  mutate(samples = map(samples, nest, -sample_type_code, -sample_type, -sample_id, .key=files))
+
+jsonlite::toJSON(nested_filtered_files, pretty = T)
+write(jsonlite::toJSON(nested_filtered_files, pretty = T), file = unpaired_json)
+
+# paired_files = filtered_files %>%
+#   mutate(sample_type_numeric = recode_factor(substr(aliquot_id, 14,16), "01A" = "P", "01B" = "P", "02A" = "R1", "02B" = "R2", "10A" = "N", "10B" = "N", "10D" = "N")) %>%
+#   select(case_id, project, sample_type_numeric, id) %>%
+#   spread(sample_type_numeric, id)
+
+
   
 
