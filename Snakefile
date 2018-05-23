@@ -21,18 +21,27 @@ CLUSTER_META    = json.load(open(config["cluster_json"]))
 #FILENAMES   = [item['file_name'] for item in SAMPLES_META]
 #UUIDS       = [item['id'] for item in SAMPLES_META]
 #SAMPLES     = [item['sample_id'] for item in SAMPLES_META]
-SAMPLES = [item["id"] for item in SAMPLES_META]
+# SAMPLES = [item["id"] for item in SAMPLES_META]
+
+BAM_FILES = {}
+SAMPLES = []
+for case in SAMPLES_META:
+    for sample in case["samples"]:
+        SAMPLES.append(sample["sample_id"])
+        for file in sample["files"]:
+            if file["format"] == "BAM":
+                BAM_FILES[sample["sample_id"]] = file["id"] + "/" + file["file_name"]
 
 ## NOTE NEED TO GIVE ERROR IF MORE THAN 1 ITEM IN LIST OF LISTS
-BAM_FILES = {}
-for value in SAMPLES_META:
-    if value["format"] == "BAM":
-        BAM_FILES[value["id"]] = [item["file_name"] for item in value["files"]][0]
+# BAM_FILES = {}
+# for value in SAMPLES_META:
+#     if value["format"] == "BAM":
+#         BAM_FILES[value["id"]] = [item["file_name"] for item in value["files"]][0]
 
-FQ_FILES = {}
-for value in SAMPLES_META:
-    if value["format"] == "FASTQ":
-        FQ_FILES[value["id"]] = [item["R1"] for item in value["files"]] + [item["R2"] for item in value["files"]]
+#FQ_FILES = {}
+#for value in SAMPLES_META:
+#    if value["format"] == "FASTQ":
+#        FQ_FILES[value["id"]] = [item["R1"] for item in value["files"]] + [item["R2"] for item in value["files"]]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
@@ -44,7 +53,7 @@ rule all:
 
 
 rule download_only:
-    input: expand("download/{file}", file=BAM_FILES)
+    input: expand("download/{file}", file=BAM_FILES.values())
  
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download BAM file from GDC
@@ -65,7 +74,7 @@ rule download:
         "gdc-client download \
             -d download \
             -n {threads} \
-            -t ~/gdc_token.key \
+            -t {config[gdc_token]} \
             {wildcards.uuid} \
             2> {log}"
 

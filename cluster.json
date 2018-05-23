@@ -30,6 +30,18 @@
         "mem" : "12gb",
         "walltime" : "70:00:00"
     },
+    "fq2ubam" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb",
+        "walltime" : "70:00:00"
+    },
+    "fastqc" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb",
+        "walltime" : "70:00:00"
+    },
     "markadapters" :
     {
         "ppn" : 2,
@@ -55,6 +67,24 @@
         "mem" : "12gb"
     },
     "applybqsr" :
+    {
+        "ppn" : 2,
+        "walltime" : "70:00:00",
+        "mem" : "12gb"
+    },
+    "wgsmetrics" :
+    {
+        "ppn" : 2,
+        "walltime" : "70:00:00",
+        "mem" : "12gb"
+    },
+    "validatebam" :
+    {
+        "ppn" : 2,
+        "walltime" : "70:00:00",
+        "mem" : "12gb"
+    },
+    "multiqc" :
     {
         "ppn" : 2,
         "walltime" : "70:00:00",
