@@ -35,4 +35,3 @@ listviewer::jsonedit(metajson)
 # If opening in SublimeText use app (shift + cmd + p) to get in JSON pretty format.
 write_json(metajson, "/Users/johnsk/Documents/Life-History/GLASS-WG/data/metadata-json.json")
 
-
