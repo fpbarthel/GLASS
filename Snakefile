@@ -17,31 +17,20 @@ KEYFILE     = config["gdc_token"]
 SAMPLES_META    = json.load(open(config["sample_json"]))
 CLUSTER_META    = json.load(open(config["cluster_json"]))
 
-## Variables
-#FILENAMES   = [item['file_name'] for item in SAMPLES_META]
-#UUIDS       = [item['id'] for item in SAMPLES_META]
-#SAMPLES     = [item['sample_id'] for item in SAMPLES_META]
-# SAMPLES = [item["id"] for item in SAMPLES_META]
+## JSON processing
 
 BAM_FILES = {}
+FQ_FILES = {}
 SAMPLES = []
 for case in SAMPLES_META:
     for sample in case["samples"]:
         SAMPLES.append(sample["sample_id"])
+        FQ_FILES[sample["sample_id"]] = {}
         for file in sample["files"]:
-            if file["format"] == "BAM":
-                BAM_FILES[sample["sample_id"]] = file["id"] + "/" + file["file_name"]
-
-## NOTE NEED TO GIVE ERROR IF MORE THAN 1 ITEM IN LIST OF LISTS
-# BAM_FILES = {}
-# for value in SAMPLES_META:
-#     if value["format"] == "BAM":
-#         BAM_FILES[value["id"]] = [item["file_name"] for item in value["files"]][0]
-
-#FQ_FILES = {}
-#for value in SAMPLES_META:
-#    if value["format"] == "FASTQ":
-#        FQ_FILES[value["id"]] = [item["R1"] for item in value["files"]] + [item["R2"] for item in value["files"]]
+            if file["file_format"] == "BAM":
+                BAM_FILES[sample["sample_id"]] = file["file_name"]
+            if file["file_format"] == "FQ":
+                FQ_FILES[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["file_name"].split(",")
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule

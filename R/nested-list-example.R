@@ -1,3 +1,9 @@
+
+## Working with nested lists in R/tidyverse example code
+## Related to question asked on stackoverflow
+## URL: https://stackoverflow.com/questions/50477156/convert-a-tidy-table-to-deeply-nested-list-using-r-and-tidyverse
+## @Author FLoris Barthel
+
 library(tidyverse)
 library(gapminder)
 

@@ -1,28 +1,11 @@
 
+## Snakemake configuration
+## @Author Floris Barthel
+
+#### GLOBAL PARAMETERS
+
 ## Full path to GDC keyfile
 gdc_token: "/home/barthf/gdc-user-token.2018-05-23T11_13_25-04_00.txt"
-
-## Extra args for revertsam, testing purpose only
-## COMMENT FOR ACTUAL RUN
-#revertsam_extra_args : "--MAX_DISCARD_FRACTION=0.05 "
-revertsam_extra_args : ""
-
-## Full path to sample list JSON
-sample_json: "/projects/barthf/GLASS-WG/data/ref/TCGA_WGS_GDC_legacy_UUIDs.json"
-
-## COMMENT FOR ACTUAL RUN
-#sample_json: "/projects/barthf/GLASS-WG/data/ref/test_samples.json" 
-
-## Full path
-cluster_json: "/projects/barthf/GLASS-WG/cluster.json"
-
-## COMMENT FOR ACTUAL RUN
-#cluster_json: "/projects/barthf/GLASS-WG/test_cluster.json"
-
-## Working directory
-#workdir: "/projects/barthf/GLASS-WG"
-
-workdir: "/fastscratch/barthf/GLASS-WG"
 
 ## Temporary directory
 tempdir: "/fastscratch/barthf/GLASS-WG/tmp"
@@ -37,3 +20,30 @@ reference_fasta: "/projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta"
 standard_java_opt: "'-Xmx12G'"
 samtofastq_java_opt: "'-Dsamjdk.buffer_size=131072 -Dsamjdk.compression_level=1 -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Xmx128m'"
 mergebamalignment_java_opt: "'-Dsamjdk.buffer_size=131072 -Dsamjdk.use_async_io=true -Dsamjdk.compression_level=1 -XX:+UseStringCache -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Xmx5000m'"
+
+#### TEST PARAMETERS
+# Uncomment parameters below to activate test mode
+
+## Extra args for revertsam, testing purpose only
+revertsam_extra_args : "--MAX_DISCARD_FRACTION=0.05 " 
+
+sample_json: "/projects/barthf/GLASS-WG/data/ref/test_samples_v2.json" 
+
+cluster_json: "/projects/barthf/GLASS-WG/test_cluster.json"
+
+workdir: "/projects/barthf/GLASS-WG"
+
+#### ACTUAL RUN
+# Uncomment parameters below for test run
+
+## Not needed for actual run
+#revertsam_extra_args : ""
+
+## Full path to sample list JSON
+#sample_json: "/projects/barthf/GLASS-WG/data/ref/TCGA_WGS_GDC_legacy_UUIDs.json"
+
+## Full path to cluster settings
+#cluster_json: "/projects/barthf/GLASS-WG/cluster.json"
+
+## Working directory
+#workdir: "/fastscratch/barthf/GLASS-WG"
