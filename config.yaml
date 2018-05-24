@@ -1,10 +1,11 @@
 
 ## Full path to GDC keyfile
-gdc_token: "/home/barthf/gdc_token.key"
+gdc_token: "/home/barthf/gdc-user-token.2018-05-23T11_13_25-04_00.txt"
 
 ## Extra args for revertsam, testing purpose only
 ## COMMENT FOR ACTUAL RUN
 #revertsam_extra_args : "--MAX_DISCARD_FRACTION=0.05 "
+revertsam_extra_args : ""
 
 ## Full path to sample list JSON
 sample_json: "/projects/barthf/GLASS-WG/data/ref/TCGA_WGS_GDC_legacy_UUIDs.json"

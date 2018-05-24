@@ -1,5 +1,6 @@
 ## Create a manifest of TCGA whole genome (WGS) files from LGG and GBM cohorts
 ## Limit to primary-recurrent triplets and 2nd recurrences
+## @Author Floris Barthel
 
 library(GenomicDataCommons)
 library(listviewer)
@@ -59,13 +60,37 @@ filtered_files = df %>%
   ungroup() %>%
   filter(hasRec, p == 1) %>%
   select(-hasRec, -p, -created_datetime, -updated_datetime, -experimental_strategy) %>%
-  mutate(file_size_readable = gdata::humanReadable(file_size, standard="Unix"))
+  mutate(file_size_readable = gdata::humanReadable(file_size, standard="Unix"),
+         sample_type_code = recode_factor(substr(aliquot_id, 14,16), "01A" = "TP", "01B" = "TP", "02A" = "R1", "02B" = "R2", "10A" = "NB", "10B" = "NB", "10D" = "NB"))
 
-paired_files = filtered_files %>%
-  mutate(sample_type_numeric = recode_factor(substr(aliquot_id, 14,16), "01A" = "P", "01B" = "P", "02A" = "R1", "02B" = "R2", "10A" = "N", "10B" = "N", "10D" = "N")) %>%
-  select(case_id, project, sample_type_numeric, id) %>%
-  spread(sample_type_numeric, id)
-  
-write(jsonlite::toJSON(filtered_files, pretty = T), file = unpaired_json)
-  
+## Insert readgroups
+rgs = read.delim('data/ref/TCGA_BAM_readgroups.txt', as.is = T, header = F)
+rgs = rgs %>% mutate(id = basename(dirname(V1)),
+                     rg_ID = gsub("ID\\:","", V3),
+                     rg_PL = gsub("PL\\:","", V4),
+                     rg_PU = gsub("PU\\:","", V5),
+                     rg_LB = gsub("LB\\:","", V6),
+                     rg_PI = gsub("PI\\:","", V7),
+                     rg_DT = gsub("DT\\:","", V8),
+                     rg_SM = gsub("SM\\:","", V9),
+                     rg_CN = gsub("CN\\:","", V10)) %>%
+  select(-starts_with("V"))
 
+## Full-join
+filtered_files_rgs = filtered_files %>% right_join(rgs)
+
+## Nest
+nested_filtered_files_rgs = filtered_files_rgs %>%
+  mutate(file_uuid = id, case_project = project, file_md5sum = md5sum, file_format = format) %>%
+  select(starts_with("case"), starts_with("sample"), starts_with("file"), starts_with("rg")) %>%
+  nest(-starts_with("case"), -starts_with("sample"), -starts_with("file"), .key=readgroups) %>% # starts_with("RG")
+  nest(-starts_with("case"), -starts_with("sample"),.key=files) %>%
+  nest(-starts_with("case"),.key=samples)
+
+jsonlite::toJSON(nested_filtered_files_rgs, pretty = T)
+write(jsonlite::toJSON(nested_filtered_files_rgs, pretty = T), file = unpaired_json)
+
+# paired_files = filtered_files %>%
+#   mutate(sample_type_numeric = recode_factor(substr(aliquot_id, 14,16), "01A" = "P", "01B" = "P", "02A" = "R1", "02B" = "R2", "10A" = "N", "10B" = "N", "10D" = "N")) %>%
+#   select(case_id, project, sample_type_numeric, id) %>%
+#   spread(sample_type_numeric, id)
