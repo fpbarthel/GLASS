@@ -108,38 +108,55 @@ def get_gdc_bam_filename(wildcards):
 ## This has now been added to "config[revertsam_extra_args]"
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule revertsam:
-    input:
-        get_gdc_bam_filename
-    output:
-        temp("ubam/{sample_id}/{sample_id}.{readgroup}.bam")
-    log: 
-        "logs/revertsam/{sample_id}.{readgroup}.log"
-    threads:
-        CLUSTER_META["revertsam"]["ppn"]
-    benchmark:
-        "benchmarks/revertsam/{sample_id}.{readgroup}.txt"
-    message:
-        "Reverting {wildcards.sample_id} back to unaligned BAM file, stripping any previous "
-        "pre-processing and restoring original base quality scores. Readgroup: {wildcards.readgroup}"
-    shell:
-        "samtools view -br \"{wildcards.readgroup}\" {input} | \
-        	gatk --java-options {config[standard_java_opt]} RevertSam \
-            --INPUT=/dev/stdin \
-            --OUTPUT={output} \
-            --RESTORE_ORIGINAL_QUALITIES=true \
-            --VALIDATION_STRINGENCY=SILENT \
-            --ATTRIBUTE_TO_CLEAR=AS \
-            --ATTRIBUTE_TO_CLEAR=FT \
-            --ATTRIBUTE_TO_CLEAR=CO \
-            --ATTRIBUTE_TO_CLEAR=XT \
-            --ATTRIBUTE_TO_CLEAR=XN \
-            --ATTRIBUTE_TO_CLEAR=OC \
-            --ATTRIBUTE_TO_CLEAR=OP \
-            --SANITIZE=true \
-            --SORT_ORDER=queryname {config[revertsam_extra_args]}\
-            --TMP_DIR={config[tempdir]} \
-            2> {log}"
+for sample, rgs in BAM_READGROUPS.items():
+    rule:
+        input:
+            "download/{}".format(BAM_FILES[sample]) #get_gdc_bam_filename
+        output:
+            bams = temp(expand("ubam/{sample_id}/{sample_id}.{rg}.bam", rg=rgs, sample_id=sample)),
+            map = "ubam/{sample_id}/{sample_id}.output_map.txt".format(sample_id=sample)
+        params:
+            dir = "ubam/{sample_id}".format(sample_id=sample)
+        log: 
+            "logs/revertsam/{sample_id}.log".format(sample_id=sample)
+        threads:
+            CLUSTER_META["revertsam"]["ppn"]
+        benchmark:
+            "benchmarks/revertsam/{sample_id}.txt".format(sample_id=sample)
+        message:
+            "Reverting {sample_id} back to unaligned BAM file, stripping any previous "
+            "pre-processing and restoring original base quality scores. Output files are split "
+            "by readgroup.".format(sample_id=sample)
+        run:
+
+            rgmap = pd.DataFrame(
+                {
+                    "READ_GROUP_ID": BAM_READGROUPS[sample],
+                    "OUTPUT": ["{sample}.{rg}.bam".format(sample=sample, rg=rg) for rg in BAM_READGROUPS[sample]]
+                },
+                columns = ["READ_GROUP_ID", "OUTPUT"]
+            )
+            rgmap.to_csv(output["map"], sep="\t", index=False)
+
+            "gatk --java-options {config[standard_java_opt]} RevertSam \
+                --INPUT={input} \
+                --OUTPUT={params.dir} \
+                --OUTPUT_MAP={output.map} \
+                --OUTPUT_BY_READGROUP=true \
+                --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
+                --RESTORE_ORIGINAL_QUALITIES=true \
+                --VALIDATION_STRINGENCY=SILENT \
+                --ATTRIBUTE_TO_CLEAR=AS \
+                --ATTRIBUTE_TO_CLEAR=FT \
+                --ATTRIBUTE_TO_CLEAR=CO \
+                --ATTRIBUTE_TO_CLEAR=XT \
+                --ATTRIBUTE_TO_CLEAR=XN \
+                --ATTRIBUTE_TO_CLEAR=OC \
+                --ATTRIBUTE_TO_CLEAR=OP \
+                --SANITIZE=true \
+                --SORT_ORDER=queryname {config[revertsam_extra_args]}\
+                --TMP_DIR={config[tempdir]} \
+                2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Init FASTQ step
@@ -309,7 +326,7 @@ rule samtofastq_bwa_mergebamalignment:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 # def get_readgroup_BAMs_sample(wildcards):
-# 	return ["bwa/{sample}/{sample}.{rg}.realn.bam".format(sample=wildcards.sample_id, rg=rg) for rg in BAM_READGROUPS[wildcards.sample_id]]
+#   return ["bwa/{sample}/{sample}.{rg}.realn.bam".format(sample=wildcards.sample_id, rg=rg) for rg in BAM_READGROUPS[wildcards.sample_id]]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Mark Duplicates & merge readgroups
