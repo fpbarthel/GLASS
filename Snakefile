@@ -4,6 +4,8 @@
 ## Development branch
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+import pandas as pd
+
 configfile: "config.yaml"
 
 ## Although this statement goes against all coding conventions, we want it here because we want to run
@@ -20,6 +22,8 @@ CLUSTER_META    = json.load(open(config["cluster_json"]))
 ## JSON processing
 
 BAM_FILES = {}
+BAM_READGROUPS = {}
+READGROUP_SAMPLE = {}
 FQ_FILES = {}
 SAMPLES = []
 for case in SAMPLES_META:
@@ -29,6 +33,9 @@ for case in SAMPLES_META:
         for file in sample["files"]:
             if file["file_format"] == "BAM":
                 BAM_FILES[sample["sample_id"]] = file["file_name"]
+                BAM_READGROUPS[sample["sample_id"]] = [readgroup["rg_ID"] for readgroup in file["readgroups"]]
+                for readgroup in file["readgroups"]:
+                    READGROUP_SAMPLE[readgroup["rg_ID"]] = sample["sample_id"]
             if file["file_format"] == "FQ":
                 FQ_FILES[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["file_name"].split(",")
 
@@ -39,7 +46,9 @@ for case in SAMPLES_META:
 rule all:
     input: "qc/multiqc/multiqc_report.html" #expand("bqsr/{ID}.realn.dedup.bqsr.bam", ID=SAMPLES)
 
-
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Download only rule
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule download_only:
     input: expand("download/{file}", file=BAM_FILES.values())
@@ -75,12 +84,15 @@ def get_gdc_bam_filename(wildcards):
     return "download/{}".format(BAM_FILES[wildcards.sample_id])
 
 
+#def get_gdc_bam_filename(wildcards):
+#    return "download/{}".format(BAM_FILES[READGROUP_SAMPLE[wildcards.readgroup]])
+
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## RevertSAM and FASTQ-2-uBAM both output uBAM files to the same directory
 ## Snakemake needs to be informed which rule takes presidence
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-ruleorder: revertsam > fq2ubam
+# ruleorder: revertsam > fq2ubam
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Revert GDC-aligned legacy BAM to unaligned SAM file
@@ -98,7 +110,8 @@ rule revertsam:
     input:
         get_gdc_bam_filename
     output:
-        dynamic("ubam/{sample_id}/{readgroup}.bam")
+        map = "ubam/{sample_id}/{sample_id}.output_map.txt",
+        bams = temp(expand("ubam/{{sample_id}}/{rg}.bam", rg=BAM_READGROUPS))
     params:
         dir = "ubam/{sample_id}"
     log: 
@@ -111,10 +124,23 @@ rule revertsam:
         "Reverting {wildcards.sample_id} back to unaligned BAM file, stripping any previous "
         "pre-processing and restoring original base quality scores. Output files are split "
         "by readgroup."
-    shell:
-        "gatk --java-options {config[standard_java_opt]} RevertSam \
+    run:
+
+    	rgmap = pd.DataFrame(
+		    {
+		        "READ_GROUP_ID": BAM_READGROUPS[wildcards["sample_id"]],
+		        "OUTPUT": ["{sample}.{rg}.bam".format(sample=wildcards["sample_id"], rg=rg) for rg in BAM_READGROUPS[wildcards["sample_id"]]]
+		    },
+		    columns = ["READ_GROUP_ID", "OUTPUT"]
+		)
+		rgmap.to_csv(output["map"], sep="\t", index=False)
+
+		anti_rgmap = pd
+
+        shell("gatk --java-options {config[standard_java_opt]} RevertSam \
             --INPUT={input} \
             --OUTPUT={params.dir} \
+            --OUTPUT_MAP={output.map} \
             --OUTPUT_BY_READGROUP=true \
             --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
             --RESTORE_ORIGINAL_QUALITIES=true \
@@ -129,17 +155,17 @@ rule revertsam:
             --SANITIZE=true \
             --SORT_ORDER=queryname {config[revertsam_extra_args]}\
             --TMP_DIR={config[tempdir]} \
-            2> {log}"
+            2> {log}")
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Init FASTQ step
 ## Required for pipeline to work correctly
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule initFQ:
-    output:
-        R1 = dynamic("fastq/{sample_id}/{sample_id}_{readgroup}_R1.fq"),
-        R2 = dynamic("fastq/{sample_id}/{sample_id}_{readgroup}_R2.fq")
+# rule initFQ:
+#     output:
+#         R1 = dynamic("fastq/{sample_id}/{sample_id}_{readgroup}_R1.fq"),
+#         R2 = dynamic("fastq/{sample_id}/{sample_id}_{readgroup}_R2.fq")
 
 # ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 # ## Convert from FASTQ pair to uBAM
@@ -147,42 +173,40 @@ rule initFQ:
 # ## See: https://gatkforums.broadinstitute.org/gatk/discussion/6472/read-groups
 # ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule fq2ubam:
-    input:
-        R1 = "fastq/{sample_id}/{sample_id}_{readgroup}_R1.fq",
-        R2 = "fastq/{sample_id}/{sample_id}_{readgroup}_R2.fq"
-    output:
-        "ubam/{sample_id}/{readgroup}.bam"
-    log:
-        "logs/fq2ubam/{sample_id}.{readgroup}.log"
-    threads:
-        CLUSTER_META["fq2ubam"]["ppn"]
-    benchmark:
-        "benchmarks/fq2ubam/{sample_id}.{readgroup}.txt"
-    message:
-        "Converting FASTQ file {wildcards.sample_id}, {wildcards.readgroup} "
-        "to uBAM format."
-    run:
-        regex = re.search("([^_]*)_([^_]*)_([^_]*)", wildcards['readgroup'])
-        library = regex.group(1)
-        flowcell = regex.group(2)
-        lane = regex.group(3)
-        shell("ISODATE=`date +%Y-%m-%dT%H:%M:%S%z`; \
-            gatk --java-options {config[standard_java_opt]} FastqToSam \
-            --FASTQ={input.R1} \
-            --FASTQ2={input.R2} \
-            --OUTPUT={output} \
-            --READ_GROUP_NAME=\"{flowcell}.{lane}\" \
-            --PLATFORM_UNIT=\"{flowcell}.{lane}.{wildcards.sample_id}\" \
-            --SAMPLE_NAME=\"{wildcards.sample_id}\" \
-            --PLATFORM=\"ILLUMINA\" \
-            --LIBRARY_NAME=\"{library}\" \
-            --SEQUENCING_CENTER=\"test\" \
-            --SORT_ORDER=queryname \
-            --RUN_DATE \"$ISODATE\"  \
-            2> {log}")
-
-        #
+# rule fq2ubam:
+#     input:
+#         R1 = "fastq/{sample_id}/{sample_id}_{readgroup}_R1.fq",
+#         R2 = "fastq/{sample_id}/{sample_id}_{readgroup}_R2.fq"
+#     output:
+#         "ubam/{sample_id}/{readgroup}.bam"
+#     log:
+#         "logs/fq2ubam/{sample_id}.{readgroup}.log"
+#     threads:
+#         CLUSTER_META["fq2ubam"]["ppn"]
+#     benchmark:
+#         "benchmarks/fq2ubam/{sample_id}.{readgroup}.txt"
+#     message:
+#         "Converting FASTQ file {wildcards.sample_id}, {wildcards.readgroup} "
+#         "to uBAM format."
+#     run:
+#         regex = re.search("([^_]*)_([^_]*)_([^_]*)", wildcards['readgroup'])
+#         library = regex.group(1)
+#         flowcell = regex.group(2)
+#         lane = regex.group(3)
+#         shell("ISODATE=`date +%Y-%m-%dT%H:%M:%S%z`; \
+#             gatk --java-options {config[standard_java_opt]} FastqToSam \
+#             --FASTQ={input.R1} \
+#             --FASTQ2={input.R2} \
+#             --OUTPUT={output} \
+#             --READ_GROUP_NAME=\"{flowcell}.{lane}\" \
+#             --PLATFORM_UNIT=\"{flowcell}.{lane}.{wildcards.sample_id}\" \
+#             --SAMPLE_NAME=\"{wildcards.sample_id}\" \
+#             --PLATFORM=\"ILLUMINA\" \
+#             --LIBRARY_NAME=\"{library}\" \
+#             --SEQUENCING_CENTER=\"test\" \
+#             --SORT_ORDER=queryname \
+#             --RUN_DATE \"$ISODATE\"  \
+#             2> {log}")
 
 rule fastqc:
     input:
@@ -297,6 +321,13 @@ rule samtofastq_bwa_mergebamalignment:
             2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Given a sample ID, this function returns expected input BAMs (one for each readgroup)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+def get_readgroup_BAMs_sample(wildcards):
+	return ["bwa/{sample}/{sample}.{rg}.realn.bam".format(sample=wildcards.sample_id, rg=rg) for rg in BAM_READGROUPS[wildcards.sample_id]]
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Mark Duplicates & merge readgroups
 ## This step marks duplicate reads
 ## See: https://gatkforums.broadinstitute.org/gatk/discussion/2799
@@ -304,7 +335,7 @@ rule samtofastq_bwa_mergebamalignment:
 
 rule markduplicates:
     input:
-        dynamic("bwa/{sample_id}/{sample_id}.{readgroup}.realn.bam") 
+        lambda wildcards: expand("bwa/{sample}/{sample}.{rg}.realn.bam", rg=BAM_READGROUPS[wildcards.sample_id], sample=wildcards.sample_id) #get_readgroup_BAMs_sample
     output:
         bam = temp("markduplicates/{sample_id}.realn.dedup.bam"),
         metrics = "markduplicates/{sample_id}.metrics.txt"
