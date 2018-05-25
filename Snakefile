@@ -22,6 +22,7 @@ CLUSTER_META    = json.load(open(config["cluster_json"]))
 ## JSON processing
 
 BAM_FILES = {}
+BAM_FILES_UUIDS = {}
 BAM_READGROUPS = {}
 READGROUP_SAMPLE = {}
 FQ_FILES = {}
@@ -33,6 +34,7 @@ for case in SAMPLES_META:
         for file in sample["files"]:
             if file["file_format"] == "BAM":
                 BAM_FILES[sample["sample_id"]] = file["file_name"]
+                BAM_FILES_UUIDS[sample["sample_id"]] = file["file_uuid"]
                 BAM_READGROUPS[sample["sample_id"]] = [readgroup["rg_ID"] for readgroup in file["readgroups"]]
                 for readgroup in file["readgroups"]:
                     READGROUP_SAMPLE[readgroup["rg_ID"]] = sample["sample_id"]
@@ -51,7 +53,7 @@ rule all:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule download_only:
-    input: expand("download/{file}", file=BAM_FILES.values())
+    input: expand("download/{uuid}/{file}", zip, uuid=BAM_FILES_UUIDS.values(), file=BAM_FILES.values())
  
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download BAM file from GDC
@@ -110,39 +112,21 @@ rule revertsam:
     input:
         get_gdc_bam_filename
     output:
-        map = "ubam/{sample_id}/{sample_id}.output_map.txt",
-        bams = temp(expand("ubam/{{sample_id}}/{rg}.bam", rg=BAM_READGROUPS))
-    params:
-        dir = "ubam/{sample_id}"
+        temp("ubam/{sample_id}/{sample_id}.{readgroup}.bam")
     log: 
-        "logs/revertsam/{sample_id}.log"
+        "logs/revertsam/{sample_id}.{readgroup}.log"
     threads:
         CLUSTER_META["revertsam"]["ppn"]
     benchmark:
-        "benchmarks/revertsam/{sample_id}.txt"
+        "benchmarks/revertsam/{sample_id}.{readgroup}.txt"
     message:
         "Reverting {wildcards.sample_id} back to unaligned BAM file, stripping any previous "
-        "pre-processing and restoring original base quality scores. Output files are split "
-        "by readgroup."
-    run:
-
-    	rgmap = pd.DataFrame(
-		    {
-		        "READ_GROUP_ID": BAM_READGROUPS[wildcards["sample_id"]],
-		        "OUTPUT": ["{sample}.{rg}.bam".format(sample=wildcards["sample_id"], rg=rg) for rg in BAM_READGROUPS[wildcards["sample_id"]]]
-		    },
-		    columns = ["READ_GROUP_ID", "OUTPUT"]
-		)
-		rgmap.to_csv(output["map"], sep="\t", index=False)
-
-		anti_rgmap = pd
-
-        shell("gatk --java-options {config[standard_java_opt]} RevertSam \
-            --INPUT={input} \
-            --OUTPUT={params.dir} \
-            --OUTPUT_MAP={output.map} \
-            --OUTPUT_BY_READGROUP=true \
-            --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
+        "pre-processing and restoring original base quality scores. Readgroup: {wildcards.readgroup}"
+    shell:
+        "samtools view -br \"{wildcards.readgroup}\" {input} | \
+        	gatk --java-options {config[standard_java_opt]} RevertSam \
+            --INPUT=/dev/stdin \
+            --OUTPUT={output} \
             --RESTORE_ORIGINAL_QUALITIES=true \
             --VALIDATION_STRINGENCY=SILENT \
             --ATTRIBUTE_TO_CLEAR=AS \
@@ -155,7 +139,7 @@ rule revertsam:
             --SANITIZE=true \
             --SORT_ORDER=queryname {config[revertsam_extra_args]}\
             --TMP_DIR={config[tempdir]} \
-            2> {log}")
+            2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Init FASTQ step
@@ -210,9 +194,9 @@ rule revertsam:
 
 rule fastqc:
     input:
-        "ubam/{sample_id}/{readgroup}.bam"
+        "ubam/{sample_id}/{sample_id}.{readgroup}.bam"
     output:
-        "qc/{sample_id}/{readgroup}_fastqc.html"
+        "qc/{sample_id}/{sample_id}.{readgroup}_fastqc.html"
     params:
         dir = "qc/{sample_id}"
     threads:
@@ -239,7 +223,7 @@ rule fastqc:
 
 rule markadapters:
     input:
-        "ubam/{sample_id}/{readgroup}.bam"
+        "ubam/{sample_id}/{sample_id}.{readgroup}.bam"
     output:
         bam = temp("markadapters/{sample_id}/{sample_id}.{readgroup}.revertsam.markadapters.bam"),
         metric = "markadapters/{sample_id}/{sample_id}.{readgroup}.markadapters.metrics.txt"
@@ -324,8 +308,8 @@ rule samtofastq_bwa_mergebamalignment:
 ## Given a sample ID, this function returns expected input BAMs (one for each readgroup)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-def get_readgroup_BAMs_sample(wildcards):
-	return ["bwa/{sample}/{sample}.{rg}.realn.bam".format(sample=wildcards.sample_id, rg=rg) for rg in BAM_READGROUPS[wildcards.sample_id]]
+# def get_readgroup_BAMs_sample(wildcards):
+# 	return ["bwa/{sample}/{sample}.{rg}.realn.bam".format(sample=wildcards.sample_id, rg=rg) for rg in BAM_READGROUPS[wildcards.sample_id]]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Mark Duplicates & merge readgroups
@@ -335,7 +319,7 @@ def get_readgroup_BAMs_sample(wildcards):
 
 rule markduplicates:
     input:
-        lambda wildcards: expand("bwa/{sample}/{sample}.{rg}.realn.bam", rg=BAM_READGROUPS[wildcards.sample_id], sample=wildcards.sample_id) #get_readgroup_BAMs_sample
+        lambda wildcards: expand("bwa/{sample_id}/{sample_id}.{readgroup}.realn.bam", sample_id=wildcards.sample_id, readgroup=BAM_READGROUPS[wildcards.sample_id]) #get_readgroup_BAMs_sample
     output:
         bam = temp("markduplicates/{sample_id}.realn.dedup.bam"),
         metrics = "markduplicates/{sample_id}.metrics.txt"
