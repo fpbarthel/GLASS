@@ -5,6 +5,15 @@
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 import pandas as pd
+import itertools
+import os
+
+def touch(fname, mode=0o666, dir_fd=None, **kwargs):
+    flags = os.O_CREAT | os.O_APPEND
+    with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
+        os.utime(f.fileno() if os.utime in os.supports_fd else fname,
+            dir_fd=None if os.supports_fd else dir_fd, **kwargs)
+
 
 configfile: "config.yaml"
 
@@ -22,6 +31,7 @@ CLUSTER_META    = json.load(open(config["cluster_json"]))
 ## JSON processing
 
 BAM_FILES = {}
+BAM_FILES_UUIDS = {}
 BAM_READGROUPS = {}
 READGROUP_SAMPLE = {}
 FQ_FILES = {}
@@ -33,6 +43,7 @@ for case in SAMPLES_META:
         for file in sample["files"]:
             if file["file_format"] == "BAM":
                 BAM_FILES[sample["sample_id"]] = file["file_name"]
+                BAM_FILES_UUIDS[sample["sample_id"]] = file["file_uuid"]
                 BAM_READGROUPS[sample["sample_id"]] = [readgroup["rg_ID"] for readgroup in file["readgroups"]]
                 for readgroup in file["readgroups"]:
                     READGROUP_SAMPLE[readgroup["rg_ID"]] = sample["sample_id"]
@@ -43,15 +54,15 @@ for case in SAMPLES_META:
 ## Master rule
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule all:
-    input: "qc/multiqc/multiqc_report.html" #expand("bqsr/{ID}.realn.dedup.bqsr.bam", ID=SAMPLES)
+#rule all:
+#    input: "qc/multiqc/multiqc_report.html" #expand("bqsr/{ID}.realn.dedup.bqsr.bam", ID=SAMPLES)
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download only rule
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule download_only:
-    input: expand("download/{file}", file=BAM_FILES.values())
+    input: expand("download/{uuid}/{file}", zip, uuid=BAM_FILES_UUIDS.values(), file=BAM_FILES.values())
  
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download BAM file from GDC
@@ -80,8 +91,8 @@ rule download:
 ## Function that resolves UUID and FILENAME from SAMPLE_ID
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-def get_gdc_bam_filename(wildcards):
-    return "download/{}".format(BAM_FILES[wildcards.sample_id])
+#def get_gdc_bam_filename(wildcards):
+#    return "download/{}".format(BAM_FILES[wildcards.sample_id])
 
 
 #def get_gdc_bam_filename(wildcards):
@@ -108,10 +119,10 @@ def get_gdc_bam_filename(wildcards):
 
 rule revertsam:
     input:
-        get_gdc_bam_filename
+        lambda wildcards: "download/{uuid}/{file}".format(uuid=BAM_FILES_UUIDS[wildcards.sample_id], file=BAM_FILES[wildcards.sample_id])#get_gdc_bam_filename
     output:
         map = "ubam/{sample_id}/{sample_id}.output_map.txt",
-        bams = temp(expand("ubam/{{sample_id}}/{rg}.bam", rg=BAM_READGROUPS))
+        bams = expand("ubam/{{sample_id}}/{{sample_id}}.{rg}.bam", rg=list(itertools.chain.from_iterable(BAM_READGROUPS.values())))
     params:
         dir = "ubam/{sample_id}"
     log: 
@@ -125,24 +136,24 @@ rule revertsam:
         "pre-processing and restoring original base quality scores. Output files are split "
         "by readgroup."
     run:
+        rgmap = pd.DataFrame(
+            {
+                "READ_GROUP_ID": BAM_READGROUPS[wildcards["sample_id"]],
+                "OUTPUT": ["ubam/{sample}/{sample}.{rg}.bam".format(sample=wildcards["sample_id"], rg=rg) for rg in BAM_READGROUPS[wildcards["sample_id"]]]
+            },
+            columns = ["READ_GROUP_ID", "OUTPUT"]
+        )
+        rgmap.to_csv(output["map"], sep="\t", index=False)
 
-    	rgmap = pd.DataFrame(
-		    {
-		        "READ_GROUP_ID": BAM_READGROUPS[wildcards["sample_id"]],
-		        "OUTPUT": ["{sample}.{rg}.bam".format(sample=wildcards["sample_id"], rg=rg) for rg in BAM_READGROUPS[wildcards["sample_id"]]]
-		    },
-		    columns = ["READ_GROUP_ID", "OUTPUT"]
-		)
-		rgmap.to_csv(output["map"], sep="\t", index=False)
-
-		anti_rgmap = pd
+        other_rg_f = ["ubam/{sample}/{sample}.{rg}.bam".format(sample=wildcards["sample_id"],rg=rg) for sample, rgs in BAM_READGROUPS.items() for rg in rgs if sample not in wildcards["sample_id"]]
+        for f in other_rg_f:
+            touch(f)
 
         shell("gatk --java-options {config[standard_java_opt]} RevertSam \
             --INPUT={input} \
-            --OUTPUT={params.dir} \
-            --OUTPUT_MAP={output.map} \
             --OUTPUT_BY_READGROUP=true \
             --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
+            --OUTPUT_MAP={output.map} \
             --RESTORE_ORIGINAL_QUALITIES=true \
             --VALIDATION_STRINGENCY=SILENT \
             --ATTRIBUTE_TO_CLEAR=AS \
@@ -208,27 +219,27 @@ rule revertsam:
 #             --RUN_DATE \"$ISODATE\"  \
 #             2> {log}")
 
-rule fastqc:
-    input:
-        "ubam/{sample_id}/{readgroup}.bam"
-    output:
-        "qc/{sample_id}/{readgroup}_fastqc.html"
-    params:
-        dir = "qc/{sample_id}"
-    threads:
-        CLUSTER_META["fastqc"]["ppn"]
-    log:
-        "logs/fastqc/{sample_id}.{readgroup}.log"
-    benchmark:
-        "benchmarks/fastqc/{sample_id}.{readgroup}.txt"
-    message:
-        "Running FASTQC for {wildcards.sample_id} {wildcards.readgroup}"
-    shell:
-        "fastqc \
-            -o {params.dir} \
-            -f bam \
-            {input} \
-            2> {log}"
+# rule fastqc:
+#     input:
+#         "ubam/{sample_id}/{sample_id}.{readgroup}.bam"
+#     output:
+#         "qc/{sample_id}/{sample_id}.{readgroup}_fastqc.html"
+#     params:
+#         dir = "qc/{sample_id}"
+#     threads:
+#         CLUSTER_META["fastqc"]["ppn"]
+#     log:
+#         "logs/fastqc/{sample_id}.{readgroup}.log"
+#     benchmark:
+#         "benchmarks/fastqc/{sample_id}.{readgroup}.txt"
+#     message:
+#         "Running FASTQC for {wildcards.sample_id} {wildcards.readgroup}"
+#     shell:
+#         "fastqc \
+#             -o {params.dir} \
+#             -f bam \
+#             {input} \
+#             2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Mark Illumina Adapters
@@ -239,7 +250,7 @@ rule fastqc:
 
 rule markadapters:
     input:
-        "ubam/{sample_id}/{readgroup}.bam"
+        "ubam/{sample_id}/{sample_id}.{readgroup}.bam"
     output:
         bam = temp("markadapters/{sample_id}/{sample_id}.{readgroup}.revertsam.markadapters.bam"),
         metric = "markadapters/{sample_id}/{sample_id}.{readgroup}.markadapters.metrics.txt"
@@ -324,8 +335,8 @@ rule samtofastq_bwa_mergebamalignment:
 ## Given a sample ID, this function returns expected input BAMs (one for each readgroup)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-def get_readgroup_BAMs_sample(wildcards):
-	return ["bwa/{sample}/{sample}.{rg}.realn.bam".format(sample=wildcards.sample_id, rg=rg) for rg in BAM_READGROUPS[wildcards.sample_id]]
+#def get_readgroup_BAMs_sample(wildcards):
+#    return ["bwa/{sample}/{sample}.{rg}.realn.bam".format(sample=wildcards.sample_id, rg=rg) for rg in BAM_READGROUPS[wildcards.sample_id]]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Mark Duplicates & merge readgroups
@@ -335,7 +346,7 @@ def get_readgroup_BAMs_sample(wildcards):
 
 rule markduplicates:
     input:
-        lambda wildcards: expand("bwa/{sample}/{sample}.{rg}.realn.bam", rg=BAM_READGROUPS[wildcards.sample_id], sample=wildcards.sample_id) #get_readgroup_BAMs_sample
+        lambda wildcards: expand("bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.sample_id, rg=BAM_READGROUPS[wildcards.sample_id]) #get_readgroup_BAMs_sample
     output:
         bam = temp("markduplicates/{sample_id}.realn.dedup.bam"),
         metrics = "markduplicates/{sample_id}.metrics.txt"
@@ -357,112 +368,112 @@ rule markduplicates:
             --CREATE_INDEX=true \
             2> {log}")
 
-rule baserecalibrator:
-    input:
-        "markduplicates/{sample_id}.realn.dedup.bam"
-    output:
-        "bqsr/{sample_id}.bqsr.txt"
-    threads:
-        CLUSTER_META["baserecalibrator"]["ppn"]
-    log:
-        "logs/bqsr/{sample_id}.recal.log"
-    benchmark:
-        "benchmarks/bqsr/{sample_id}.recal.txt"
-    message:
-        "Calculating base recalibration scores for {wildcards.sample_id}."
-    shell:
-        "gatk --java-options {config[standard_java_opt]} BaseRecalibrator \
-            -R {config[reference_fasta]} \
-            -I {input} \
-            -O {output} \
-            --known-sites {config[gnomad_vcf]} \
-            2> {log}"
+# rule baserecalibrator:
+#     input:
+#         "markduplicates/{sample_id}.realn.dedup.bam"
+#     output:
+#         "bqsr/{sample_id}.bqsr.txt"
+#     threads:
+#         CLUSTER_META["baserecalibrator"]["ppn"]
+#     log:
+#         "logs/bqsr/{sample_id}.recal.log"
+#     benchmark:
+#         "benchmarks/bqsr/{sample_id}.recal.txt"
+#     message:
+#         "Calculating base recalibration scores for {wildcards.sample_id}."
+#     shell:
+#         "gatk --java-options {config[standard_java_opt]} BaseRecalibrator \
+#             -R {config[reference_fasta]} \
+#             -I {input} \
+#             -O {output} \
+#             --known-sites {config[gnomad_vcf]} \
+#             2> {log}"
 
-rule applybqsr:
-    input:
-        bam = "markduplicates/{sample_id}.realn.dedup.bam",
-        bqsr = "bqsr/{sample_id}.bqsr.txt"
-    output:
-        protected("bqsr/{sample_id}.realn.dedup.bqsr.bam")
-    threads:
-        CLUSTER_META["applybqsr"]["ppn"]
-    log:
-        "logs/bqsr/{sample_id}.apply.log"
-    benchmark:
-        "benchmarks/bqsr/{sample_id}.apply.txt"
-    message:
-        "Applying base recalibration scores to {wildcards.sample_id} and generating final "
-        "aligned BAM file"
-    shell:
-        "gatk --java-options {config[standard_java_opt]} ApplyBQSR \
-            -R {config[reference_fasta]} \
-            -I {input.bam} \
-            -OQ true \
-            -O {output} \
-            -bqsr {input.bqsr} \
-            --create-output-bam-md5 true \
-            2> {log}"
+# rule applybqsr:
+#     input:
+#         bam = "markduplicates/{sample_id}.realn.dedup.bam",
+#         bqsr = "bqsr/{sample_id}.bqsr.txt"
+#     output:
+#         protected("bqsr/{sample_id}.realn.dedup.bqsr.bam")
+#     threads:
+#         CLUSTER_META["applybqsr"]["ppn"]
+#     log:
+#         "logs/bqsr/{sample_id}.apply.log"
+#     benchmark:
+#         "benchmarks/bqsr/{sample_id}.apply.txt"
+#     message:
+#         "Applying base recalibration scores to {wildcards.sample_id} and generating final "
+#         "aligned BAM file"
+#     shell:
+#         "gatk --java-options {config[standard_java_opt]} ApplyBQSR \
+#             -R {config[reference_fasta]} \
+#             -I {input.bam} \
+#             -OQ true \
+#             -O {output} \
+#             -bqsr {input.bqsr} \
+#             --create-output-bam-md5 true \
+#             2> {log}"
 
-rule wgsmetrics:
-    input:
-        "bqsr/{sample_id}.realn.dedup.bqsr.bam"
-    output:
-        "qc/{sample_id}.WgsMetrics.txt"
-    threads:
-        CLUSTER_META["wgsmetrics"]["ppn"]
-    log:
-        "logs/wgsmetrics/{sample_id}.WgsMetrics.log"
-    benchmark:
-        "benchmarks/wgsmetrics/{sample_id}.WgsMetrics.txt"
-    message:
-        "Computing WGS Metrics for {wildcards.sample_id}"
-    shell:
-        "gatk --java-options {config[standard_java_opt]} CollectWgsMetrics \
-            -R {config[reference_fasta]} \
-            -I {input} \
-            -O {output} \
-            --USE_FAST_ALGORITHM true \
-            2> {log}"
+# rule wgsmetrics:
+#     input:
+#         "bqsr/{sample_id}.realn.dedup.bqsr.bam"
+#     output:
+#         "qc/{sample_id}.WgsMetrics.txt"
+#     threads:
+#         CLUSTER_META["wgsmetrics"]["ppn"]
+#     log:
+#         "logs/wgsmetrics/{sample_id}.WgsMetrics.log"
+#     benchmark:
+#         "benchmarks/wgsmetrics/{sample_id}.WgsMetrics.txt"
+#     message:
+#         "Computing WGS Metrics for {wildcards.sample_id}"
+#     shell:
+#         "gatk --java-options {config[standard_java_opt]} CollectWgsMetrics \
+#             -R {config[reference_fasta]} \
+#             -I {input} \
+#             -O {output} \
+#             --USE_FAST_ALGORITHM true \
+#             2> {log}"
 
-rule validatebam:
-    input:
-        "bqsr/{sample_id}.realn.dedup.bqsr.bam"
-    output:
-        "qc/{sample_id}.ValidateSamFile.txt"
-    threads:
-        CLUSTER_META["validatebam"]["ppn"]
-    log:
-        "logs/validatebam/{sample_id}.ValidateSamFile.log"
-    benchmark:
-        "benchmarks/validatebam/{sample_id}.ValidateSamFile.txt"
-    message:
-        "Validating BAM file {wildcards.sample_id}"
-    shell:
-        "gatk --java-options {config[standard_java_opt]} ValidateSamFile \
-            -I {input} \
-            -O {output} \
-            -M SUMMARY \
-            2> {log}"
+# rule validatebam:
+#     input:
+#         "bqsr/{sample_id}.realn.dedup.bqsr.bam"
+#     output:
+#         "qc/{sample_id}.ValidateSamFile.txt"
+#     threads:
+#         CLUSTER_META["validatebam"]["ppn"]
+#     log:
+#         "logs/validatebam/{sample_id}.ValidateSamFile.log"
+#     benchmark:
+#         "benchmarks/validatebam/{sample_id}.ValidateSamFile.txt"
+#     message:
+#         "Validating BAM file {wildcards.sample_id}"
+#     shell:
+#         "gatk --java-options {config[standard_java_opt]} ValidateSamFile \
+#             -I {input} \
+#             -O {output} \
+#             -M SUMMARY \
+#             2> {log}"
 
-rule multiqc:
-    input:
-        expand("qc/{sample_id}.ValidateSamFile.txt", sample_id=SAMPLES),
-        expand("qc/{sample_id}.WgsMetrics.txt", sample_id=SAMPLES),
-        dynamic("qc/{sample_id}/{readgroup}_fastqc.html")
-    output:
-        "qc/multiqc/multiqc_report.html"
-    params:
-        dir = "qc/multiqc"
-    threads:
-        CLUSTER_META["multiqc"]["ppn"]
-    log:
-        "logs/multiqc/multiqc.log"
-    benchmark:
-        "benchmarks/multiqc/multiqc.txt"
-    message:
-        "Running MultiQC"
-    shell:
-        "multiqc -o {params.dir} {config[workdir]}"
+# rule multiqc:
+#     input:
+#         expand("qc/{sample_id}.ValidateSamFile.txt", sample_id=SAMPLES),
+#         expand("qc/{sample_id}.WgsMetrics.txt", sample_id=SAMPLES),
+#         dynamic("qc/{sample_id}/{readgroup}_fastqc.html")
+#     output:
+#         "qc/multiqc/multiqc_report.html"
+#     params:
+#         dir = "qc/multiqc"
+#     threads:
+#         CLUSTER_META["multiqc"]["ppn"]
+#     log:
+#         "logs/multiqc/multiqc.log"
+#     benchmark:
+#         "benchmarks/multiqc/multiqc.txt"
+#     message:
+#         "Running MultiQC"
+#     shell:
+#         "multiqc -o {params.dir} {config[workdir]}"
 
 
 # rule coverage:

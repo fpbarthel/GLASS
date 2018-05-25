@@ -11,15 +11,15 @@
         "walltime" : "12:00:00",
         "mem" : "6gb",
         "queu" : "batch",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.sample_id}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.sample_id}.err",
-        "d" : "/fastscratch/barthf/GLASS-WG"
+        "stdout" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.sample_id}.out",
+        "stderr" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.sample_id}.err",
+        "d" : "/projects/barthf/GLASS-WG"
     },
     "download" :
     {
         "name" : "{rule}.{wildcards.uuid}",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.err",
+        "stdout" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.out",
+        "stderr" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.err",
         "ppn" : 6,
         "mem" : "12gb",
         "walltime" : "70:00:00"
