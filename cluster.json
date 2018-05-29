@@ -86,6 +86,9 @@
     },
     "multiqc" :
     {
+        "name" : "{rule}",
+        "stdout" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.out",
+        "stderr" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.err",
         "ppn" : 2,
         "walltime" : "70:00:00",
         "mem" : "12gb"

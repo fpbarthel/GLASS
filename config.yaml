@@ -16,6 +16,9 @@ gnomad_vcf: "/projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.
 ## Reference genome
 reference_fasta: "/projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta"
 
+## HTML dir
+html_dir: "/home/barthf/ShinyApps"
+
 ## JAVA options
 standard_java_opt: "'-Xmx12G'"
 samtofastq_java_opt: "'-Dsamjdk.buffer_size=131072 -Dsamjdk.compression_level=1 -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Xmx128m'"
