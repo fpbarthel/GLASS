@@ -16,11 +16,10 @@ def touch(fname, mode=0o666, dir_fd=None, **kwargs):
         os.utime(f.fileno() if os.utime in os.supports_fd else fname,
             dir_fd=None if os.supports_fd else dir_fd, **kwargs)
 
-
-configfile: "config.yaml"
-
 ## Although this statement goes against all coding conventions, we want it here because we want to run
 ## everything on a temporary storage while we keep this script safe on a permanent drive
+## TEMPORARY
+configfile: "config.yaml"
 workdir: config["workdir"]
 
 ## GDC token file for authentication
@@ -30,7 +29,9 @@ KEYFILE     = config["gdc_token"]
 SAMPLES_META    = json.load(open(config["sample_json"]))
 CLUSTER_META    = json.load(open(config["cluster_json"]))
 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## JSON processing
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 BAM_FILES = {}
 BAM_FILES_UUIDS = {}
@@ -39,6 +40,12 @@ ALL_READGROUPS = {}
 READGROUP_SAMPLE = {}
 FQ_FILES = {}
 SAMPLES = []
+PONBYBATCH = {}
+
+PAIR_TO_TUMOR = { "A" : "testT-A" }
+PAIR_TO_NORMAL = { "A" : "testN-A" }
+PAIR_TO_BATCH = { "A" : "test"}
+BATCH_TO_NORMAL = { "test" : [ "testN-A" ]}
 
 RGPL = {}
 RGPU = {}
@@ -48,7 +55,11 @@ RGSM = {}
 RGCN = {}
 
 for case in SAMPLES_META:
+    if case["case_project"] not in PONBYBATCH:
+        PONBYBATCH[case["case_project"]] = []
     for sample in case["samples"]:
+        if sample["sample_type"] == "Blood Derived Normal":
+            PONBYBATCH[case["case_project"]].append(sample["sample_id"])
         SAMPLES.append(sample["sample_id"])
         FQ_FILES[sample["sample_id"]] = {}
         RGPL[sample["sample_id"]] = {}
@@ -152,7 +163,8 @@ rule revertsam:
         map = "results/ubam/{sample_id}/{sample_id}.output_map.txt",
         bams = temp(expand("results/ubam/{{sample_id}}/{{sample_id}}.{rg}.bam", rg=list(itertools.chain.from_iterable(BAM_READGROUPS.values()))))
     params:
-        dir = "results/ubam/{sample_id}"
+        dir = "results/ubam/{sample_id}",
+        mem = "{CLUSTER_META[revertsam][ppn]}" #"24"#CLUSTER_META["revertsam"]["ppn"]
     log: 
         "logs/revertsam/{sample_id}.log"
     threads:
@@ -180,7 +192,7 @@ rule revertsam:
         for f in other_rg_f:
             touch(f)
 
-        shell("gatk --java-options {config[standard_java_opt]} RevertSam \
+        shell("gatk --java-options -Xmx{params.mem}G RevertSam \
             --INPUT={input} \
             --OUTPUT_BY_READGROUP=true \
             --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
@@ -509,6 +521,183 @@ rule multiqc:
     message:
         "Running MultiQC"
     shell:
-        "multiqc -o {params.dir} {config[workdir]}; cp -R {params.dir}/* {config[html_dir]}"
+        "multiqc -o {params.dir} {config[workdir]}/results; cp -R {params.dir}/* {config[html_dir]}"
+
+rule callpon:
+    input:
+        "results/bqsr/{sample_id}.realn.dedup.bqsr.bam"
+    output:
+        "results/pon/{batch}/{sample_id}.pon.vcf"
+    shell:
+        "gatk --java-options {config[standard_java_opt]} Mutect2 \
+            -R {config[reference_fasta]} \
+            -I {input} \
+            --germline-resource {config[gnomad_vcf]} \
+            --af-of-alleles-not-in-resource 0.00000406055 \
+            --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter \
+            -O {output}"
+
+rule createpon:
+    input:
+        lambda wildcards: expand("results/pon/{batch}/{sample_id}.pon.vcf", batch=wildcards.batch, sample_id=BATCH_TO_NORMAL[wildcards.batch])
+    output:
+        "results/pon/{batch}.pon.vcf"
+    params:
+        dir = "results/qc/multiqc",
+        mem = CLUSTER_META["createpon"]["ppn"]
+    threads:
+        CLUSTER_META["createpon"]["ppn"]
+    log:
+        "logs/createpon/{batch}.createpon.log"
+    benchmark:
+        "benchmarks/createpon/{batch}.createpon.txt"
+    message:
+        "Creating panel of normals for {wildcards.batch}"
+    run:
+        vcfs = " ".join(["--vcfs=" + s for s in input])
+        shell("gatk --java-options -Xmx{params.mem}g CreateSomaticPanelOfNormals \
+            {vcfs} \
+            --duplicate-sample-strategy THROW_ERROR \
+            --output {output}")
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## GATK parameters taken from "GATK4_SomaticSNVindel_worksheet.pdf"
+## Extract SM tag from BAM file
+## Code snippet taken from https://github.com/IARCbioinfo/BAM-tricks
+## Added "dont-use-soft-clipped-bases" and "standard-min-confidence-threshold-for-calling"
+## Based on GATK best practices RNAseq 04/05/18
+## https://software.broadinstitute.org/gatk/documentation/article.php?id=3891
+## Calculate af-of-alleles: 1/(2*123136) = 0.00000406055 (6 sign. digits)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule callsnv:
+    input:
+        tumor = lambda wildcards: "results/bqsr/{sample_id}.realn.dedup.bqsr.bam".format(sample_id=PAIR_TO_TUMOR[wildcards.pair_id]),
+        normal = lambda wildcards: "results/bqsr/{sample_id}.realn.dedup.bqsr.bam".format(sample_id=PAIR_TO_NORMAL[wildcards.pair_id]),
+        pon = lambda wildcards: "results/pon/{batch}.pon.vcf".format(batch=PAIR_TO_BATCH[wildcards.pair_id])
+    output:
+        vcf = "results/m2vcf/{pair_id}.vcf",
+        bam = "results/m2bam/{pair_id}.bam"
+    run:
+        "gatk --java-options {config[standard_java_opt]} Mutect2 \
+            -R {config[reference_fasta]} \
+            -I {input.tumor} \
+            -I {input.normal} \
+            --tumor-sample {TEST_NAM} \
+            --normal-sample {CTRL_NAM} \
+            --panel-of-normals {input.pon} \
+            --germline-resource {config[gnomad_vcf]} \
+            --af-of-alleles-not-in-resource 0.00000406055 \
+            --dont-use-soft-clipped-bases true \
+            --standard-min-confidence-threshold-for-calling 20 \
+            --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter \
+            -O {output.vcf} \
+            -bamout {output.bam}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Summarize read support for known variant sites
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule pileupsummaries:
+    input:
+        "results/bqsr/{sample_id}.realn.dedup.bqsr.bam"
+    output:
+        "results/pileupsummaries/{sample_id}.pileupsummaries.txt"
+    shell:
+        "gatk --java-options {config[standard_java_opt]} GetPileupSummaries \
+            -I {input} \
+            -V {config[tiny_vcf]} \
+            -O {output}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Estimate contamination
+## Input: pileup summaries table
+## Output: contamination table
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule calculatecontamination:
+    input:
+        tumortab = lambda wildcards: "results/pileupsummaries/{sample_id}.pileupsummaries.txt".format(sample_id=PAIR_TO_TUMOR[wildcards.pair_id]),
+        normaltab = lambda wildcards: "results/pileupsummaries/{sample_id}.pileupsummaries.txt".format(sample_id=PAIR_TO_NORMAL[wildcards.pair_id]),
+    output:
+        "results/contamination/{pair_id}.contamination.txt"
+    shell:
+        "gatk --java-options {config[standard_java_opt]} CalculateContamination \
+            -I {input.tumortable} \
+            --matched-normal {input.normaltable} \
+            -O {output}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## If variants have not been filtered, filter, else done
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule filtermutect:
+    input:
+        vcf = "results/m2vcf/{pair_id}.vcf",
+        tab = "results/contamination/{pair_id}.contamination.txt"
+    output:
+        "results/m2filter/{pair_id}.filtered.vcf"
+    shell:    
+        "gatk --java-options {config[standard_java_opt]} FilterMutectCalls \
+            -V {input.vcf} \
+            --contamination-table {input.tab} \
+            -O {output}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Collect metrics on sequencing context artifacts
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule collectartifacts:
+    input:
+        "results/bqsr/{sample_id}.realn.dedup.bqsr.bam"
+    output:
+        "results/artifacts/{sample_id}.artifacts.txt"
+    shell:
+        "gatk --java-options {config[standard_java_opt]} CollectSequencingArtifactMetrics \
+            -I {input} \
+            -O {output} \
+            --FILE_EXTENSION \".txt\" \
+            -R {config[reference_fasta]}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Filter by orientation bias
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule filterorientation:
+    input:
+        art = lambda wildcards: "results/artifacts/{sample_id}.artifacts.txt".format(sample_id=PAIR_TO_TUMOR[wildcards.pair_id]),
+        vcf = "results/m2filter/{pair_id}.filtered.vcf"
+    output:
+        "results/m2filter/{pair_id}.filtered2.vcf"
+    shell:
+        "gatk --java-options {config[standard_java_opt]} FilterByOrientationBias \
+            -AM \"G/T\" \
+            -AM \"C/T\" \
+            -V {input.vcf} \
+            -P {input.art} \
+            -O {output}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## USE VEP
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule vep:
+    input:
+        "results/m2filter/{pair_id}.filtered2.vcf"
+    output:
+        "results/vep/{pair_id}.filtered2.anno.maf"
+    shell:
+        "{config[vcf2maf]} \
+            --input-vcf {input} \
+            --output-maf {output} \
+            --vep-path {config[veppath]} \
+            --vep-data {config[vepdata]} \
+            --vep-forks 2 \
+            --ref-fasta {config[reference_fasta]} \
+            --filter-vcf {config[gnomad_vcf]} \
+            --tumor-id {TEST_NAM} \
+            --normal-id {CTRL_NAM} \
+            --species homo_sapiens \
+            --ncbi-build GRCh37"
 
 ## END ##

@@ -1,0 +1,43 @@
+Using GATK jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=1 -Xmx12G -jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar MarkDuplicates --INPUT=results/bwa/testT-A/testT-A.6172_7#3.realn.bam --INPUT=results/bwa/testT-A/testT-A.6206_7#3.realn.bam --INPUT=results/bwa/testT-A/testT-A.6209_1#3.realn.bam --INPUT=results/bwa/testT-A/testT-A.6209_2#3.realn.bam --INPUT=results/bwa/testT-A/testT-A.6209_3#3.realn.bam --INPUT=results/bwa/testT-A/testT-A.6209_4#3.realn.bam --INPUT=results/bwa/testT-A/testT-A.6209_5#3.realn.bam --INPUT=results/bwa/testT-A/testT-A.6209_6#3.realn.bam --INPUT=results/bwa/testT-A/testT-A.6209_7#3.realn.bam --INPUT=results/bwa/testT-A/testT-A.6209_8#3.realn.bam --OUTPUT=results/markduplicates/testT-A.realn.dedup.bam --METRICS_FILE=results/markduplicates/testT-A.metrics.txt --CREATE_INDEX=true
+17:30:32.744 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+[Tue May 29 17:30:32 EDT 2018] MarkDuplicates  --INPUT results/bwa/testT-A/testT-A.6172_7#3.realn.bam --INPUT results/bwa/testT-A/testT-A.6206_7#3.realn.bam --INPUT results/bwa/testT-A/testT-A.6209_1#3.realn.bam --INPUT results/bwa/testT-A/testT-A.6209_2#3.realn.bam --INPUT results/bwa/testT-A/testT-A.6209_3#3.realn.bam --INPUT results/bwa/testT-A/testT-A.6209_4#3.realn.bam --INPUT results/bwa/testT-A/testT-A.6209_5#3.realn.bam --INPUT results/bwa/testT-A/testT-A.6209_6#3.realn.bam --INPUT results/bwa/testT-A/testT-A.6209_7#3.realn.bam --INPUT results/bwa/testT-A/testT-A.6209_8#3.realn.bam --OUTPUT results/markduplicates/testT-A.realn.dedup.bam --METRICS_FILE results/markduplicates/testT-A.metrics.txt --CREATE_INDEX true  --MAX_SEQUENCES_FOR_DISK_READ_ENDS_MAP 50000 --MAX_FILE_HANDLES_FOR_READ_ENDS_MAP 8000 --SORTING_COLLECTION_SIZE_RATIO 0.25 --TAG_DUPLICATE_SET_MEMBERS false --REMOVE_SEQUENCING_DUPLICATES false --TAGGING_POLICY DontTag --CLEAR_DT true --ADD_PG_TAG_TO_READS true --REMOVE_DUPLICATES false --ASSUME_SORTED false --DUPLICATE_SCORING_STRATEGY SUM_OF_BASE_QUALITIES --PROGRAM_RECORD_ID MarkDuplicates --PROGRAM_GROUP_NAME MarkDuplicates --READ_NAME_REGEX <optimized capture of last three ':' separated fields as numeric values> --OPTICAL_DUPLICATE_PIXEL_DISTANCE 100 --MAX_OPTICAL_DUPLICATE_SET_SIZE 300000 --VERBOSITY INFO --QUIET false --VALIDATION_STRINGENCY STRICT --COMPRESSION_LEVEL 1 --MAX_RECORDS_IN_RAM 500000 --CREATE_MD5_FILE false --GA4GH_CLIENT_SECRETS client_secrets.json --help false --version false --showHidden false --USE_JDK_DEFLATER false --USE_JDK_INFLATER false
+[Tue May 29 17:30:32 EDT 2018] Executing as barthf@helix095 on Linux 2.6.32-696.18.7.el6.x86_64 amd64; Java HotSpot(TM) 64-Bit Server VM 1.8.0_73-b02; Deflater: Intel; Inflater: Intel; Picard version: Version:4.0.2.1
+INFO	2018-05-29 17:30:32	MarkDuplicates	Start of doWork freeMemory: 1680162872; totalMemory: 1717567488; maxMemory: 11453595648
+INFO	2018-05-29 17:30:32	MarkDuplicates	Reading input file and constructing read end information.
+INFO	2018-05-29 17:30:32	MarkDuplicates	Will retain up to 41498534 data points before spilling to disk.
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6172_7#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6172_7#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6206_7#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6206_7#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_1#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_1#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_2#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_2#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_3#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_3#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_4#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_4#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_5#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_5#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_6#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_6#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_7#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_7#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_8#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_8#3.realn.bam
+INFO	2018-05-29 17:30:33	MarkDuplicates	Read 4532 records. 0 pairs never matched.
+INFO	2018-05-29 17:30:37	MarkDuplicates	After buildSortedReadEndLists freeMemory: 1359637480; totalMemory: 1720188928; maxMemory: 11453595648
+INFO	2018-05-29 17:30:37	MarkDuplicates	Will retain up to 357924864 duplicate indices before spilling to disk.
+INFO	2018-05-29 17:31:03	MarkDuplicates	Traversing read pair information and detecting duplicates.
+INFO	2018-05-29 17:31:03	MarkDuplicates	Traversing fragment information and detecting duplicates.
+INFO	2018-05-29 17:31:03	MarkDuplicates	Sorting list of duplicate records.
+INFO	2018-05-29 17:31:08	MarkDuplicates	After generateDuplicateIndexes freeMemory: 1694205240; totalMemory: 4583849984; maxMemory: 11453595648
+INFO	2018-05-29 17:31:08	MarkDuplicates	Marking 26 records as duplicates.
+INFO	2018-05-29 17:31:08	MarkDuplicates	Found 0 optical duplicate clusters.
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6172_7#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6172_7#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6206_7#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6206_7#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_1#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_1#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_2#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_2#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_3#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_3#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_4#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_4#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_5#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_5#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_6#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_6#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_7#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_7#3.realn.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_8#3.realn.bai is older than BAM /projects/barthf/GLASS-WG/results/bwa/testT-A/testT-A.6209_8#3.realn.bam
+INFO	2018-05-29 17:31:08	MarkDuplicates	Reads are assumed to be ordered by: coordinate
+INFO	2018-05-29 17:31:08	MarkDuplicates	Before output close freeMemory: 4550673352; totalMemory: 4583849984; maxMemory: 11453595648
+INFO	2018-05-29 17:31:08	MarkDuplicates	After output close freeMemory: 4555193784; totalMemory: 4583849984; maxMemory: 11453595648
+[Tue May 29 17:31:08 EDT 2018] picard.sam.markduplicates.MarkDuplicates done. Elapsed time: 0.60 minutes.
+Runtime.totalMemory()=4583849984

@@ -1,0 +1,33 @@
+Using GATK jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=1 -Xmx12G -jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar ApplyBQSR -R /projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta -I results/markduplicates/testT-A.realn.dedup.bam -OQ true -O results/bqsr/testT-A.realn.dedup.bqsr.bam -bqsr results/bqsr/testT-A.bqsr.txt --create-output-bam-md5 true
+17:32:16.258 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+17:32:17.421 INFO  ApplyBQSR - ------------------------------------------------------------
+17:32:17.421 INFO  ApplyBQSR - The Genome Analysis Toolkit (GATK) v4.0.2.1
+17:32:17.422 INFO  ApplyBQSR - For support and documentation go to https://software.broadinstitute.org/gatk/
+17:32:17.422 INFO  ApplyBQSR - Executing as barthf@helix062 on Linux v2.6.32-696.18.7.el6.x86_64 amd64
+17:32:17.422 INFO  ApplyBQSR - Java runtime: Java HotSpot(TM) 64-Bit Server VM v1.8.0_73-b02
+17:32:17.422 INFO  ApplyBQSR - Start Date/Time: May 29, 2018 5:32:16 PM EDT
+17:32:17.422 INFO  ApplyBQSR - ------------------------------------------------------------
+17:32:17.422 INFO  ApplyBQSR - ------------------------------------------------------------
+17:32:17.423 INFO  ApplyBQSR - HTSJDK Version: 2.14.3
+17:32:17.423 INFO  ApplyBQSR - Picard Version: 2.17.2
+17:32:17.423 INFO  ApplyBQSR - HTSJDK Defaults.COMPRESSION_LEVEL : 1
+17:32:17.423 INFO  ApplyBQSR - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+17:32:17.423 INFO  ApplyBQSR - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+17:32:17.423 INFO  ApplyBQSR - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+17:32:17.423 INFO  ApplyBQSR - Deflater: IntelDeflater
+17:32:17.423 INFO  ApplyBQSR - Inflater: IntelInflater
+17:32:17.423 INFO  ApplyBQSR - GCS max retries/reopens: 20
+17:32:17.423 INFO  ApplyBQSR - Using google-cloud-java patch 6d11bef1c81f885c26b2b56c8616b7a705171e4f from https://github.com/droazen/google-cloud-java/tree/dr_all_nio_fixes
+17:32:17.423 INFO  ApplyBQSR - Initializing engine
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/markduplicates/testT-A.realn.dedup.bai is older than BAM /projects/barthf/GLASS-WG/results/markduplicates/testT-A.realn.dedup.bam
+17:32:18.405 INFO  ApplyBQSR - Done initializing engine
+17:32:18.431 INFO  ProgressMeter - Starting traversal
+17:32:18.431 INFO  ProgressMeter -        Current Locus  Elapsed Minutes       Reads Processed     Reads/Minute
+17:32:19.800 INFO  ApplyBQSR - No reads filtered by: WellformedReadFilter
+17:32:19.800 INFO  ProgressMeter -             19:94381              0.0                  4532         198626.7
+17:32:19.800 INFO  ProgressMeter - Traversal complete. Processed 4532 total reads in 0.0 minutes.
+17:32:19.820 INFO  ApplyBQSR - Shutting down engine
+[May 29, 2018 5:32:19 PM EDT] org.broadinstitute.hellbender.tools.walkers.bqsr.ApplyBQSR done. Elapsed time: 0.06 minutes.
+Runtime.totalMemory()=2273312768

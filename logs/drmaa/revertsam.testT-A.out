@@ -1,0 +1,33 @@
+[Tue May 29 17:26:35 2018] Building DAG of jobs...
+[Tue May 29 17:26:35 2018] Using shell: /bin/bash
+[Tue May 29 17:26:35 2018] Provided cores: 56
+[Tue May 29 17:26:35 2018] Rules claiming more threads will be scaled down.
+[Tue May 29 17:26:35 2018] Job counts:
+[Tue May 29 17:26:35 2018] 	count	jobs
+[Tue May 29 17:26:35 2018] 	1	revertsam
+[Tue May 29 17:26:35 2018] 	1
+
+[Tue May 29 17:26:35 2018] Job 0: Reverting testT-A back to unaligned BAM file, stripping any previous pre-processing and restoring original base quality scores. Output files are split by readgroup.
+
+[Tue May 29 17:26:36 2018] gatk --java-options '-Xmx12G' RevertSam             --INPUT=download/testT-A/testT-A.bam             --OUTPUT_BY_READGROUP=true             --OUTPUT_BY_READGROUP_FILE_FORMAT=bam             --OUTPUT_MAP=results/ubam/testT-A/testT-A.output_map.txt             --RESTORE_ORIGINAL_QUALITIES=true             --VALIDATION_STRINGENCY=SILENT             --ATTRIBUTE_TO_CLEAR=AS             --ATTRIBUTE_TO_CLEAR=FT             --ATTRIBUTE_TO_CLEAR=CO             --ATTRIBUTE_TO_CLEAR=XT             --ATTRIBUTE_TO_CLEAR=XN             --ATTRIBUTE_TO_CLEAR=OC             --ATTRIBUTE_TO_CLEAR=OP             --SANITIZE=true             --SORT_ORDER=queryname --MAX_DISCARD_FRACTION=0.05             --TMP_DIR=/fastscratch/barthf/GLASS-WG/tmp             2> logs/revertsam/testT-A.log
+Tool returned:
+0
+[Tue May 29 17:26:40 2018] Finished job 0.
+[Tue May 29 17:26:40 2018] 1 of 1 steps (100%) done
+[Tue May 29 17:26:40 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-29T172634.516739.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6567611.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=70:00:00
+|  Resources Consumed:
+|      cput=00:00:15,mem=824880kb,vmem=19845740kb,walltime=00:00:07
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix112
+|
+--------------------------------------------------------------------------------

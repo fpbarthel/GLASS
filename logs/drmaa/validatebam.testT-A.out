@@ -1,0 +1,33 @@
+[Tue May 29 17:32:41 2018] Building DAG of jobs...
+[Tue May 29 17:32:41 2018] Using shell: /bin/bash
+[Tue May 29 17:32:41 2018] Provided cores: 40
+[Tue May 29 17:32:41 2018] Rules claiming more threads will be scaled down.
+[Tue May 29 17:32:41 2018] Job counts:
+[Tue May 29 17:32:41 2018] 	count	jobs
+[Tue May 29 17:32:41 2018] 	1	validatebam
+[Tue May 29 17:32:41 2018] 	1
+
+[Tue May 29 17:32:41 2018] Job 0: Validating BAM file testT-A
+
+[Tue May 29 17:32:41 2018] gatk --java-options '-Xmx12G' ValidateSamFile             -I results/bqsr/testT-A.realn.dedup.bqsr.bam             -O results/qc/testT-A.ValidateSamFile.txt             -M SUMMARY             2> logs/validatebam/testT-A.ValidateSamFile.log
+Tool returned:
+0
+[Tue May 29 17:32:45 2018] Finished job 0.
+[Tue May 29 17:32:45 2018] 1 of 1 steps (100%) done
+[Tue May 29 17:32:45 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-29T173240.433962.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6567767.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=70:00:00
+|  Resources Consumed:
+|      cput=00:00:12,mem=52872kb,vmem=691780kb,walltime=00:00:06
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix039
+|
+--------------------------------------------------------------------------------

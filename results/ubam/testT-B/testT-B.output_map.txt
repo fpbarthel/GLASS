@@ -1,0 +1,2 @@
+READ_GROUP_ID	OUTPUT
+1	results/ubam/testT-B/testT-B.1.bam

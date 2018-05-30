@@ -1,0 +1,182 @@
+[Tue May 29 17:27:30 2018] Building DAG of jobs...
+[Tue May 29 17:27:30 2018] Using shell: /bin/bash
+[Tue May 29 17:27:30 2018] Provided cores: 56
+[Tue May 29 17:27:30 2018] Rules claiming more threads will be scaled down.
+[Tue May 29 17:27:30 2018] Job counts:
+[Tue May 29 17:27:30 2018] 	count	jobs
+[Tue May 29 17:27:30 2018] 	1	fastqc
+[Tue May 29 17:27:30 2018] 	1
+
+[Tue May 29 17:27:30 2018] Job 0: Running FASTQC for testT-A 6172_7#3
+
+[Tue May 29 17:27:30 2018] fastqc             -o results/qc/testT-A             -f bam             results/ubam/testT-A/testT-A.6172_7#3.bam             2> logs/fastqc/testT-A.6172_7#3.log
+Analysis complete for testT-A.6209_3#3.bam
+jobs...
+[Tue May 29 17:27:32 2018] Using shell: /bin/bash
+[Tue May 29 17:27:32 2018] Provided cores: 56
+[Tue May 29 17:27:32 2018] Rules claiming more threads will be scaled down.
+[Tue May 29 17:27:32 2018] Job counts:
+[Tue May 29 17:27:32 2018] 	count	jobs
+[Tue May 29 17:27:32 2018] 	1	fastqc
+[Tue May 29 17:27:32 2018] 	1
+
+[Tue May 29 17:27:32 2018] Job 0: Running FASTQC for testT-A 6206_7#3
+
+[Tue May 29 17:27:32 2018] fastqc             -o results/qc/testT-A             -f bam             results/ubam/testT-A/testT-A.6206_7#3.bam             2> logs/fastqc/testT-A.6206_7#3.log
+Analysis complete for testT-A.6209_4#3.bam
+[Tue May 29 17:27:34 2018] 1 of 1 steps (100%) done
+[Tue May 29 17:27:34 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-29T172729.248670.snakemake.log
+[Tue May 29 17:27:34 2018] Finished job 0.
+[Tue May 29 17:27:34 2018] 1 of 1 steps (100%) done
+[Tue May 29 17:27:34 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-29T172729.267256.snakemake.log
+time=70:00:00
+|  Resources Consumed:
+|      cput=00:00:07,mem=0kb,vmem=0kb,walltime=00:00:06
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix135
+|
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6567644.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=70:00:00
+|  Resources Consumed:
+|      cput=00:00:08,mem=0kb,vmem=0kb,walltime=00:00:07
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix122
+|
+--------------------------------------------------------------------------------
+[Tue May 29 17:27:35 2018] Finished job 0.
+[Tue May 29 17:27:35 2018] 1 of 1 steps (100%) done
+[Tue May 29 17:27:35 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-29T172729.051600.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6567642.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=70:00:00
+|  Resources Consumed:
+|      cput=00:00:07,mem=219860kb,vmem=4523820kb,walltime=00:00:07
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix075
+|
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6567641.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=70:00:00
+|  Resources Consumed:
+|      cput=00:00:07,mem=0kb,vmem=0kb,walltime=00:00:07
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix114
+|
+--------------------------------------------------------------------------------
+[Tue May 29 17:27:36 2018] Finished job 0.
+[Tue May 29 17:27:36 2018] 1 of 1 steps (100%) done
+[Tue May 29 17:27:36 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-29T172731.679815.snakemake.log
+[Tue May 29 17:27:36 2018] Finished job 0.
+[Tue May 29 17:27:36 2018] 1 of 1 steps (100%) done
+[Tue May 29 17:27:36 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-29T172731.211174.snakemake.log
+time=70:00:00
+|  Resources Consumed:
+|      cput=00:00:08,mem=225128kb,vmem=3944756kb,walltime=00:00:06
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix126
+|
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6567655.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=70:00:00
+|  Resources Consumed:
+|      cput=00:00:09,mem=0kb,vmem=0kb,walltime=00:00:06
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix112
+|
+--------------------------------------------------------------------------------
+[Tue May 29 17:27:36 2018] Finished job 0.
+[Tue May 29 17:27:36 2018] 1 of 1 steps (100%) done
+[Tue May 29 17:27:36 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-29T172731.215836.snakemake.log
+time=70:00:00
+|  Resources Consumed:
+|      cput=00:00:07,mem=0kb,vmem=0kb,walltime=00:00:06
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix054
+|
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6567650.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=70:00:00
+|  Resources Consumed:
+|      cput=00:00:08,mem=0kb,vmem=0kb,walltime=00:00:06
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix057
+|
+--------------------------------------------------------------------------------
+[Tue May 29 17:27:37 2018] Finished job 0.
+[Tue May 29 17:27:37 2018] 1 of 1 steps (100%) done
+[Tue May 29 17:27:37 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-29T172731.221396.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6567651.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=70:00:00
+|  Resources Consumed:
+|      cput=00:00:08,mem=231616kb,vmem=4528016kb,walltime=00:00:07
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix051
+|
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6567656.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=70:00:00
+|  Resources Consumed:
+|      cput=00:00:08,mem=0kb,vmem=0kb,walltime=00:00:07
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix109
+|
+--------------------------------------------------------------------------------

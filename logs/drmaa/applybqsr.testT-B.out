@@ -1,0 +1,32 @@
+[Tue May 29 17:29:30 2018] Building DAG of jobs...
+[Tue May 29 17:29:30 2018] Using shell: /bin/bash
+[Tue May 29 17:29:30 2018] Provided cores: 32
+[Tue May 29 17:29:30 2018] Rules claiming more threads will be scaled down.
+[Tue May 29 17:29:30 2018] Job counts:
+[Tue May 29 17:29:30 2018] 	count	jobs
+[Tue May 29 17:29:30 2018] 	1	applybqsr
+[Tue May 29 17:29:30 2018] 	1
+
+[Tue May 29 17:29:30 2018] Job 0: Applying base recalibration scores to testT-B and generating final aligned BAM file
+
+[Tue May 29 17:29:30 2018] gatk --java-options '-Xmx12G' ApplyBQSR             -R /projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta             -I results/markduplicates/testT-B.realn.dedup.bam             -OQ true             -O results/bqsr/testT-B.realn.dedup.bqsr.bam             -bqsr results/bqsr/testT-B.bqsr.txt             --create-output-bam-md5 true             2> logs/bqsr/testT-B.apply.log
+[Tue May 29 17:29:50 2018] Write-protecting output file results/bqsr/testT-B.realn.dedup.bqsr.bam.
+[Tue May 29 17:29:50 2018] Finished job 0.
+[Tue May 29 17:29:50 2018] 1 of 1 steps (100%) done
+[Tue May 29 17:29:50 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-29T172929.395124.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6567748.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=70:00:00
+|  Resources Consumed:
+|      cput=00:00:58,mem=0kb,vmem=0kb,walltime=00:00:22
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix067
+|
+--------------------------------------------------------------------------------

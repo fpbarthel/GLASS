@@ -1,0 +1,51 @@
+Using GATK jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=1 -Xmx12G -jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar BaseRecalibrator -R /projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta -I results/markduplicates/testT-B.realn.dedup.bam -O results/bqsr/testT-B.bqsr.txt --known-sites /projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz
+17:29:02.788 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+17:29:03.015 INFO  BaseRecalibrator - ------------------------------------------------------------
+17:29:03.015 INFO  BaseRecalibrator - The Genome Analysis Toolkit (GATK) v4.0.2.1
+17:29:03.015 INFO  BaseRecalibrator - For support and documentation go to https://software.broadinstitute.org/gatk/
+17:29:03.015 INFO  BaseRecalibrator - Executing as barthf@helix114 on Linux v2.6.32-696.18.7.el6.x86_64 amd64
+17:29:03.015 INFO  BaseRecalibrator - Java runtime: Java HotSpot(TM) 64-Bit Server VM v1.8.0_73-b02
+17:29:03.016 INFO  BaseRecalibrator - Start Date/Time: May 29, 2018 5:29:02 PM EDT
+17:29:03.016 INFO  BaseRecalibrator - ------------------------------------------------------------
+17:29:03.016 INFO  BaseRecalibrator - ------------------------------------------------------------
+17:29:03.016 INFO  BaseRecalibrator - HTSJDK Version: 2.14.3
+17:29:03.016 INFO  BaseRecalibrator - Picard Version: 2.17.2
+17:29:03.016 INFO  BaseRecalibrator - HTSJDK Defaults.COMPRESSION_LEVEL : 1
+17:29:03.016 INFO  BaseRecalibrator - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+17:29:03.017 INFO  BaseRecalibrator - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+17:29:03.017 INFO  BaseRecalibrator - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+17:29:03.017 INFO  BaseRecalibrator - Deflater: IntelDeflater
+17:29:03.017 INFO  BaseRecalibrator - Inflater: IntelInflater
+17:29:03.017 INFO  BaseRecalibrator - GCS max retries/reopens: 20
+17:29:03.017 INFO  BaseRecalibrator - Using google-cloud-java patch 6d11bef1c81f885c26b2b56c8616b7a705171e4f from https://github.com/droazen/google-cloud-java/tree/dr_all_nio_fixes
+17:29:03.017 INFO  BaseRecalibrator - Initializing engine
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/markduplicates/testT-B.realn.dedup.bai is older than BAM /projects/barthf/GLASS-WG/results/markduplicates/testT-B.realn.dedup.bam
+17:29:03.604 INFO  FeatureManager - Using codec VCFCodec to read file file:///projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz
+17:29:03.766 WARN  IndexUtils - Feature file "/projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz" appears to contain no sequence dictionary. Attempting to retrieve a sequence dictionary from the associated index file
+17:29:03.924 INFO  BaseRecalibrator - Done initializing engine
+17:29:03.932 INFO  BaseRecalibrationEngine - The covariates being used here: 
+17:29:03.932 INFO  BaseRecalibrationEngine - 	ReadGroupCovariate
+17:29:03.932 INFO  BaseRecalibrationEngine - 	QualityScoreCovariate
+17:29:03.932 INFO  BaseRecalibrationEngine - 	ContextCovariate
+17:29:03.932 INFO  BaseRecalibrationEngine - 	CycleCovariate
+17:29:03.938 INFO  ProgressMeter - Starting traversal
+17:29:03.938 INFO  ProgressMeter -        Current Locus  Elapsed Minutes       Reads Processed     Reads/Minute
+17:29:05.011 INFO  BaseRecalibrator - 5861 read(s) filtered by: ((((((MappingQualityNotZeroReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND WellformedReadFilter)
+  5861 read(s) filtered by: (((((MappingQualityNotZeroReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter)
+      5861 read(s) filtered by: ((((MappingQualityNotZeroReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter)
+          5852 read(s) filtered by: (((MappingQualityNotZeroReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter)
+              5852 read(s) filtered by: ((MappingQualityNotZeroReadFilter AND MappingQualityAvailableReadFilter) AND MappedReadFilter)
+                  5852 read(s) filtered by: (MappingQualityNotZeroReadFilter AND MappingQualityAvailableReadFilter)
+                      5852 read(s) filtered by: MappingQualityNotZeroReadFilter 
+          9 read(s) filtered by: NotDuplicateReadFilter 
+
+17:29:05.012 INFO  ProgressMeter -             unmapped              0.0                   191          10690.3
+17:29:05.013 INFO  ProgressMeter - Traversal complete. Processed 191 total reads in 0.0 minutes.
+17:29:05.068 INFO  BaseRecalibrator - Calculating quantized quality scores...
+17:29:05.086 INFO  BaseRecalibrator - Writing recalibration report...
+17:29:05.429 INFO  BaseRecalibrator - ...done!
+17:29:05.430 INFO  BaseRecalibrator - Shutting down engine
+[May 29, 2018 5:29:05 PM EDT] org.broadinstitute.hellbender.tools.walkers.bqsr.BaseRecalibrator done. Elapsed time: 0.05 minutes.
+Runtime.totalMemory()=2263875584

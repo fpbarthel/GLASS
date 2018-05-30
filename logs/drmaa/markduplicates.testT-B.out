@@ -1,0 +1,33 @@
+[Tue May 29 17:28:29 2018] Building DAG of jobs...
+[Tue May 29 17:28:29 2018] Using shell: /bin/bash
+[Tue May 29 17:28:29 2018] Provided cores: 56
+[Tue May 29 17:28:29 2018] Rules claiming more threads will be scaled down.
+[Tue May 29 17:28:29 2018] Job counts:
+[Tue May 29 17:28:29 2018] 	count	jobs
+[Tue May 29 17:28:29 2018] 	1	markduplicates
+[Tue May 29 17:28:29 2018] 	1
+
+[Tue May 29 17:28:29 2018] Job 0: Readgroup-specific BAM files are combined into a single BAM for testT-B. Potential PCR duplicates are marked.
+
+[Tue May 29 17:28:29 2018] gatk --java-options '-Xmx12G' MarkDuplicates             --INPUT=results/bwa/testT-B/testT-B.1.realn.bam             --OUTPUT=results/markduplicates/testT-B.realn.dedup.bam             --METRICS_FILE=results/markduplicates/testT-B.metrics.txt             --CREATE_INDEX=true             2> logs/markduplicates/testT-B.log
+Tool returned:
+0
+[Tue May 29 17:28:35 2018] Finished job 0.
+[Tue May 29 17:28:35 2018] 1 of 1 steps (100%) done
+[Tue May 29 17:28:35 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-05-29T172828.918679.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6567722.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=70:00:00
+|  Resources Consumed:
+|      cput=00:00:36,mem=0kb,vmem=0kb,walltime=00:00:07
+|  Walltime accuracy: 0.0%
+|
+| Epilogue Host (TORQUE Mother Superior): helix138
+|
+--------------------------------------------------------------------------------

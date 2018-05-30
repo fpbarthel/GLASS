@@ -74,6 +74,53 @@
     },
     "multiqc" :
     {
+        "name" : "{rule}",
+        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.out",
+        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.err",
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "callpon" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "createpon" :
+    {
+        "name" : "{rule}{batch}",
+        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{batch}.out",
+        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{batch}.err",
+        "ppn" : 2,
+        "walltime" : "70:00:00",
+        "mem" : "12gb"
+    },
+    "callsnv" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "pileupsummaries" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "calculatecontamination" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "filtermutect" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "collectartifacts" :
+    {
+        "ppn" : 2,
+        "mem" : "12gb"
+    },
+    "filterorientation" :
+    {
         "ppn" : 2,
         "mem" : "12gb"
     }
