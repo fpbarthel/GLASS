@@ -10,8 +10,20 @@ gdc_token: "/home/barthf/gdc-user-token.2018-05-23T11_13_25-04_00.txt"
 ## Temporary directory
 tempdir: "/fastscratch/barthf/GLASS-WG/tmp"
 
+wgs_scatterdir: "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50"
+
 ## GnomAD VCF file
 gnomad_vcf: "/projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz"
+
+## Tiny vcf
+tiny_vcf: "/projects/barthf/GTex-somatic/data/gnomad/small_exac_common_3_b37.vcf.gz"
+
+vcf2maf: "/projects/barthf/opt/mskcc-vcf2maf-747a1bb/vcf2maf.pl"
+
+veppath: "/projects/barthf/opt/ensembl-vep"
+
+## VEP cache directory
+vepdata: "/projects/barthf/opt/.vep"
 
 ## Reference genome
 reference_fasta: "/projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta"
@@ -35,18 +47,3 @@ sample_json: "/projects/barthf/GLASS-WG/data/ref/test_samples_v2.json"
 cluster_json: "/projects/barthf/GLASS-WG/test_cluster.json"
 
 workdir: "/projects/barthf/GLASS-WG"
-
-#### ACTUAL RUN
-# Uncomment parameters below for test run
-
-## Not needed for actual run
-#revertsam_extra_args : ""
-
-## Full path to sample list JSON
-#sample_json: "/projects/barthf/GLASS-WG/data/ref/TCGA_WGS_GDC_legacy_UUIDs.json"
-
-## Full path to cluster settings
-#cluster_json: "/projects/barthf/GLASS-WG/cluster.json"
-
-## Working directory
-#workdir: "/fastscratch/barthf/GLASS-WG"

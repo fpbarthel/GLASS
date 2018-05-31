@@ -2,17 +2,17 @@
     "__default__" :
     {
         "_comment" : "CLUSTER SETTINGS FOR TEST SAMPLES - DO NOT USE",
-        "name" : "{rule}.{wildcards.sample_id}",
+        "name" : "{rule}.{wildcards}",
         "j" : "oe",
         "m" : "a",
         "M" : "floris.barthel@jax.org",
         "nodes" : 1,
         "ppn" : 1,
-        "walltime" : "1:00:00",
-        "mem" : "6gb",
-        "queu" : "batch",
-        "stdout" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.sample_id}.out",
-        "stderr" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.sample_id}.err"
+        "walltime" : "0:30:00",
+        "mem" : 6,
+        "queu" : "short",
+        "stdout" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards}.out",
+        "stderr" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards}.err"
     },
     "download" :
     {
@@ -20,108 +20,122 @@
         "stdout" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.out",
         "stderr" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.err",
         "ppn" : 6,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "revertsam" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "fq2ubam" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "fastqc" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "markadapters" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "samtofastq_bwa_mergebamalignment" :
     {
         "ppn" : 12,
-        "mem" : "72gb"
+        "mem" : 72
     },
     "markduplicates" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "baserecalibrator" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "applybqsr" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "wgsmetrics" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "validatebam" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "multiqc" :
     {
         "name" : "{rule}",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.err",
+        "stdout" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.out",
+        "stderr" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.err",
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "callpon" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
+    },
+    "mergepon" :
+    {
+        "ppn" : 2,
+        "mem" : 12
     },
     "createpon" :
     {
-        "name" : "{rule}{batch}",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{batch}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{batch}.err",
+        "name" : "{rule}{wildcards.batch}",
+        "stdout" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.out",
+        "stderr" : "/projects/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.err",
         "ppn" : 2,
-        "walltime" : "70:00:00",
-        "mem" : "12gb"
+        "mem" : 12
     },
     "callsnv" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
+    },
+    "mergesnv" :
+    {
+        "ppn" : 2,
+        "mem" : 12
     },
     "pileupsummaries" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "calculatecontamination" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "filtermutect" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "collectartifacts" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
     },
     "filterorientation" :
     {
         "ppn" : 2,
-        "mem" : "12gb"
+        "mem" : 12
+    },
+    "vep" :
+    {
+        "ppn" : 4,
+        "mem" : 24
     }
 }
