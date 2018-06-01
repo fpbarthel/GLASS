@@ -27,6 +27,7 @@ vepdata: "/projects/barthf/opt/.vep"
 reference_fasta: "/projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta"
 
 ## HTML dir
+# @sbamin helix ~/ has 50GB limit. multiqc and fastqc files may grow in size.
 html_dir: "/home/barthf/ShinyApps"
 
 ## JAVA options

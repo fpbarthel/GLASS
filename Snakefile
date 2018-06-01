@@ -33,6 +33,8 @@ CLUSTER_META    = json.load(open(config["cluster_json"]))
 ## JSON processing
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+# @sbamin Unless already implemented, we should be explicitly checking json input for 1. non-empty variables, and 2. unique RGID and RGPU but an identical RGSM tags, e.g., https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L25 We can either check it upfront while making json or more preferable to check just before snakemake submits a workflow per case or sample. That way, snakemake should STOP with error or emit WARN for non-compliant RG format. This is more practical if input is FQ and not BAM unless we already have RG info for BAM file.
+
 WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in range(50)]
 
 BAM_FILES = {}
@@ -276,6 +278,8 @@ rule fq2ubam:
 ## URL: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+# @sbamin Besides html, fastqc should provide a tab-delimited output, e.g., https://gist.github.com/chapmanb/3953983, https://gitlab.com/gmapps/railab_chipseq/tree/master/scripts A step further, that can be programmatically added to emit WARN or STOP if converted FQ fails to PASS base filters, e.g., per base or tile seq quality.
+
 rule fastqc:
     input:
         "results/ubam/{sample_id}/{sample_id}.{readgroup}.bam"
@@ -350,6 +354,10 @@ rule markadapters:
 ##
 ## See: https://gatkforums.broadinstitute.org/gatk/discussion/6483/how-to-map-and-clean-up-short-read-sequence-data-efficiently
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+# @sbamin I am new to this step. Are read groups, including RGID per read incorporated in final merge bam? I am more familiar with bwa mem -R '@RG\tID:foo\tSM:bar' format. https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L103
+
+# @sbamin If original bam file (and so coverted fastq) are using ref genome with chr prefix for chromosomes, does workflow take care of removing chr prefix (or vice versa) while aligning to ref genome from GATK b37 legacy bundle?
 
 rule samtofastq_bwa_mergebamalignment:
     input:
@@ -431,6 +439,8 @@ rule markduplicates:
             --CREATE_INDEX=true \
             2> {log}")
 
+# @sbamin A few notes on IndelRealignment step at annotated link: https://hyp.is/8_20bK-aEeerk1MduBFv6w/gatkforums.broadinstitute.org/gatk/discussion/7847 IndelRealinger adds OC:Z tag to realigned reads (GATK Doc # 7156), shifts MAPQ by +10. For high-quality data (>75bp read length, 30x plus, PCR-free lib), and MAPQ > 20, there seems to have minimal impact of +MAPQ10. Perhaps, we should get clarification from GATK team based on GATK Doc # 7847 on pros and cons of keeping IndelRealigner step in the workflow. If there is minimal impact, we should add IndelRealigner. I have not yet seen but OC:Z tag may be required by other indel callers.
+
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Recalibrate base quality scores
 ## This steps computes a bare recalibration table
@@ -492,6 +502,8 @@ rule applybqsr:
             -bqsr {input.bqsr} \
             --create-output-bam-md5 true \
             2> {log}"
+
+# @sbamin I haven't used WgsMetrics. Does it cover Depth of Coverage like metrics? I guess we need a plot like this one, http://www.gettinggeneticsdone.com/2014/03/visualize-coverage-exome-targeted-ngs-bedtools.html .  https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L582
 
 rule wgsmetrics:
     input:
@@ -562,6 +574,12 @@ rule multiqc:
         "Running MultiQC"
     shell:
         "multiqc -o {params.dir} {config[workdir]}/results; cp -R {params.dir}/* {config[html_dir]}"
+
+# @sbamin Haven't looked deep into PON commands but just checking if it is running only on matched normals and not on both, tumor and normal samples.
+
+# @sbamin Regarding command similar to `echo $TUMOR_SM`, we want to have some stringecy there (unless snakemake takes care of it) to avoid empty variable being passed downstream.
+
+# @sbamin :imp: Per GATK Doc # 11136, M2 prefilters sites present in PON before using those sites for somatic variant calling. So, I would rather benchmark PON first before using it explicitly to filter out sites which may turn out to be false negative or true somatic variant. Alternately, we can use `--genotype-pon-sites` (beta) so as to keep PON sites in M2 output but tag those using VCF INFO tag, `IN_PON`. Also, doubt if we need --germline-resource and --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter for PON. See https://software.broadinstitute.org/gatk/documentation/article?id=11136#2
 
 rule callpon:
     input:
@@ -651,6 +669,8 @@ rule createpon:
 ## Calculate af-of-alleles: 1/(2*123136) = 0.00000406055 (6 sign. digits)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+# @sbamin  :imp: I am vary of beta function: `--disable-read-filter MateOnSameContigOrNoMappedMateReadFilter` as it is more relevant to alt-aware processed alignments using GRCh38 genome (GATK Doc # 11136). Alternately, it should be ok to keep this filter disabled (allow discordant reads to be counted towards variant calling) as long as realigned bam has a *tag* for these reads. Then, we can use those for manual review of calls, esp. when discordant reads are supporting ALT allele.
+
 rule callsnv:
     input:
         tumor = lambda wildcards: "results/bqsr/{sample_id}.realn.dedup.bqsr.bam".format(sample_id=PAIR_TO_TUMOR[wildcards.pair_id]),
@@ -691,6 +711,8 @@ rule callsnv:
             -O {output.vcf} \
             -bamout {output.bam}"
 
+# @sbamin may need to supply .dict file if chr-wise vcf header is missing chr index (1:21,X,Y,MT). Usually, this is not a case but just writing here anyways!
+
 rule mergesnv:
     input:
         lambda wildcards: expand("results/m2vcf-scatter/{pair_id}.{interval}.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST)
@@ -716,6 +738,8 @@ rule mergesnv:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Summarize read support for known variant sites
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+# @sbamin What is small_exac_common_3_b37.vcf.gz? Haven't read further but search only gives me this link: https://crc.pitt.edu/variantcalling
 
 rule pileupsummaries:
     input:
@@ -744,6 +768,8 @@ rule pileupsummaries:
 ## Input: pileup summaries table
 ## Output: contamination table
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+# @sbamin We don't necessarily need contamination table based on variants across all chrs, and 2-3 large chrs are good enough. Idea is to query sufficient population level variants to estimate normal contamination of tumor sample.
 
 rule calculatecontamination:
     input:
@@ -852,6 +878,8 @@ rule filterorientation:
             -P {input.art} \
             -O {output}"
 
+# @sbamin I suggest that we should put hold at VEP step until we finalize consensus calls. Idea is too get how many filtered calls we have and with what level of confidence (based on consensus calls from other callers). To me, VEP with extended anntoations is of little value until vcfs are at freeze level. Also, we should have uniform processing past alignment step across both canine and human (adult + pediatric) life history projects. A few callers and filtering steps that we already have run on canine are at https://github.com/TheJacksonLaboratory/hourglass/issues/9. If we are in need of base annotations, like exonic vs promoter vs non-coding, that should be quick enough from VEP, but I suggest to have a hold on extended annotations using vcf2maf as I guess we will end up doing those iteratively until we freeze vcfs.
+
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## USE VEP
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -890,4 +918,5 @@ rule vep:
             --species homo_sapiens \
             --ncbi-build GRCh37"
 
+# @sbamin For GATK runner: --seconds-between-progress-updates 900 to reduce log size. --TMP_DIR Optional: Most times, tmp is relative to workdir. But, if you see it is being under /tmp/, then it may fill up fast as /tmp is typically mounted on RAM at compute nodes.
 ## END ##
