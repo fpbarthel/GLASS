@@ -64,3 +64,37 @@ SUCCESS
 | Epilogue Host (TORQUE Mother Superior): helix096
 |
 --------------------------------------------------------------------------------
+[Fri Jun  1 14:22:30 2018] Building DAG of jobs...
+[Fri Jun  1 14:22:30 2018] Using shell: /bin/bash
+[Fri Jun  1 14:22:30 2018] Provided cores: 56
+[Fri Jun  1 14:22:30 2018] Rules claiming more threads will be scaled down.
+[Fri Jun  1 14:22:30 2018] Job counts:
+[Fri Jun  1 14:22:30 2018] 	count	jobs
+[Fri Jun  1 14:22:30 2018] 	1	filtermutect
+[Fri Jun  1 14:22:30 2018] 	1
+
+[Fri Jun  1 14:22:30 2018] Job 0: Filtering Mutect2 calls
+[Fri Jun  1 14:22:30 2018] Pair: A
+
+[Fri Jun  1 14:22:30 2018] gatk --java-options -Xmx12g FilterMutectCalls             -V results/m2vcf/A.vcf             --contamination-table results/contamination/A.contamination.txt             -O results/m2filter/A.filtered.vcf             2> logs/filtermutect/A.log
+Tool returned:
+SUCCESS
+[Fri Jun  1 14:22:33 2018] Finished job 0.
+[Fri Jun  1 14:22:33 2018] 1 of 1 steps (100%) done
+[Fri Jun  1 14:22:33 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-06-01T142229.883907.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6629569.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=00:30:00
+|  Resources Consumed:
+|      cput=00:00:10,mem=0kb,vmem=0kb,walltime=00:00:04
+|  Walltime accuracy: 0.2%
+|
+| Epilogue Host (TORQUE Mother Superior): helix113
+|
+--------------------------------------------------------------------------------

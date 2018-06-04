@@ -31,3 +31,35 @@ STATUS: Running VEP and writing to: results/m2filter/A.filtered2.vep.vcf
 | Epilogue Host (TORQUE Mother Superior): helix131
 |
 --------------------------------------------------------------------------------
+[Fri Jun  1 14:30:21 2018] Building DAG of jobs...
+[Fri Jun  1 14:30:21 2018] Using shell: /bin/bash
+[Fri Jun  1 14:30:21 2018] Provided cores: 56
+[Fri Jun  1 14:30:21 2018] Rules claiming more threads will be scaled down.
+[Fri Jun  1 14:30:21 2018] Job counts:
+[Fri Jun  1 14:30:21 2018] 	count	jobs
+[Fri Jun  1 14:30:21 2018] 	1	vep
+[Fri Jun  1 14:30:21 2018] 	1
+
+[Fri Jun  1 14:30:21 2018] Job 0: Running VEP (variant annotation) on filtered Mutect2 calls
+[Fri Jun  1 14:30:21 2018] Pair: A
+
+[Fri Jun  1 14:30:21 2018] TEST_NAM=`samtools view -H results/bqsr/testT-A.realn.dedup.bqsr.bam | grep '^@RG' | sed "s/.*SM:\([^\t]*\).*/\1/g" | uniq`;CTRL_NAM=`samtools view -H results/bqsr/testN-A.realn.dedup.bqsr.bam | grep '^@RG' | sed "s/.*SM:\([^\t]*\).*/\1/g" | uniq`;/projects/barthf/opt/mskcc-vcf2maf-747a1bb/vcf2maf.pl             --input-vcf results/m2filter/A.filtered2.vcf             --output-maf results/vep/A.filtered2.anno.maf             --vep-path /projects/barthf/opt/ensembl-vep             --vep-data /projects/barthf/opt/.vep             --vep-forks 2             --ref-fasta /projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta             --filter-vcf /projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz             --tumor-id $TEST_NAM             --normal-id $CTRL_NAM             --species homo_sapiens             --ncbi-build GRCh37             2> logs/vep/A.log
+[Fri Jun  1 14:30:22 2018] Finished job 0.
+[Fri Jun  1 14:30:22 2018] 1 of 1 steps (100%) done
+[Fri Jun  1 14:30:22 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-06-01T143020.127465.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6629603.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=24gb,nodes=1:ppn=4,walltime=00:30:00
+|  Resources Consumed:
+|      cput=00:00:01,mem=0kb,vmem=0kb,walltime=00:00:03
+|  Walltime accuracy: 0.2%
+|
+| Epilogue Host (TORQUE Mother Superior): helix131
+|
+--------------------------------------------------------------------------------

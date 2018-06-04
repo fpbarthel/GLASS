@@ -29,7 +29,7 @@ vepdata: "/projects/barthf/opt/.vep"
 reference_fasta: "/projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta"
 
 ## HTML dir
-html_dir: "/home/barthf/ShinyApps"
+html_dir: "/projects/barthf/GLASS-WG/html"
 
 ## JAVA options
 standard_java_opt: "'-Xmx12G'"

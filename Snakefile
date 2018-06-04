@@ -353,15 +353,22 @@ rule markadapters:
 ## ie. restore all the original readgroup tags
 ##
 ## See: https://gatkforums.broadinstitute.org/gatk/discussion/6483/how-to-map-and-clean-up-short-read-sequence-data-efficiently
+##
+## Update 06/01: Added markadapter metrics as input even though not required. Metrics file
+## is saved all the way at the end of markadapters step, and adding it makes sure that the
+## input data is good
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 # @sbamin I am new to this step. Are read groups, including RGID per read incorporated in final merge bam? I am more familiar with bwa mem -R '@RG\tID:foo\tSM:bar' format. https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L103
 
 # @sbamin If original bam file (and so coverted fastq) are using ref genome with chr prefix for chromosomes, does workflow take care of removing chr prefix (or vice versa) while aligning to ref genome from GATK b37 legacy bundle?
 
+##            --VALIDATION_STRINGENCY=SILENT removed from SamToFastq
+
 rule samtofastq_bwa_mergebamalignment:
     input:
-        "results/markadapters/{sample_id}/{sample_id}.{readgroup}.revertsam.markadapters.bam"
+        bam = "results/markadapters/{sample_id}/{sample_id}.{readgroup}.revertsam.markadapters.bam",
+        metric = "results/markadapters/{sample_id}/{sample_id}.{readgroup}.markadapters.metrics.txt"
     output:
         temp("results/bwa/{sample_id}/{sample_id}.{readgroup}.realn.bam")
     threads:
@@ -381,20 +388,19 @@ rule samtofastq_bwa_mergebamalignment:
         "Readgroup: {wildcards.readgroup}"
     shell:
         "gatk --java-options {config[samtofastq_java_opt]} SamToFastq \
-            --INPUT={input} \
+            --INPUT={input.bam} \
             --FASTQ=/dev/stdout \
             --CLIPPING_ATTRIBUTE=XT \
             --CLIPPING_ACTION=2 \
             --INTERLEAVE=true \
             --NON_PF=true \
-            --VALIDATION_STRINGENCY=SILENT \
             --TMP_DIR={config[tempdir]} | \
-        bwa mem -M -t {threads} -p {config[reference_fasta]} /dev/stdin | \
-        gatk --java-options {config[mergebamalignment_java_opt]} MergeBamAlignment \
-            --REFERENCE_SEQUENCE={config[reference_fasta]} \
-            --UNMAPPED_BAM={input} \
+         bwa mem -M -t {threads} -p {config[reference_fasta]} /dev/stdin | \
+         gatk --java-options {config[mergebamalignment_java_opt]} MergeBamAlignment \
             --ALIGNED_BAM=/dev/stdin \
+            --UNMAPPED_BAM={input.bam} \
             --OUTPUT={output} \
+            --REFERENCE_SEQUENCE={config[reference_fasta]} \
             --CREATE_INDEX=true \
             --ADD_MATE_CIGAR=true \
             --CLIP_ADAPTERS=false \
@@ -503,7 +509,9 @@ rule applybqsr:
             --create-output-bam-md5 true \
             2> {log}"
 
-# @sbamin I haven't used WgsMetrics. Does it cover Depth of Coverage like metrics? I guess we need a plot like this one, http://www.gettinggeneticsdone.com/2014/03/visualize-coverage-exome-targeted-ngs-bedtools.html .  https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L582
+# @sbamin I haven't used WgsMetrics. Does it cover Depth of Coverage like metrics? I guess we need a plot like this one, 
+# http://www.gettinggeneticsdone.com/2014/03/visualize-coverage-exome-targeted-ngs-bedtools.html .  
+# https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L582
 
 rule wgsmetrics:
     input:
@@ -552,6 +560,14 @@ rule validatebam:
             -M SUMMARY \
             2> {log}"
 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## MultiQC
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## MultiQC (and its Click dependency) can have problwms with Python locale settings
+## Fix these by specifying the following options in .bash_profile
+## export LC_ALL=en_US.UTF-8
+## export LANG=en_US.UTF-8
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 rule multiqc:
     input:
         expand("results/qc/{sample}.ValidateSamFile.txt", sample=ALL_READGROUPS.keys()),
@@ -573,7 +589,9 @@ rule multiqc:
     message:
         "Running MultiQC"
     shell:
-        "multiqc -o {params.dir} {config[workdir]}/results; cp -R {params.dir}/* {config[html_dir]}"
+        "multiqc -o {params.dir} {config[workdir]}/results \
+            2> {log}; \
+            cp -R {params.dir}/* {config[html_dir]}"
 
 # @sbamin Haven't looked deep into PON commands but just checking if it is running only on matched normals and not on both, tumor and normal samples.
 
@@ -611,7 +629,8 @@ rule callpon:
             --germline-resource {config[gnomad_vcf]} \
             --af-of-alleles-not-in-resource 0.00000406055 \
             --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter \
-            -O {output}"
+            -O {output} \
+            2> {log}"
 
 rule mergepon:
     input:
@@ -633,7 +652,8 @@ rule mergepon:
         input_cat = " ".join(["-I " + s for s in input])
         shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
             {input_cat} \
-            -O {output}")
+            -O {output} \
+            2> {log}")
 
 rule createpon:
     input:
@@ -657,7 +677,8 @@ rule createpon:
         shell("gatk --java-options -Xmx{params.mem}g CreateSomaticPanelOfNormals \
             {vcfs} \
             --duplicate-sample-strategy THROW_ERROR \
-            --output {output}")
+            --output {output} \
+            2> {log}")
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## GATK parameters taken from "GATK4_SomaticSNVindel_worksheet.pdf"
@@ -709,7 +730,8 @@ rule callsnv:
             --standard-min-confidence-threshold-for-calling 20 \
             --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter \
             -O {output.vcf} \
-            -bamout {output.bam}"
+            -bamout {output.bam} \
+            2> {log}"
 
 # @sbamin may need to supply .dict file if chr-wise vcf header is missing chr index (1:21,X,Y,MT). Usually, this is not a case but just writing here anyways!
 
@@ -733,7 +755,8 @@ rule mergesnv:
         input_cat = " ".join(["-I " + s for s in input])
         shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
             {input_cat} \
-            -O {output}")
+            -O {output} \
+            2> {log}")
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Summarize read support for known variant sites
@@ -761,7 +784,8 @@ rule pileupsummaries:
         "gatk --java-options -Xmx{params.mem}g GetPileupSummaries \
             -I {input} \
             -V {config[tiny_vcf]} \
-            -O {output}"
+            -O {output} \
+            2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Estimate contamination
@@ -792,7 +816,8 @@ rule calculatecontamination:
         "gatk --java-options -Xmx{params.mem}g CalculateContamination \
             -I {input.tumortable} \
             --matched-normal {input.normaltable} \
-            -O {output}"
+            -O {output} \
+            2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## If variants have not been filtered, filter, else done
@@ -819,7 +844,8 @@ rule filtermutect:
         "gatk --java-options -Xmx{params.mem}g FilterMutectCalls \
             -V {input.vcf} \
             --contamination-table {input.tab} \
-            -O {output}"
+            -O {output} \
+            2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Collect metrics on sequencing context artifacts
@@ -847,7 +873,8 @@ rule collectartifacts:
             -I {input} \
             -O {params.prefix} \
             --FILE_EXTENSION \".txt\" \
-            -R {config[reference_fasta]}"
+            -R {config[reference_fasta]} \
+            2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Filter by orientation bias
@@ -876,7 +903,8 @@ rule filterorientation:
             -AM \"C/T\" \
             -V {input.vcf} \
             -P {input.art} \
-            -O {output}"
+            -O {output} \
+            2> {log}"
 
 # @sbamin I suggest that we should put hold at VEP step until we finalize consensus calls. Idea is too get how many filtered calls we have and with what level of confidence (based on consensus calls from other callers). To me, VEP with extended anntoations is of little value until vcfs are at freeze level. Also, we should have uniform processing past alignment step across both canine and human (adult + pediatric) life history projects. A few callers and filtering steps that we already have run on canine are at https://github.com/TheJacksonLaboratory/hourglass/issues/9. If we are in need of base annotations, like exonic vs promoter vs non-coding, that should be quick enough from VEP, but I suggest to have a hold on extended annotations using vcf2maf as I guess we will end up doing those iteratively until we freeze vcfs.
 
@@ -916,7 +944,8 @@ rule vep:
             --tumor-id $TEST_NAM \
             --normal-id $CTRL_NAM \
             --species homo_sapiens \
-            --ncbi-build GRCh37"
+            --ncbi-build GRCh37 \
+            2> {log}"
 
 # @sbamin For GATK runner: --seconds-between-progress-updates 900 to reduce log size. --TMP_DIR Optional: Most times, tmp is relative to workdir. But, if you see it is being under /tmp/, then it may fill up fast as /tmp is typically mounted on RAM at compute nodes.
 ## END ##

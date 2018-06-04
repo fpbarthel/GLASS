@@ -1,0 +1,32 @@
+[Fri Jun  1 14:43:14 2018] Building DAG of jobs...
+[Fri Jun  1 14:43:14 2018] Using shell: /bin/bash
+[Fri Jun  1 14:43:14 2018] Provided cores: 56
+[Fri Jun  1 14:43:14 2018] Rules claiming more threads will be scaled down.
+[Fri Jun  1 14:43:14 2018] Job counts:
+[Fri Jun  1 14:43:14 2018] 	count	jobs
+[Fri Jun  1 14:43:14 2018] 	1	multiqc
+[Fri Jun  1 14:43:14 2018] 	1
+
+[Fri Jun  1 14:43:14 2018] Job 0: Running MultiQC
+
+[Fri Jun  1 14:43:14 2018] multiqc -o results/qc/multiqc /projects/barthf/GLASS-WG/results             2> logs/multiqc/multiqc.log;             cp -R results/qc/multiqc/* /projects/barthf/GLASS-WG/html
+Searching 431 files..
+[Fri Jun  1 14:43:33 2018] Finished job 0.
+[Fri Jun  1 14:43:33 2018] 1 of 1 steps (100%) done
+[Fri Jun  1 14:43:33 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-06-01T144313.070898.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6629942.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=00:30:00
+|  Resources Consumed:
+|      cput=00:00:11,mem=0kb,vmem=0kb,walltime=00:00:22
+|  Walltime accuracy: 1.2%
+|
+| Epilogue Host (TORQUE Mother Superior): helix130
+|
+--------------------------------------------------------------------------------

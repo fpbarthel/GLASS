@@ -99,6 +99,11 @@
         "mem" : 12,
         "walltime" : "70:00:00"
     },
+    "mergepon" :
+    {
+        "ppn" : 2,
+        "mem" : 12
+    },
     "createpon" :
     {
         "name" : "{rule}{batch}",
@@ -113,6 +118,11 @@
         "ppn" : 2,
         "mem" : 12,
         "walltime" : "70:00:00"
+    },
+    "mergesnv" :
+    {
+        "ppn" : 2,
+        "mem" : 12
     },
     "pileupsummaries" :
     {

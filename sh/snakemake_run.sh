@@ -50,12 +50,16 @@ then
 	exit 1
 fi
 
+EXTRA_OPTS=$(printf " %s" "${POSITIONAL[@]}")
+EXTRA_OPTS=${EXTRA_OPTS:1}
+
 echo "Running snakemake with"
 echo "Directory: " `pwd`
 echo "TARGET: ${TARGET}"
 echo "CONFIG: ${CONFIGFILE}"
 echo "CLUSTER-CONFIG: ${CLUSTRCONF}"
 echo "OPTS: ${OPTS}"
+echo "EXTRA OPTS: ${EXTRA_OPTS}"
 
 read -p "Continue? (y/n)" -n 1 -r
 echo    # (optional) move to a new line
@@ -66,4 +70,4 @@ fi
 
 echo "Starting snakemake..."
 sleep 1
-snakemake ${OPTS} --jobs 800 --latency-wait 120 --max-jobs-per-second 8 --configfile "${CONFIGFILE}" --cluster-config "${CLUSTRCONF}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e {cluster.stderr} -o {cluster.stdout}" ${TARGET}
+snakemake ${OPTS} --jobs 800 --latency-wait 120 --max-jobs-per-second 8 --configfile "${CONFIGFILE}" --cluster-config "${CLUSTRCONF}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e {cluster.stderr} -o {cluster.stdout}" ${EXTRA_OPTS} ${TARGET}
