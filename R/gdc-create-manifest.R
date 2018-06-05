@@ -68,31 +68,6 @@ filtered_files = df %>%
   mutate(file_size_readable = gdata::humanReadable(file_size, standard="Unix"),
          sample_type_code = recode_factor(substr(aliquot_id, 14,16), "01A" = "TP", "01B" = "TP", "02A" = "R1", "02B" = "R2", "10A" = "NB", "10B" = "NB", "10D" = "NB"))
 
-## Insert readgroups
-rgs = readLines('data/ref/TCGA_BAM_readgroups.txt')
-rgs = data.frame(id = basename(dirname(gsub("\\t@RG.*$","",rgs))),
-                 RGID = gsub("^.*ID:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                 RGPL = gsub("^.*PL:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                 RGPU = gsub("^.*PU:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                 RGLB = gsub("^.*LB:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                 RGPI = gsub("^.*PI:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                 RGDT = gsub("^.*DT:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                 RGSM = gsub("^.*SM:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                 RGCN = gsub("^.*CN:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T)) %>%
-  mutate(RGPI = ifelse(RGPI == 0, 0, NA))
-
-rgs = read.delim('data/ref/TCGA_BAM_readgroups.txt', as.is = T, header = F)
-rgs = rgs %>% mutate(id = basename(dirname(V1)),
-                     rg_ID = gsub("ID\\:","", V3),
-                     rg_PL = gsub("PL\\:","", V4),
-                     rg_PU = gsub("PU\\:","", V5),
-                     rg_LB = gsub("LB\\:","", V6),
-                     rg_PI = gsub("PI\\:","", V7),
-                     rg_DT = gsub("DT\\:","", V8),
-                     rg_SM = gsub("SM\\:","", V9),
-                     rg_CN = gsub("CN\\:","", V10)) %>%
-  select(-starts_with("V"))
-
 ## Full-join
 filtered_files_rgs = filtered_files %>% right_join(rgs)
 
@@ -107,9 +82,74 @@ nested_filtered_files_rgs = filtered_files_rgs %>%
 jsonlite::toJSON(nested_filtered_files_rgs, pretty = T)
 write(jsonlite::toJSON(nested_filtered_files_rgs, pretty = T), file = unpaired_json)
 
+####################################################################################
+
+## Aliquots
+df2 = read.delim("data/sequencing-information/master_life_history_uniform_naming_incomplete.txt", as.is=T)
+df2 = df2 %>% select(aliquot_uuid = uuid, sample_id = Barcode) %>%
+  mutate(aliquot_id = sprintf("%s-%s", sample_id, aliquot_uuid),
+         analyte_type = "DNA",
+         analysis_type = "WGS",
+         portion = 1) %>%
+  filter(grepl("TCGA", sample_id))
+
 tmp = jsonlite::read_json("data/ref/TCGA_WGS_GDC_legacy_UUIDs.json", simplifyVector=T)
 df = tmp %>% unnest(samples) %>%
   unnest(files) %>%
-  unnest(readgroups)
+  unnest(readgroups) %>%
+  mutate(sample_id = sprintf("%s-%s", case_id, sample_type_code)) %>%
+  left_join(df2)
 
-cases =
+files = df %>% 
+  mutate(file_path = sprintf("/fastscratch/barthf/GLASS-WG/download/%s/%s", file_uuid, file_name)) %>%
+  select(file_path, file_name, file_uuid, file_size, file_md5sum, file_format) %>%
+  distinct()
+
+## Readgroups
+rgs = readLines('data/ref/TCGA_BAM_readgroups.txt')
+readgroups = data.frame(file_uuid = basename(dirname(gsub("\\t@RG.*$","",rgs))),
+                        RGID = gsub("^.*ID:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                        RGPL = gsub("^.*PL:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                        RGPU = gsub("^.*PU:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                        RGLB = gsub("^.*LB:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                        RGPI = gsub("^.*PI:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                        RGDT = gsub("^.*DT:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                        RGSM = gsub("^.*SM:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                        RGCN = gsub("^.*CN:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                        stringsAsFactors = F) %>%
+  mutate(RGPI = ifelse(RGPI == 0, 0, NA)) %>%
+  left_join(select(df, file_uuid, aliquot_id)) %>%
+  select(file_uuid, aliquot_id, everything())
+
+### aliquots
+aliquots = df %>% select(sample_id, aliquot_uuid, aliquot_id, portion, analyte_type, analysis_type) %>% distinct()
+
+## Samples
+samples = df %>% select(case_id, sample_id, sample_type = sample_type_code) %>% distinct()
+
+### Cases
+cases = df %>% select(case_id, project_id = case_project)
+
+## Pairs
+p1 = samples %>% filter(sample_type %in% c("TP", "NB")) %>% 
+  spread(sample_type, sample_id) %>%
+  mutate(pair_id = TP) %>%
+  select(case_id, pair_id, tumor_sample_id = TP, normal_sample_id = NB)
+
+p2 = samples %>% filter(sample_type %in% c("R1", "NB")) %>%
+  spread(sample_type, sample_id) %>%
+  mutate(pair_id = R1) %>%
+  select(case_id, pair_id, tumor_sample_id = R1, normal_sample_id = NB)
+
+p3 = samples %>% filter(sample_type %in% c("R2", "NB")) %>%
+  spread(sample_type, sample_id) %>%
+  mutate(pair_id = R2) %>%
+  select(case_id, pair_id, tumor_sample_id = R2, normal_sample_id = NB)
+
+pairs = rbind(p1,p2,p3) %>% filter(complete.cases(tumor_sample_id, normal_sample_id))
+
+write(jsonlite::toJSON(cases, pretty = T), file = "data/manifest/tcga/cases.json")
+write(jsonlite::toJSON(samples, pretty = T), file = "data/manifest/tcga/samples.json")
+write(jsonlite::toJSON(aliquots, pretty = T), file = "data/manifest/tcga/aliquots.json")
+write(jsonlite::toJSON(readgroups, pretty = T), file = "data/manifest/tcga/readgroups.json")
+write(jsonlite::toJSON(pairs, pretty = T), file = "data/manifest/tcga/pairs.json")
