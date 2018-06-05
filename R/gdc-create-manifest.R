@@ -8,7 +8,12 @@ library(tidyverse)
 
 setwd("/Volumes/Helix-Projects/GLASS-WG")
 
-unpaired_json = "data/ref/TCGA_WGS_GDC_legacy_UUIDs.json"
+cases_json      = "data/manifest/tcga/cases.json"
+samples_json    = "data/manifest/tcga/samples.json"
+aliquots_json   = "data/manifest/tcga/aliquots.json"
+readgroups_json = "data/manifest/tcga/readgroups.json"
+files_json      = "data/manifest/tcga/files.json"
+pairs_json      = "data/manifest/tcga/pairs.json"
 
 ## Make sure to include case ids
 # "cases.project.project_id" = project (eg. TCGA-LGG)
@@ -64,6 +69,18 @@ filtered_files = df %>%
          sample_type_code = recode_factor(substr(aliquot_id, 14,16), "01A" = "TP", "01B" = "TP", "02A" = "R1", "02B" = "R2", "10A" = "NB", "10B" = "NB", "10D" = "NB"))
 
 ## Insert readgroups
+rgs = readLines('data/ref/TCGA_BAM_readgroups.txt')
+rgs = data.frame(id = basename(dirname(gsub("\\t@RG.*$","",rgs))),
+                 RGID = gsub("^.*ID:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                 RGPL = gsub("^.*PL:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                 RGPU = gsub("^.*PU:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                 RGLB = gsub("^.*LB:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                 RGPI = gsub("^.*PI:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                 RGDT = gsub("^.*DT:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                 RGSM = gsub("^.*SM:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                 RGCN = gsub("^.*CN:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T)) %>%
+  mutate(RGPI = ifelse(RGPI == 0, 0, NA))
+
 rgs = read.delim('data/ref/TCGA_BAM_readgroups.txt', as.is = T, header = F)
 rgs = rgs %>% mutate(id = basename(dirname(V1)),
                      rg_ID = gsub("ID\\:","", V3),
@@ -90,7 +107,9 @@ nested_filtered_files_rgs = filtered_files_rgs %>%
 jsonlite::toJSON(nested_filtered_files_rgs, pretty = T)
 write(jsonlite::toJSON(nested_filtered_files_rgs, pretty = T), file = unpaired_json)
 
-# paired_files = filtered_files %>%
-#   mutate(sample_type_numeric = recode_factor(substr(aliquot_id, 14,16), "01A" = "P", "01B" = "P", "02A" = "R1", "02B" = "R2", "10A" = "N", "10B" = "N", "10D" = "N")) %>%
-#   select(case_id, project, sample_type_numeric, id) %>%
-#   spread(sample_type_numeric, id)
+tmp = jsonlite::read_json("data/ref/TCGA_WGS_GDC_legacy_UUIDs.json", simplifyVector=T)
+df = tmp %>% unnest(samples) %>%
+  unnest(files) %>%
+  unnest(readgroups)
+
+cases =
