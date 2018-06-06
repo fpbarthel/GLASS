@@ -131,22 +131,31 @@ samples = df %>% select(case_id, sample_id, sample_type = sample_type_code) %>% 
 cases = df %>% select(case_id, project_id = case_project)
 
 ## Pairs
-p1 = samples %>% filter(sample_type %in% c("TP", "NB")) %>% 
-  spread(sample_type, sample_id) %>%
+p1 = samples %>% 
+  left_join(aliquots) %>%
+  select(sample_type, aliquot_id, case_id) %>%
+  filter(sample_type %in% c("TP", "NB")) %>% 
+  spread(sample_type, aliquot_id) %>%
   mutate(pair_id = TP) %>%
-  select(case_id, pair_id, tumor_sample_id = TP, normal_sample_id = NB)
+  select(case_id, pair_id, tumor_aliquot_id = TP, normal_aliquot_id = NB)
 
-p2 = samples %>% filter(sample_type %in% c("R1", "NB")) %>%
-  spread(sample_type, sample_id) %>%
+p2 = samples %>% 
+  left_join(aliquots) %>%
+  select(sample_type, aliquot_id, case_id) %>%
+  filter(sample_type %in% c("R1", "NB")) %>%
+  spread(sample_type, aliquot_id) %>%
   mutate(pair_id = R1) %>%
-  select(case_id, pair_id, tumor_sample_id = R1, normal_sample_id = NB)
+  select(case_id, pair_id, tumor_aliquot_id = R1, normal_aliquot_id = NB)
 
-p3 = samples %>% filter(sample_type %in% c("R2", "NB")) %>%
-  spread(sample_type, sample_id) %>%
+p3 = samples %>% 
+  left_join(aliquots) %>%
+  select(sample_type, aliquot_id, case_id) %>%
+  filter(sample_type %in% c("R2", "NB")) %>%
+  spread(sample_type, aliquot_id) %>%
   mutate(pair_id = R2) %>%
-  select(case_id, pair_id, tumor_sample_id = R2, normal_sample_id = NB)
+  select(case_id, pair_id, tumor_aliquot_id = R2, normal_aliquot_id = NB)
 
-pairs = rbind(p1,p2,p3) %>% filter(complete.cases(tumor_sample_id, normal_sample_id))
+pairs = rbind(p1,p2,p3) %>% filter(complete.cases(tumor_aliquot_id, normal_aliquot_id))
 
 write(jsonlite::toJSON(files, pretty = T), file = "data/manifest/tcga/files.json")
 write(jsonlite::toJSON(cases, pretty = T), file = "data/manifest/tcga/cases.json")

@@ -33,6 +33,64 @@ CLUSTER_META    = json.load(open(config["cluster_json"]))
 ## JSON processing
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+# BAM_FILES = {}
+# BAM_FILES_UUIDS = {} ## Not nessecary, used together with BAM FILES (only one needed)
+# BAM_READGROUPS = {}
+# ALL_READGROUPS = {} ## Consider merge with BAM_RG
+# READGROUP_SAMPLE = {} ## Not used
+# FQ_FILES = {}
+# SAMPLES = [] ## Not used
+# PONBYBATCH = {} ## Not used
+
+# PAIR_TO_TUMOR = { "A" : "testT-A" }
+# PAIR_TO_NORMAL = { "A" : "testN-A" }
+# PAIR_TO_BATCH = { "A" : "test"}
+# BATCH_TO_NORMAL = { "test" : [ "testN-A" ]}
+
+# RGPL = {}
+# RGPU = {}
+# RGLB = {}
+# RGDT = {}
+# RGSM = {}
+# RGCN = {}
+
+# for case in SAMPLES_META:
+#     if case["case_project"] not in PONBYBATCH:
+#         PONBYBATCH[case["case_project"]] = []
+#     for sample in case["samples"]:
+#         if sample["sample_type"] == "Blood Derived Normal":
+#             PONBYBATCH[case["case_project"]].append(sample["sample_id"])
+#         SAMPLES.append(sample["sample_id"])
+#         FQ_FILES[sample["sample_id"]] = {}
+#         RGPL[sample["sample_id"]] = {}
+#         RGPU[sample["sample_id"]] = {}
+#         RGLB[sample["sample_id"]] = {}
+#         RGDT[sample["sample_id"]] = {}
+#         RGSM[sample["sample_id"]] = {}
+#         RGCN[sample["sample_id"]] = {}
+#         for file in sample["files"]:
+#             if file["file_format"] == "BAM":
+#                 BAM_FILES[sample["sample_id"]] = file["file_name"]
+#                 BAM_FILES_UUIDS[sample["sample_id"]] = file["file_uuid"]
+#                 BAM_READGROUPS[sample["sample_id"]] = [readgroup["rg_ID"] for readgroup in file["readgroups"]]
+#                 ALL_READGROUPS[sample["sample_id"]] = [readgroup["rg_ID"] for readgroup in file["readgroups"]]
+#                 for readgroup in file["readgroups"]:
+#                     READGROUP_SAMPLE[readgroup["rg_ID"]] = sample["sample_id"]
+#             if file["file_format"] == "FQ":
+#                 FQ_FILES[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["file_name"].split(",")
+#                 RGPL[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_PL"]
+#                 RGPU[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_PU"]
+#                 RGLB[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_LB"]
+#                 RGDT[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_DT"]
+#                 RGSM[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_SM"]
+#                 RGCN[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_CN"]
+#                 if sample["sample_id"] in ALL_READGROUPS:
+#                     ALL_READGROUPS[sample["sample_id"]].append(file["readgroups"][0]["rg_ID"])
+#                 else:
+#                     ALL_READGROUPS[sample["sample_id"]] = [ file["readgroups"][0]["rg_ID"] ]
+
+# FQ_FILES = dict((sample,readgroup) for sample,readgroup in FQ_FILES.items() if len(readgroup)>0)
+
 # @sbamin Unless already implemented, we should be explicitly checking json input for 1. non-empty variables, and 2. unique RGID and RGPU but an identical RGSM tags, e.g., https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L25 We can either check it upfront while making json or more preferable to check just before snakemake submits a workflow per case or sample. That way, snakemake should STOP with error or emit WARN for non-compliant RG format. This is more practical if input is FQ and not BAM unless we already have RG info for BAM file.
 
 WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in range(50)]
