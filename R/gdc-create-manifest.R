@@ -102,7 +102,7 @@ df = tmp %>% unnest(samples) %>%
 
 files = df %>% 
   mutate(file_path = sprintf("/fastscratch/barthf/GLASS-WG/download/%s/%s", file_uuid, file_name)) %>%
-  select(file_path, file_name, file_uuid, file_size, file_md5sum, file_format) %>%
+  select(aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format) %>%
   distinct()
 
 ## Readgroups
@@ -118,7 +118,7 @@ readgroups = data.frame(file_uuid = basename(dirname(gsub("\\t@RG.*$","",rgs))),
                         RGCN = gsub("^.*CN:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
                         stringsAsFactors = F) %>%
   mutate(RGPI = ifelse(RGPI == 0, 0, NA)) %>%
-  left_join(select(df, file_uuid, aliquot_id)) %>%
+  left_join(select(files, file_uuid, aliquot_id)) %>%
   select(file_uuid, aliquot_id, everything())
 
 ### aliquots
@@ -148,6 +148,7 @@ p3 = samples %>% filter(sample_type %in% c("R2", "NB")) %>%
 
 pairs = rbind(p1,p2,p3) %>% filter(complete.cases(tumor_sample_id, normal_sample_id))
 
+write(jsonlite::toJSON(files, pretty = T), file = "data/manifest/tcga/files.json")
 write(jsonlite::toJSON(cases, pretty = T), file = "data/manifest/tcga/cases.json")
 write(jsonlite::toJSON(samples, pretty = T), file = "data/manifest/tcga/samples.json")
 write(jsonlite::toJSON(aliquots, pretty = T), file = "data/manifest/tcga/aliquots.json")

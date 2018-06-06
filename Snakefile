@@ -37,63 +37,79 @@ CLUSTER_META    = json.load(open(config["cluster_json"]))
 
 WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in range(50)]
 
-BAM_FILES = {}
-BAM_FILES_UUIDS = {}
-BAM_READGROUPS = {}
-ALL_READGROUPS = {}
-READGROUP_SAMPLE = {}
-FQ_FILES = {}
-SAMPLES = []
-PONBYBATCH = {}
+## Turn an unnamed list of dicts into a nammed list of dicts
+## Taken from stackoverflow
+## https://stackoverflow.com/questions/4391697/find-the-index-of-a-dict-within-a-list-by-matching-the-dicts-value
+def build_dict(seq, key):
+    return dict((d[key], dict(d, index=index)) for (index, d) in enumerate(seq))
 
-PAIR_TO_TUMOR = { "A" : "testT-A" }
-PAIR_TO_NORMAL = { "A" : "testN-A" }
-PAIR_TO_BATCH = { "A" : "test"}
-BATCH_TO_NORMAL = { "test" : [ "testN-A" ]}
+## CASES should be unique
+## CHECK THAT ALL CASE_ID VALUES IN CASES ARE UNIQUE
+## IN PROGRESS
 
-RGPL = {}
-RGPU = {}
-RGLB = {}
-RGDT = {}
-RGSM = {}
-RGCN = {}
 
-for case in SAMPLES_META:
-    if case["case_project"] not in PONBYBATCH:
-        PONBYBATCH[case["case_project"]] = []
-    for sample in case["samples"]:
-        if sample["sample_type"] == "Blood Derived Normal":
-            PONBYBATCH[case["case_project"]].append(sample["sample_id"])
-        SAMPLES.append(sample["sample_id"])
-        FQ_FILES[sample["sample_id"]] = {}
-        RGPL[sample["sample_id"]] = {}
-        RGPU[sample["sample_id"]] = {}
-        RGLB[sample["sample_id"]] = {}
-        RGDT[sample["sample_id"]] = {}
-        RGSM[sample["sample_id"]] = {}
-        RGCN[sample["sample_id"]] = {}
-        for file in sample["files"]:
-            if file["file_format"] == "BAM":
-                BAM_FILES[sample["sample_id"]] = file["file_name"]
-                BAM_FILES_UUIDS[sample["sample_id"]] = file["file_uuid"]
-                BAM_READGROUPS[sample["sample_id"]] = [readgroup["rg_ID"] for readgroup in file["readgroups"]]
-                ALL_READGROUPS[sample["sample_id"]] = [readgroup["rg_ID"] for readgroup in file["readgroups"]]
-                for readgroup in file["readgroups"]:
-                    READGROUP_SAMPLE[readgroup["rg_ID"]] = sample["sample_id"]
-            if file["file_format"] == "FQ":
-                FQ_FILES[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["file_name"].split(",")
-                RGPL[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_PL"]
-                RGPU[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_PU"]
-                RGLB[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_LB"]
-                RGDT[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_DT"]
-                RGSM[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_SM"]
-                RGCN[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_CN"]
-                if sample["sample_id"] in ALL_READGROUPS:
-                    ALL_READGROUPS[sample["sample_id"]].append(file["readgroups"][0]["rg_ID"])
-                else:
-                    ALL_READGROUPS[sample["sample_id"]] = [ file["readgroups"][0]["rg_ID"] ]
+## FILES -> FILE_UUID should be unique
+## CHECK THAT ALL FILE_UUID VALUES IN FILES ARE UNIQUE
+## IN PROGRESS
 
-FQ_FILES = dict((sample,readgroup) for sample,readgroup in FQ_FILES.items() if len(readgroup)>0)
+
+## PAIR -> PAIR_ID should be unique
+## CHECK THAT ALL PAIR_ID VALUES IN PAIR ARE UNIQUE
+## IN PROGRESS
+
+
+## CASES -> DICT
+CASES_DICT = build_dict(CASES, "case_id")
+
+
+## FILES -> DICT
+FILES_DICT = build_dict(FILES, "file_uuid")
+
+
+## Pair IDs are unique, PAIRS -> DICT
+PAIRS_DICT = build_dict(PAIRS, "pair_id")
+
+
+## Aliquot IDs and BAM files map 1:1
+ALIQUOT_TO_BAM_PATH = {}
+for file in FILES:
+    if file["file_format"] == "BAM":
+        ALIQUOT_TO_BAM_PATH[ file["aliquot_id"] ] = file["file_path"]
+
+
+## Aliquots and RGIDs map 1:many
+ALIQUOT_TO_RGID = {}        
+for readgroup in READGROUPS:
+    if readgroup["aliquot_id"] not in ALIQUOT_TO_RGID:
+        ALIQUOT_TO_RGID[ readgroup["aliquot_id"] ] = [ readgroup["RGID"] ]
+    else:
+        ALIQUOT_TO_RGID[ readgroup["aliquot_id"] ].append(readgroup["RGID"])
+
+
+## Batches and normal aliquot IDs map 1:many
+## Normal aliquot IDs are repeated across multiple pairs from same case
+## Each pair has one normal and one tumor
+BATCH_TO_NORMAL = {}
+for pair in PAIRS:
+    pair["project_id"] = CASES_DICT[ pair["case_id"] ]["project_id"]
+    if pair["project_id"] not in BATCH_TO_NORMAL:
+        BATCH_TO_NORMAL[ pair["project_id"] ] = [ pair["normal_sample_id"] ]
+    elif pair["normal_sample_id"] not in BATCH_TO_NORMAL[ pair["project_id"] ]:
+        BATCH_TO_NORMAL[ pair["project_id"] ].append(pair["normal_sample_id"])
+        
+
+## Readgroup information and 
+## Aliquots and RGIDs map 1:many
+## RGIDs are unique within an aliquot
+## Aliquot IDs and fastQ files map 1:many
+ALIQUOT_TO_READGROUP = {} 
+for readgroup in READGROUPS:
+    if readgroup["aliquot_id"] not in ALIQUOT_TO_READGROUP:
+        ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ] = { readgroup["RGID"] : readgroup }
+    else:
+        ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ] = readgroup
+    ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_path"] = FILES_DICT[ ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_uuid"] ]["file_path"]
+    ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_format"] = FILES_DICT[ ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_uuid"] ]["file_format"]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
@@ -172,30 +188,30 @@ rule download:
 
 rule revertsam:
     input:
-        lambda wildcards: "download/{uuid}/{file}".format(uuid=BAM_FILES_UUIDS[wildcards.sample_id], file=BAM_FILES[wildcards.sample_id])
+        lambda wildcards: "download/{uuid}/{file}".format(uuid=BAM_FILES_UUIDS[wildcards.aliquot_id], file=BAM_FILES[wildcards.aliquot_id])
     output:
-        map = "results/ubam/{sample_id}/{sample_id}.output_map.txt",
-        bams = temp(expand("results/ubam/{{sample_id}}/{{sample_id}}.{rg}.bam", rg=list(itertools.chain.from_iterable(BAM_READGROUPS.values()))))
+        map = "results/ubam/{aliquot_id}/{aliquot_id}.output_map.txt",
+        bams = temp(expand("results/ubam/{{aliquot_id}}/{{aliquot_id}}.{rg}.bam", rg=list(itertools.chain.from_iterable(BAM_READGROUPS.values()))))
     params:
-        dir = "results/ubam/{sample_id}",
+        dir = "results/ubam/{aliquot_id}",
         mem = CLUSTER_META["revertsam"]["mem"]
     log: 
-        "logs/revertsam/{sample_id}.log"
+        "logs/revertsam/{aliquot_id}.log"
     threads:
         CLUSTER_META["revertsam"]["ppn"]
     benchmark:
-        "benchmarks/revertsam/{sample_id}.txt"
+        "benchmarks/revertsam/{aliquot_id}.txt"
     message:
         "Reverting sample back to unaligned BAM file, stripping any previous "
         "pre-processing and restoring original base quality scores. Output files are split "
         "by readgroup.\n"
-        "Sample: {wildcards.sample_id}"
+        "Sample: {wildcards.aliquot_id}"
     run:
         ## Create a readgroup name / filename mapping file
         rgmap = pd.DataFrame(
             {
-                "READ_GROUP_ID": BAM_READGROUPS[wildcards["sample_id"]],
-                "OUTPUT": ["results/ubam/{sample}/{sample}.{rg}.bam".format(sample=wildcards["sample_id"], rg=rg) for rg in BAM_READGROUPS[wildcards["sample_id"]]]
+                "READ_GROUP_ID": BAM_READGROUPS[wildcards["aliquot_id"]],
+                "OUTPUT": ["results/ubam/{sample}/{sample}.{rg}.bam".format(sample=wildcards["aliquot_id"], rg=rg) for rg in BAM_READGROUPS[wildcards["aliquot_id"]]]
             },
             columns = ["READ_GROUP_ID", "OUTPUT"]
         )
@@ -203,7 +219,7 @@ rule revertsam:
 
         ## Create empty files ("touch") for readgroups not in this BAM file
         ## Workaround for issue documented here: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
-        other_rg_f = ["results/ubam/{sample}/{sample}.{rg}.bam".format(sample=wildcards["sample_id"],rg=rg) for sample, rgs in BAM_READGROUPS.items() for rg in rgs if sample not in wildcards["sample_id"]]
+        other_rg_f = ["results/ubam/{sample}/{sample}.{rg}.bam".format(sample=wildcards["aliquot_id"],rg=rg) for sample, rgs in BAM_READGROUPS.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
         for f in other_rg_f:
             touch(f)
 
@@ -234,28 +250,28 @@ rule revertsam:
 
 rule fq2ubam:
     input:
-        R1 = lambda wildcards: "fastq/{sample}/{file}".format(sample=wildcards.sample_id, file=FQ_FILES[wildcards.sample_id][wildcards.readgroup][0]),
-        R2 = lambda wildcards: "fastq/{sample}/{file}".format(sample=wildcards.sample_id, file=FQ_FILES[wildcards.sample_id][wildcards.readgroup][1])
+        R1 = lambda wildcards: "fastq/{sample}/{file}".format(sample=wildcards.aliquot_id, file=FQ_FILES[wildcards.aliquot_id][wildcards.readgroup][0]),
+        R2 = lambda wildcards: "fastq/{sample}/{file}".format(sample=wildcards.aliquot_id, file=FQ_FILES[wildcards.aliquot_id][wildcards.readgroup][1])
     output:
-        temp("results/ubam/{sample_id}/{sample_id}.{readgroup}.bam")
+        temp("results/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.bam")
     params:
         RGID = lambda wildcards: wildcards.readgroup,
-        RGPL = lambda wildcards: RGPL[wildcards.sample_id][wildcards.readgroup],
-        RGPU = lambda wildcards: RGPU[wildcards.sample_id][wildcards.readgroup],
-        RGLB = lambda wildcards: RGLB[wildcards.sample_id][wildcards.readgroup],
-        RGDT = lambda wildcards: RGDT[wildcards.sample_id][wildcards.readgroup],
-        RGSM = lambda wildcards: RGSM[wildcards.sample_id][wildcards.readgroup],
-        RGCN = lambda wildcards: RGCN[wildcards.sample_id][wildcards.readgroup],
+        RGPL = lambda wildcards: RGPL[wildcards.aliquot_id][wildcards.readgroup],
+        RGPU = lambda wildcards: RGPU[wildcards.aliquot_id][wildcards.readgroup],
+        RGLB = lambda wildcards: RGLB[wildcards.aliquot_id][wildcards.readgroup],
+        RGDT = lambda wildcards: RGDT[wildcards.aliquot_id][wildcards.readgroup],
+        RGSM = lambda wildcards: RGSM[wildcards.aliquot_id][wildcards.readgroup],
+        RGCN = lambda wildcards: RGCN[wildcards.aliquot_id][wildcards.readgroup],
         mem = CLUSTER_META["fq2ubam"]["mem"]
     log:
-        "logs/fq2ubam/{sample_id}.{readgroup}.log"
+        "logs/fq2ubam/{aliquot_id}.{readgroup}.log"
     threads:
         CLUSTER_META["fq2ubam"]["ppn"]
     benchmark:
-        "benchmarks/fq2ubam/{sample_id}.{readgroup}.txt"
+        "benchmarks/fq2ubam/{aliquot_id}.{readgroup}.txt"
     message:
         "Converting FASTQ file to uBAM format\n"
-        "Sample: {wildcards.sample_id}\n"
+        "Sample: {wildcards.aliquot_id}\n"
         "Readgroup: {wildcards.readgroup}"
     run:
         ## ISODATE=`date +%Y-%m-%dT%H:%M:%S%z`; \
@@ -282,21 +298,21 @@ rule fq2ubam:
 
 rule fastqc:
     input:
-        "results/ubam/{sample_id}/{sample_id}.{readgroup}.bam"
+        "results/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.bam"
     output:
-        "results/qc/{sample_id}/{sample_id}.{readgroup}_fastqc.html"
+        "results/qc/{aliquot_id}/{aliquot_id}.{readgroup}_fastqc.html"
     params:
-        dir = "results/qc/{sample_id}",
+        dir = "results/qc/{aliquot_id}",
         mem = CLUSTER_META["fastqc"]["mem"]
     threads:
         CLUSTER_META["fastqc"]["ppn"]
     log:
-        "logs/fastqc/{sample_id}.{readgroup}.log"
+        "logs/fastqc/{aliquot_id}.{readgroup}.log"
     benchmark:
-        "benchmarks/fastqc/{sample_id}.{readgroup}.txt"
+        "benchmarks/fastqc/{aliquot_id}.{readgroup}.txt"
     message:
         "Running FASTQC\n"
-        "Sample: {wildcards.sample_id}\n"
+        "Sample: {wildcards.aliquot_id}\n"
         "Readgroup: {wildcards.readgroup}"
     shell:
         "fastqc \
@@ -314,10 +330,10 @@ rule fastqc:
 
 rule markadapters:
     input:
-        "results/ubam/{sample_id}/{sample_id}.{readgroup}.bam"
+        "results/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.bam"
     output:
-        bam = temp("results/markadapters/{sample_id}/{sample_id}.{readgroup}.revertsam.markadapters.bam"),
-        metric = "results/markadapters/{sample_id}/{sample_id}.{readgroup}.markadapters.metrics.txt"
+        bam = temp("results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.revertsam.markadapters.bam"),
+        metric = "results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
     params:
         mem = CLUSTER_META["markadapters"]["mem"]
     threads:
@@ -325,12 +341,12 @@ rule markadapters:
     params:
         mem = CLUSTER_META["markadapters"]["mem"]
     log: 
-        dynamic("logs/markadapters/{sample_id}.{readgroup}.log")
+        dynamic("logs/markadapters/{aliquot_id}.{readgroup}.log")
     benchmark:
-        "benchmarks/markadapters/{sample_id}.{readgroup}.txt"
+        "benchmarks/markadapters/{aliquot_id}.{readgroup}.txt"
     message:
         "Adding XT tags. This marks Illumina Adapters and allows them to be removed in later steps\n"
-        "Sample: {wildcards.sample_id}\n"
+        "Sample: {wildcards.aliquot_id}\n"
         "Readgroup: {wildcards.readgroup}"
     shell:
         "gatk --java-options -Xmx{params.mem}g MarkIlluminaAdapters \
@@ -367,24 +383,24 @@ rule markadapters:
 
 rule samtofastq_bwa_mergebamalignment:
     input:
-        bam = "results/markadapters/{sample_id}/{sample_id}.{readgroup}.revertsam.markadapters.bam",
-        metric = "results/markadapters/{sample_id}/{sample_id}.{readgroup}.markadapters.metrics.txt"
+        bam = "results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.revertsam.markadapters.bam",
+        metric = "results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
     output:
-        temp("results/bwa/{sample_id}/{sample_id}.{readgroup}.realn.bam")
+        temp("results/bwa/{aliquot_id}/{aliquot_id}.{readgroup}.realn.bam")
     threads:
         CLUSTER_META["samtofastq_bwa_mergebamalignment"]["ppn"]
     params:
         mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
     log: 
-        "logs/samtofastq_bwa_mergebamalignment/{sample_id}.{readgroup}.log"
+        "logs/samtofastq_bwa_mergebamalignment/{aliquot_id}.{readgroup}.log"
     benchmark:
-        "benchmarks/revertsam/{sample_id}.{readgroup}.txt"
+        "benchmarks/revertsam/{aliquot_id}.{readgroup}.txt"
     message:
         "BAM to FASTQ --> BWA-MEM --> Merge BAM Alignment.\n"
         "The first step converts the reverted BAM to an interleaved FASTQ, removing Illumina "
         "adapters. The output is then piped to BWA-MEM and aligned. Aligned reads are merged "
         "with the original pre-aligned BAM to preserve original metadata, including read groups.\n"
-        "Sample: {wildcards.sample_id}\n"
+        "Sample: {wildcards.aliquot_id}\n"
         "Readgroup: {wildcards.readgroup}"
     shell:
         "gatk --java-options {config[samtofastq_java_opt]} SamToFastq \
@@ -420,22 +436,22 @@ rule samtofastq_bwa_mergebamalignment:
 
 rule markduplicates:
     input:
-        lambda wildcards: expand("results/bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.sample_id, rg=ALL_READGROUPS[wildcards.sample_id]) #get_readgroup_BAMs_sample
+        lambda wildcards: expand("results/bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.aliquot_id, rg=ALL_READGROUPS[wildcards.aliquot_id]) #get_readgroup_BAMs_sample
     output:
-        bam = temp("results/markduplicates/{sample_id}.realn.dedup.bam"),
-        metrics = "results/markduplicates/{sample_id}.metrics.txt"
+        bam = temp("results/markduplicates/{aliquot_id}.realn.dedup.bam"),
+        metrics = "results/markduplicates/{aliquot_id}.metrics.txt"
     params:
         mem = CLUSTER_META["markduplicates"]["mem"]
     threads:
         CLUSTER_META["markduplicates"]["ppn"]
     log:
-        "logs/markduplicates/{sample_id}.log"
+        "logs/markduplicates/{aliquot_id}.log"
     benchmark:
-        "benchmarks/markduplicates/{sample_id}.txt"
+        "benchmarks/markduplicates/{aliquot_id}.txt"
     message:
         "Readgroup-specific BAM files are combined into a single BAM. "
         "Potential PCR duplicates are marked.\n"
-        "Sample: {wildcards.sample_id}"
+        "Sample: {wildcards.aliquot_id}"
     run:
         multi_input = " ".join(["--INPUT=" + s for s in input])
         shell("gatk --java-options -Xmx{params.mem}g MarkDuplicates \
@@ -454,20 +470,20 @@ rule markduplicates:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 rule baserecalibrator:
     input:
-        "results/markduplicates/{sample_id}.realn.dedup.bam"
+        "results/markduplicates/{aliquot_id}.realn.dedup.bam"
     output:
-        "results/bqsr/{sample_id}.bqsr.txt"
+        "results/bqsr/{aliquot_id}.bqsr.txt"
     params:
         mem = CLUSTER_META["baserecalibrator"]["mem"]
     threads:
         CLUSTER_META["baserecalibrator"]["ppn"]
     log:
-        "logs/bqsr/{sample_id}.recal.log"
+        "logs/bqsr/{aliquot_id}.recal.log"
     benchmark:
-        "benchmarks/bqsr/{sample_id}.recal.txt"
+        "benchmarks/bqsr/{aliquot_id}.recal.txt"
     message:
         "Calculating base recalibration scores.\n"
-        "Sample: {wildcards.sample_id}"
+        "Sample: {wildcards.aliquot_id}"
     shell:
         "gatk --java-options -Xmx{params.mem}g BaseRecalibrator \
             -R {config[reference_fasta]} \
@@ -484,21 +500,21 @@ rule baserecalibrator:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 rule applybqsr:
     input:
-        bam = "results/markduplicates/{sample_id}.realn.dedup.bam",
-        bqsr = "results/bqsr/{sample_id}.bqsr.txt"
+        bam = "results/markduplicates/{aliquot_id}.realn.dedup.bam",
+        bqsr = "results/bqsr/{aliquot_id}.bqsr.txt"
     output:
-        protected("results/bqsr/{sample_id}.realn.dedup.bqsr.bam")
+        protected("results/bqsr/{aliquot_id}.realn.dedup.bqsr.bam")
     params:
         mem = CLUSTER_META["applybqsr"]["mem"]
     threads:
         CLUSTER_META["applybqsr"]["ppn"]
     log:
-        "logs/bqsr/{sample_id}.apply.log"
+        "logs/bqsr/{aliquot_id}.apply.log"
     benchmark:
-        "benchmarks/bqsr/{sample_id}.apply.txt"
+        "benchmarks/bqsr/{aliquot_id}.apply.txt"
     message:
         "Applying base recalibration scores and generating final BAM file\n"
-        "Sample: {wildcards.sample_id}"
+        "Sample: {wildcards.aliquot_id}"
     shell:
         "gatk --java-options -Xmx{params.mem}g ApplyBQSR \
             -R {config[reference_fasta]} \
@@ -515,20 +531,20 @@ rule applybqsr:
 
 rule wgsmetrics:
     input:
-        "results/bqsr/{sample_id}.realn.dedup.bqsr.bam"
+        "results/bqsr/{aliquot_id}.realn.dedup.bqsr.bam"
     output:
-        "results/qc/{sample_id}.WgsMetrics.txt"
+        "results/qc/{aliquot_id}.WgsMetrics.txt"
     params:
         mem = CLUSTER_META["wgsmetrics"]["mem"]
     threads:
         CLUSTER_META["wgsmetrics"]["ppn"]
     log:
-        "logs/wgsmetrics/{sample_id}.WgsMetrics.log"
+        "logs/wgsmetrics/{aliquot_id}.WgsMetrics.log"
     benchmark:
-        "benchmarks/wgsmetrics/{sample_id}.WgsMetrics.txt"
+        "benchmarks/wgsmetrics/{aliquot_id}.WgsMetrics.txt"
     message:
         "Computing WGS Metrics\n"
-        "Sample: {wildcards.sample_id}"
+        "Sample: {wildcards.aliquot_id}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CollectWgsMetrics \
             -R {config[reference_fasta]} \
@@ -539,20 +555,20 @@ rule wgsmetrics:
 
 rule validatebam:
     input:
-        "results/bqsr/{sample_id}.realn.dedup.bqsr.bam"
+        "results/bqsr/{aliquot_id}.realn.dedup.bqsr.bam"
     output:
-        "results/qc/{sample_id}.ValidateSamFile.txt"
+        "results/qc/{aliquot_id}.ValidateSamFile.txt"
     params:
         mem = CLUSTER_META["validatebam"]["mem"]
     threads:
         CLUSTER_META["validatebam"]["ppn"]
     log:
-        "logs/validatebam/{sample_id}.ValidateSamFile.log"
+        "logs/validatebam/{aliquot_id}.ValidateSamFile.log"
     benchmark:
-        "benchmarks/validatebam/{sample_id}.ValidateSamFile.txt"
+        "benchmarks/validatebam/{aliquot_id}.ValidateSamFile.txt"
     message:
         "Validating BAM file\n"
-        "Sample: {wildcards.sample_id}"
+        "Sample: {wildcards.aliquot_id}"
     shell:
         "gatk --java-options -Xmx{params.mem}g ValidateSamFile \
             -I {input} \
@@ -601,22 +617,22 @@ rule multiqc:
 
 rule callpon:
     input:
-        bam = "results/bqsr/{sample_id}.realn.dedup.bqsr.bam",
+        bam = "results/bqsr/{aliquot_id}.realn.dedup.bqsr.bam",
         intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
     output:
-        "results/callpon/{batch}/{sample_id}/{sample_id}.{interval}.pon.vcf"
+        "results/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf"
     params:
         mem = CLUSTER_META["callpon"]["mem"]
     threads:
         CLUSTER_META["callpon"]["ppn"]
     log:
-        "logs/callpon/{batch}.{sample_id}.{interval}.log"
+        "logs/callpon/{batch}.{aliquot_id}.{interval}.log"
     benchmark:
-        "benchmarks/callpon/{batch}.{sample_id}.{interval}.txt"
+        "benchmarks/callpon/{batch}.{aliquot_id}.{interval}.txt"
     message:
         "Calling Mutect2 in tumor-only mode to build a panel of normals\n"
         "Batch: {wildcards.batch}\n"
-        "Sample: {wildcards.sample_id}\n"
+        "Sample: {wildcards.aliquot_id}\n"
         "Interval: {wildcards.interval}"
     shell:
         "TUMOR_SM=`samtools view -H {input} | grep '^@RG' | sed \"s/.*SM:\\([^\\t]*\\).*/\\1/g\" | uniq`; \
@@ -634,20 +650,20 @@ rule callpon:
 
 rule mergepon:
     input:
-        lambda wildcards: expand("results/callpon/{batch}/{sample_id}/{sample_id}.{interval}.pon.vcf", batch=wildcards.batch, sample_id=wildcards.sample_id, interval=WGS_SCATTERLIST)
+        lambda wildcards: expand("results/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf", batch=wildcards.batch, aliquot_id=wildcards.aliquot_id, interval=WGS_SCATTERLIST)
     output:
-        "results/mergepon/{batch}/{sample_id}.pon.vcf"
+        "results/mergepon/{batch}/{aliquot_id}.pon.vcf"
     params:
         mem = CLUSTER_META["mergepon"]["mem"]
     threads:
         CLUSTER_META["mergepon"]["ppn"]
     log:
-        "logs/mergepon/{sample_id}.log"
+        "logs/mergepon/{aliquot_id}.log"
     benchmark:
-        "benchmarks/mergepon/{sample_id}.txt"
+        "benchmarks/mergepon/{aliquot_id}.txt"
     message:
         "Merging VCF files (PON)\n"
-        "Sample: {wildcards.sample_id}"
+        "Sample: {wildcards.aliquot_id}"
     run:
         input_cat = " ".join(["-I " + s for s in input])
         shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
@@ -657,7 +673,7 @@ rule mergepon:
 
 rule createpon:
     input:
-        lambda wildcards: expand("results/mergepon/{batch}/{sample_id}.pon.vcf", batch=wildcards.batch, sample_id=BATCH_TO_NORMAL[wildcards.batch])
+        lambda wildcards: expand("results/mergepon/{batch}/{aliquot_id}.pon.vcf", batch=wildcards.batch, aliquot_id=BATCH_TO_NORMAL[wildcards.batch])
     output:
         "results/pon/{batch}.pon.vcf"
     params:
@@ -694,8 +710,8 @@ rule createpon:
 
 rule callsnv:
     input:
-        tumor = lambda wildcards: "results/bqsr/{sample_id}.realn.dedup.bqsr.bam".format(sample_id=PAIR_TO_TUMOR[wildcards.pair_id]),
-        normal = lambda wildcards: "results/bqsr/{sample_id}.realn.dedup.bqsr.bam".format(sample_id=PAIR_TO_NORMAL[wildcards.pair_id]),
+        tumor = lambda wildcards: "results/bqsr/{aliquot_id}.realn.dedup.bqsr.bam".format(aliquot_id=PAIR_TO_TUMOR[wildcards.pair_id]),
+        normal = lambda wildcards: "results/bqsr/{aliquot_id}.realn.dedup.bqsr.bam".format(aliquot_id=PAIR_TO_NORMAL[wildcards.pair_id]),
         pon = lambda wildcards: "results/pon/{batch}.pon.vcf".format(batch=PAIR_TO_BATCH[wildcards.pair_id]),
         intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
     output:
@@ -766,20 +782,20 @@ rule mergesnv:
 
 rule pileupsummaries:
     input:
-        "results/bqsr/{sample_id}.realn.dedup.bqsr.bam"
+        "results/bqsr/{aliquot_id}.realn.dedup.bqsr.bam"
     output:
-        "results/pileupsummaries/{sample_id}.pileupsummaries.txt"
+        "results/pileupsummaries/{aliquot_id}.pileupsummaries.txt"
     params:
         mem = CLUSTER_META["pileupsummaries"]["mem"]
     threads:
         CLUSTER_META["pileupsummaries"]["ppn"]
     log:
-        "logs/pileupsummaries/{sample_id}.log"
+        "logs/pileupsummaries/{aliquot_id}.log"
     benchmark:
-        "benchmarks/pileupsummaries/{sample_id}.txt"
+        "benchmarks/pileupsummaries/{aliquot_id}.txt"
     message:
         "Generating pileupsummaries\n"
-        "Sample: {wildcards.sample_id}"
+        "Sample: {wildcards.aliquot_id}"
     shell:
         "gatk --java-options -Xmx{params.mem}g GetPileupSummaries \
             -I {input} \
@@ -797,8 +813,8 @@ rule pileupsummaries:
 
 rule calculatecontamination:
     input:
-        tumortable = lambda wildcards: "results/pileupsummaries/{sample_id}.pileupsummaries.txt".format(sample_id=PAIR_TO_TUMOR[wildcards.pair_id]),
-        normaltable = lambda wildcards: "results/pileupsummaries/{sample_id}.pileupsummaries.txt".format(sample_id=PAIR_TO_NORMAL[wildcards.pair_id]),
+        tumortable = lambda wildcards: "results/pileupsummaries/{aliquot_id}.pileupsummaries.txt".format(aliquot_id=PAIR_TO_TUMOR[wildcards.pair_id]),
+        normaltable = lambda wildcards: "results/pileupsummaries/{aliquot_id}.pileupsummaries.txt".format(aliquot_id=PAIR_TO_NORMAL[wildcards.pair_id]),
     output:
         "results/contamination/{pair_id}.contamination.txt"
     params:
@@ -853,21 +869,21 @@ rule filtermutect:
 
 rule collectartifacts:
     input:
-        "results/bqsr/{sample_id}.realn.dedup.bqsr.bam"
+        "results/bqsr/{aliquot_id}.realn.dedup.bqsr.bam"
     output:
-        "results/artifacts/{sample_id}.pre_adapter_detail_metrics.txt"
+        "results/artifacts/{aliquot_id}.pre_adapter_detail_metrics.txt"
     params:
-        prefix = "results/artifacts/{sample_id}",
+        prefix = "results/artifacts/{aliquot_id}",
         mem = CLUSTER_META["collectartifacts"]["mem"]
     threads:
         CLUSTER_META["collectartifacts"]["ppn"]
     log:
-        "logs/collectartifacts/{sample_id}.log"
+        "logs/collectartifacts/{aliquot_id}.log"
     benchmark:
-        "benchmarks/collectartifacts/{sample_id}.txt"
+        "benchmarks/collectartifacts/{aliquot_id}.txt"
     message:
         "Collecting sequencing artifact metrics\n"
-        "Sample: {wildcards.sample_id}"
+        "Sample: {wildcards.aliquot_id}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CollectSequencingArtifactMetrics \
             -I {input} \
@@ -882,7 +898,7 @@ rule collectartifacts:
 
 rule filterorientation:
     input:
-        art = lambda wildcards: "results/artifacts/{sample_id}.pre_adapter_detail_metrics.txt".format(sample_id=PAIR_TO_TUMOR[wildcards.pair_id]),
+        art = lambda wildcards: "results/artifacts/{aliquot_id}.pre_adapter_detail_metrics.txt".format(aliquot_id=PAIR_TO_TUMOR[wildcards.pair_id]),
         vcf = "results/m2filter/{pair_id}.filtered.vcf"
     output:
         "results/m2filter/{pair_id}.filtered2.vcf"
@@ -914,8 +930,8 @@ rule filterorientation:
 
 rule vep:
     input:
-        tumor = lambda wildcards: "results/bqsr/{sample_id}.realn.dedup.bqsr.bam".format(sample_id=PAIR_TO_TUMOR[wildcards.pair_id]),
-        normal = lambda wildcards: "results/bqsr/{sample_id}.realn.dedup.bqsr.bam".format(sample_id=PAIR_TO_NORMAL[wildcards.pair_id]),
+        tumor = lambda wildcards: "results/bqsr/{aliquot_id}.realn.dedup.bqsr.bam".format(aliquot_id=PAIR_TO_TUMOR[wildcards.pair_id]),
+        normal = lambda wildcards: "results/bqsr/{aliquot_id}.realn.dedup.bqsr.bam".format(aliquot_id=PAIR_TO_NORMAL[wildcards.pair_id]),
         vcf = "results/m2filter/{pair_id}.filtered2.vcf"
     output:
         "results/vep/{pair_id}.filtered2.anno.maf"
