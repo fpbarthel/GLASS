@@ -10,6 +10,8 @@ gdc_token: "/home/barthf/gdc-user-token.2018-05-23T11_13_25-04_00.txt"
 ## Temporary directory
 tempdir: "/fastscratch/barthf/GLASS-WG/tmp"
 
+wgs_scatterdir: "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50"
+
 ## GnomAD VCF file
 gnomad_vcf: "/projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz"
 

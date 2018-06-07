@@ -8,12 +8,15 @@ library(tidyverse)
 
 setwd("/Volumes/Helix-Projects/GLASS-WG")
 
-cases_json      = "data/manifest/tcga/cases.json"
-samples_json    = "data/manifest/tcga/samples.json"
-aliquots_json   = "data/manifest/tcga/aliquots.json"
-readgroups_json = "data/manifest/tcga/readgroups.json"
-files_json      = "data/manifest/tcga/files.json"
-pairs_json      = "data/manifest/tcga/pairs.json"
+cases_file      = "data/manifest/tcga/cases"
+samples_file    = "data/manifest/tcga/samples"
+aliquots_file   = "data/manifest/tcga/aliquots"
+readgroups_file = "data/manifest/tcga/readgroups"
+files_file      = "data/manifest/tcga/files"
+pairs_file      = "data/manifest/tcga/pairs"
+
+json_ext = "json"
+text_ext = "tsv"
 
 ## Make sure to include case ids
 # "cases.project.project_id" = project (eg. TCGA-LGG)
@@ -97,7 +100,8 @@ tmp = jsonlite::read_json("data/ref/TCGA_WGS_GDC_legacy_UUIDs.json", simplifyVec
 df = tmp %>% unnest(samples) %>%
   unnest(files) %>%
   unnest(readgroups) %>%
-  mutate(sample_id = sprintf("%s-%s", case_id, sample_type_code)) %>%
+  mutate(legacy_sample_id = sample_id,
+         sample_id = sprintf("%s-%s", case_id, sample_type_code)) %>%
   left_join(df2)
 
 files = df %>% 
@@ -125,7 +129,7 @@ readgroups = data.frame(file_uuid = basename(dirname(gsub("\\t@RG.*$","",rgs))),
 aliquots = df %>% select(sample_id, aliquot_uuid, aliquot_id, portion, analyte_type, analysis_type) %>% distinct()
 
 ## Samples
-samples = df %>% select(case_id, sample_id, sample_type = sample_type_code) %>% distinct()
+samples = df %>% select(case_id, sample_id, legacy_sample_id, sample_type = sample_type_code) %>% distinct()
 
 ### Cases
 cases = df %>% select(case_id, project_id = case_project)
@@ -157,9 +161,37 @@ p3 = samples %>%
 
 pairs = rbind(p1,p2,p3) %>% filter(complete.cases(tumor_aliquot_id, normal_aliquot_id))
 
-write(jsonlite::toJSON(files, pretty = T), file = "data/manifest/tcga/files.json")
-write(jsonlite::toJSON(cases, pretty = T), file = "data/manifest/tcga/cases.json")
-write(jsonlite::toJSON(samples, pretty = T), file = "data/manifest/tcga/samples.json")
-write(jsonlite::toJSON(aliquots, pretty = T), file = "data/manifest/tcga/aliquots.json")
-write(jsonlite::toJSON(readgroups, pretty = T), file = "data/manifest/tcga/readgroups.json")
-write(jsonlite::toJSON(pairs, pretty = T), file = "data/manifest/tcga/pairs.json")
+write(jsonlite::toJSON(files, pretty = T), file = sprintf("%s.%s", files_file, json_ext))
+write(jsonlite::toJSON(cases, pretty = T), file = sprintf("%s.%s", cases_file, json_ext))
+write(jsonlite::toJSON(samples, pretty = T), file = sprintf("%s.%s", samples_file, json_ext))
+write(jsonlite::toJSON(aliquots, pretty = T), file = sprintf("%s.%s", aliquots_file, json_ext))
+write(jsonlite::toJSON(readgroups, pretty = T), file = sprintf("%s.%s", readgroups_file, json_ext))
+write(jsonlite::toJSON(pairs, pretty = T), file = sprintf("%s.%s", pairs_file, json_ext))
+
+write.table(files, file = sprintf("%s.%s", files_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(cases, file = sprintf("%s.%s", cases_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(samples, file = sprintf("%s.%s", samples_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(aliquots, file = sprintf("%s.%s", aliquots_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(readgroups, file = sprintf("%s.%s", readgroups_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(pairs, file = sprintf("%s.%s", pairs_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+
+## Old - new name mapping table
+## hack that works bc for now samples and aliquots map 1:1
+renamemap = samples %>% left_join(aliquots) %>%
+  mutate(old_bam = sprintf("%s.realn.dedup.bqsr.bam",legacy_sample_id),
+         old_bai = sprintf("%s.realn.dedup.bqsr.bai",legacy_sample_id),
+         old_md5 = sprintf("%s.realn.dedup.bqsr.bam.md5",legacy_sample_id),
+         old_bqsr = sprintf("%s.bqsr.txt",legacy_sample_id),
+         new_bam = sprintf("%s.realn.mdup.bqsr.bam",aliquot_id),
+         new_bai = sprintf("%s.realn.mdup.bqsr.bai",aliquot_id),
+         new_md5 = sprintf("%s.realn.mdup.bqsr.bam.md5",aliquot_id),
+         new_bqsr = sprintf("%s.bqsr.txt",aliquot_id)) %>%
+  select(aliquot_id, starts_with("new"), starts_with("old")) %>%
+  gather(starts_with("new"), starts_with("old"), key="var", value="filename") %>%
+  separate(var, into=c("a","file"), sep="_") %>%
+  spread(a, filename) %>%
+  select(old,new)
+
+write.table(renamemap, file="results_bqsr_renamemap.tsv", quote=F, row.names=F, sep="\t")
+
+
