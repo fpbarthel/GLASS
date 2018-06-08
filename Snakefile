@@ -148,8 +148,8 @@ rule all:
 ## Run snakemake with 'snakemake download_only' to activate
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-#rule download_only:
-#    input: expand("download/{uuid}/{file}", zip, uuid=BAM_FILES_UUIDS.values(), file=BAM_FILES.values())
+rule download_only:
+   input: expand("{file}", file=ALIQUOT_TO_BAM_PATH.values())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SNV rule
@@ -183,14 +183,14 @@ rule snv:
 #             -n {threads} \
 #             -t {config[gdc_token]} \
 #             {wildcards.uuid} \
-#             2> {log}"
+#             > {log} 2>&1"
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## RevertSAM and FASTQ-2-uBAM both output uBAM files to the same directory
-## Snakemake needs to be informed which rule takes presidence
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+# ## RevertSAM and FASTQ-2-uBAM both output uBAM files to the same directory
+# ## Snakemake needs to be informed which rule takes presidence
+# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-#ruleorder: revertsam > fq2ubam
+# #ruleorder: revertsam > fq2ubam
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Revert GDC-aligned legacy BAM to unaligned SAM file
@@ -211,61 +211,61 @@ rule snv:
 ## Unlikely this will get fixed any time soon
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule revertsam:
-    input:
-        lambda wildcards: ALIQUOT_TO_BAM_PATH[wildcards.aliquot_id]
-    output:
-        map = "results/ubam/{aliquot_id}/{aliquot_id}.output_map.txt",
-        bams = temp(expand("results/ubam/{{aliquot_id}}/{{aliquot_id}}.{rg}.bam", rg=list(itertools.chain.from_iterable(ALIQUOT_TO_RGID.values()))))
-    params:
-        dir = "results/ubam/{aliquot_id}",
-        mem = CLUSTER_META["revertsam"]["mem"]
-    log: 
-        "logs/revertsam/{aliquot_id}.log"
-    threads:
-        CLUSTER_META["revertsam"]["ppn"]
-    benchmark:
-        "benchmarks/revertsam/{aliquot_id}.txt"
-    message:
-        "Reverting sample back to unaligned BAM file, stripping any previous "
-        "pre-processing and restoring original base quality scores. Output files are split "
-        "by readgroup.\n"
-        "Sample: {wildcards.aliquot_id}"
-    run:
-        ## Create a readgroup name / filename mapping file
-        rgmap = pd.DataFrame(
-            {
-                "READ_GROUP_ID": BAM_READGROUPS[wildcards["aliquot_id"]],
-                "OUTPUT": ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in BAM_READGROUPS[wildcards["aliquot_id"]]]
-            },
-            columns = ["READ_GROUP_ID", "OUTPUT"]
-        )
-        rgmap.to_csv(output["map"], sep="\t", index=False)
+# rule revertsam: ## 5/8 this rule is causing trouble, comment for now
+#     input:
+#         lambda wildcards: ALIQUOT_TO_BAM_PATH[wildcards.aliquot_id]
+#     output:
+#         map = "results/ubam/{aliquot_id}/{aliquot_id}.output_map.txt",
+#         bams = temp(expand("results/ubam/{{aliquot_id}}/{{aliquot_id}}.{rg}.bam", rg=list(itertools.chain.from_iterable(ALIQUOT_TO_RGID.values()))))
+#     params:
+#         dir = "results/ubam/{aliquot_id}",
+#         mem = CLUSTER_META["revertsam"]["mem"]
+#     log: 
+#         "logs/revertsam/{aliquot_id}.log"
+#     threads:
+#         CLUSTER_META["revertsam"]["ppn"]
+#     benchmark:
+#         "benchmarks/revertsam/{aliquot_id}.txt"
+#     message:
+#         "Reverting sample back to unaligned BAM file, stripping any previous "
+#         "pre-processing and restoring original base quality scores. Output files are split "
+#         "by readgroup.\n"
+#         "Sample: {wildcards.aliquot_id}"
+#     run:
+#         ## Create a readgroup name / filename mapping file
+#         rgmap = pd.DataFrame(
+#             {
+#                 "READ_GROUP_ID": BAM_READGROUPS[wildcards["aliquot_id"]],
+#                 "OUTPUT": ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in BAM_READGROUPS[wildcards["aliquot_id"]]]
+#             },
+#             columns = ["READ_GROUP_ID", "OUTPUT"]
+#         )
+#         rgmap.to_csv(output["map"], sep="\t", index=False)
 
-        ## Create empty files ("touch") for readgroups not in this BAM file
-        ## Workaround for issue documented here: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
-        other_rg_f = ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.bam".format(aliquot_id=wildcards["aliquot_id"],rg=rg) for sample, rgs in BAM_READGROUPS.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
-        for f in other_rg_f:
-            touch(f)
+#         ## Create empty files ("touch") for readgroups not in this BAM file
+#         ## Workaround for issue documented here: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
+#         other_rg_f = ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.bam".format(aliquot_id=wildcards["aliquot_id"],rg=rg) for sample, rgs in BAM_READGROUPS.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
+#         for f in other_rg_f:
+#             touch(f)
 
-        shell("gatk --java-options -Xmx{params.mem}g RevertSam \
-            --INPUT={input} \
-            --OUTPUT_BY_READGROUP=true \
-            --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
-            --OUTPUT_MAP={output.map} \
-            --RESTORE_ORIGINAL_QUALITIES=true \
-            --VALIDATION_STRINGENCY=SILENT \
-            --ATTRIBUTE_TO_CLEAR=AS \
-            --ATTRIBUTE_TO_CLEAR=FT \
-            --ATTRIBUTE_TO_CLEAR=CO \
-            --ATTRIBUTE_TO_CLEAR=XT \
-            --ATTRIBUTE_TO_CLEAR=XN \
-            --ATTRIBUTE_TO_CLEAR=OC \
-            --ATTRIBUTE_TO_CLEAR=OP \
-            --SANITIZE=true \
-            --SORT_ORDER=queryname {config[revertsam_extra_args]}\
-            --TMP_DIR={config[tempdir]} \
-            2> {log}")
+#         shell("gatk --java-options -Xmx{params.mem}g RevertSam \
+#             --INPUT={input} \
+#             --OUTPUT_BY_READGROUP=true \
+#             --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
+#             --OUTPUT_MAP={output.map} \
+#             --RESTORE_ORIGINAL_QUALITIES=true \
+#             --VALIDATION_STRINGENCY=SILENT \
+#             --ATTRIBUTE_TO_CLEAR=AS \
+#             --ATTRIBUTE_TO_CLEAR=FT \
+#             --ATTRIBUTE_TO_CLEAR=CO \
+#             --ATTRIBUTE_TO_CLEAR=XT \
+#             --ATTRIBUTE_TO_CLEAR=XN \
+#             --ATTRIBUTE_TO_CLEAR=OC \
+#             --ATTRIBUTE_TO_CLEAR=OP \
+#             --SANITIZE=true \
+#             --SORT_ORDER=queryname {config[revertsam_extra_args]}\
+#             --TMP_DIR={config[tempdir]} \
+#             > {log} 2>&1")
 
 # ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 # ## Convert from FASTQ pair to uBAM
@@ -311,7 +311,7 @@ rule revertsam:
 #             --LIBRARY_NAME=\"{params.RGLB}\" \
 #             --SEQUENCING_CENTER=\"{params.RGCN}\" \
 #             --SORT_ORDER=queryname \
-#             2> {log}")
+#             > {log} 2>&1")
 #         #            --RUN_DATE=\"{params.RGDT}\" \
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -347,7 +347,7 @@ rule fastqc:
             -o {params.dir} \
             -f bam \
             {input} \
-            2> {log}"
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Mark Illumina Adapters
@@ -382,7 +382,7 @@ rule markadapters:
             --OUTPUT={output.bam} \
             --METRICS={output.metric} \
             --TMP_DIR={config[tempdir]} \
-            2> {log}"
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## (1) BAM to FASTQ
@@ -455,7 +455,7 @@ rule samtofastq_bwa_mergebamalignment:
             --PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
             --ATTRIBUTES_TO_RETAIN=XS \
             --TMP_DIR={config[tempdir]} \
-            2> {log}"
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Mark Duplicates & merge readgroups
@@ -489,7 +489,7 @@ rule markduplicates:
             --OUTPUT={output.bam} \
             --METRICS_FILE={output.metrics} \
             --CREATE_INDEX=true \
-            2> {log}")
+            > {log} 2>&1")
 
 # @sbamin A few notes on IndelRealignment step at annotated link: https://hyp.is/8_20bK-aEeerk1MduBFv6w/gatkforums.broadinstitute.org/gatk/discussion/7847 
 # IndelRealinger adds OC:Z tag to realigned reads (GATK Doc # 7156), shifts MAPQ by +10. 
@@ -526,7 +526,7 @@ rule baserecalibrator:
             -O {output} \
             --known-sites {config[gnomad_vcf]} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
-            2> {log}"
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Apply BQSR
@@ -561,7 +561,13 @@ rule applybqsr:
             -bqsr {input.bqsr} \
             --create-output-bam-md5 true \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
-            2> {log}"
+            > {log} 2>&1"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## WGS Metrics
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Calculate coverage metrics for the WGS BAM file. These metrics are shown by MultiQC
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule wgsmetrics:
     input:
@@ -585,7 +591,13 @@ rule wgsmetrics:
             -I {input} \
             -O {output} \
             --USE_FAST_ALGORITHM true \
-            2> {log}"
+            > {log} 2>&1"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Validate BAM file
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Final check to ensure no errors in final analysis-ready BAM file
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule validatebam:
     input:
@@ -608,7 +620,7 @@ rule validatebam:
             -I {input} \
             -O {output} \
             -M SUMMARY \
-            2> {log}"
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## MultiQC
@@ -641,7 +653,7 @@ rule multiqc:
         "Running MultiQC"
     shell:
         "multiqc -o {params.dir} {config[workdir]}/results \
-            2> {log}; \
+            > {log} 2>&1; \
             cp -R {params.dir}/* {config[html_dir]}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -676,7 +688,6 @@ rule callpon:
         "Interval: {wildcards.interval}"
     shell:
         "TUMOR_SM=`samtools view -H {input} | grep '^@RG' | sed \"s/.*SM:\\([^\\t]*\\).*/\\1/g\" | uniq`; \
-        echo $TUMOR_SM; \
         gatk --java-options -Xmx{params.mem}g Mutect2 \
             -R {config[reference_fasta]} \
             -I {input.bam} \
@@ -684,7 +695,9 @@ rule callpon:
             --tumor-sample $TUMOR_SM \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             -O {output} \
-            2> {log}"
+            > {log} 2>&1"
+
+            #        TUMOR_SM=${TUMOR_SM:-\"TUMOR\"}; \
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## MergePON
@@ -717,7 +730,7 @@ rule mergepon:
         shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
             {input_cat} \
             -O {output} \
-            2> {log}")
+            > {log} 2>&1")
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## CreatePON
@@ -752,7 +765,7 @@ rule createpon:
             {vcfs} \
             --duplicate-sample-strategy THROW_ERROR \
             --output {output} \
-            2> {log}")
+            > {log} 2>&1")
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SNV
@@ -793,6 +806,8 @@ rule callsnv:
     shell:
         "TEST_NAM=`samtools view -H {input.tumor} | grep '^@RG' | sed \"s/.*SM:\\([^\\t]*\\).*/\\1/g\" | uniq`;"
         "CTRL_NAM=`samtools view -H {input.normal} | grep '^@RG' | sed \"s/.*SM:\\([^\\t]*\\).*/\\1/g\" | uniq`;"
+        #"TEST_NAM=${TEST_NAM:-\"TUMOR\"};"
+        #"CTRL_NAM=${CTRL_NAM:-\"NORMAL\"};"
         "gatk --java-options -Xmx{params.mem}g Mutect2 \
             -R {config[reference_fasta]} \
             -I {input.tumor} \
@@ -808,7 +823,7 @@ rule callsnv:
             -O {output.vcf} \
             -bamout {output.bam} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
-            2> {log}"
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Merge SNV
@@ -841,13 +856,14 @@ rule mergesnv:
         shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
             {input_cat} \
             -O {output} \
-            2> {log}")
+            > {log} 2>&1")
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Summarize read support for known variant sites
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 # @sbamin What is small_exac_common_3_b37.vcf.gz? Haven't read further but search only gives me this link: https://crc.pitt.edu/variantcalling
+# @barthf This is used in broad pipelines
 
 rule pileupsummaries:
     input:
@@ -871,7 +887,7 @@ rule pileupsummaries:
             -V {config[tiny_vcf]} \
             -O {output} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
-            2> {log}"
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Estimate contamination
@@ -905,7 +921,7 @@ rule calculatecontamination:
             -I {input.tumortable} \
             --matched-normal {input.normaltable} \
             -O {output} \
-            2> {log}"
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## If variants have not been filtered, filter, else done
@@ -934,7 +950,7 @@ rule filtermutect:
             --contamination-table {input.tab} \
             -O {output} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
-            2> {log}"
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Collect metrics on sequencing context artifacts
@@ -963,7 +979,7 @@ rule collectartifacts:
             -O {params.prefix} \
             --FILE_EXTENSION \".txt\" \
             -R {config[reference_fasta]} \
-            2> {log}"
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Filter by orientation bias
@@ -994,7 +1010,39 @@ rule filterorientation:
             -P {input.art} \
             -O {output} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
-            2> {log}"
+            > {log} 2>&1"
+
+# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+# ## VariantFiltration
+# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+# ## Hard filter variants, removes "bad" variants from pre-VEP VCF
+# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+# rule hardfilter:
+#     input:
+#         "results/m2filter/{pair_id}.filtered2.vcf"
+#     output:
+#         "results/m2filter/{pair_id}.filtered3.vcf"
+#     params:
+#         mem = CLUSTER_META["hardfilter"]["mem"]
+#     threads:
+#         CLUSTER_META["hardfilter"]["ppn"]
+#     log:
+#         "logs/hardfilter/{pair_id}.log"
+#     benchmark:
+#         "benchmarks/hardfilter/{pair_id}.txt"
+#     message:
+#         "Hard-filtering soft-filtered Mutect2 calls\n"
+#         "Pair: {wildcards.pair_id}"
+#     shell:
+#         "gatk --java-options -Xmx{params.mem}g VariantFiltration \
+#             -AM \"G/T\" \
+#             -AM \"C/T\" \
+#             -V {input.vcf} \
+#             -P {input.art} \
+#             -O {output} \
+#             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
+#             > {log} 2>&1"
 
 # @sbamin I suggest that we should put hold at VEP step until we finalize consensus calls. 
 # Idea is too get how many filtered calls we have and with what level of confidence (based on consensus calls from other callers).
@@ -1041,6 +1089,6 @@ rule vep:
             --normal-id $CTRL_NAM \
             --species homo_sapiens \
             --ncbi-build GRCh37 \
-            2> {log}"
+            > {log} 2>&1"
 
 ## END ##
