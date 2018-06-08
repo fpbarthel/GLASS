@@ -2,13 +2,21 @@
 ## Snakemake configuration
 ## @Author Floris Barthel
 
+#### JSON files
+cases_json:       "/projects/barthf/GLASS-WG/data/manifest/tcga/cases.json"
+samples_json:     "/projects/barthf/GLASS-WG/data/manifest/tcga/samples.json"
+aliquots_json:    "/projects/barthf/GLASS-WG/data/manifest/tcga/aliquots.json"
+files_json:       "/projects/barthf/GLASS-WG/data/manifest/tcga/files.json"
+readgroups_json:  "/projects/barthf/GLASS-WG/data/manifest/tcga/readgroups.json"
+pairs_json:       "/projects/barthf/GLASS-WG/data/manifest/tcga/pairs.json"
+
 #### GLOBAL PARAMETERS
 
 ## Full path to GDC keyfile
 gdc_token: "/home/barthf/gdc-user-token.2018-05-23T11_13_25-04_00.txt"
 
 ## Temporary directory
-tempdir: "/fastscratch/barthf/GLASS-WG/tmp"
+tempdir:  "/fastscratch/barthf/GLASS-WG/tmp"
 
 wgs_scatterdir: "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50"
 
@@ -21,6 +29,13 @@ tiny_vcf: "/projects/barthf/GTex-somatic/data/gnomad/small_exac_common_3_b37.vcf
 vcf2maf: "/projects/barthf/opt/mskcc-vcf2maf-747a1bb/vcf2maf.pl"
 
 veppath: "/projects/barthf/opt/ensembl-vep"
+
+## Based on GATK best practices RNAseq 04/05/18
+## https://software.broadinstitute.org/gatk/documentation/article.php?id=3891
+## Calculate af-of-alleles: 1/(2*123136) = 0.00000406055 (6 sign. digits)
+af_of_alleles_not_in_resource: 0.00000406055
+
+seconds_between_progress_updates: 900
 
 ## VEP cache directory
 vepdata: "/projects/barthf/opt/.vep"

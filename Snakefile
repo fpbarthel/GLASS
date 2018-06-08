@@ -1,7 +1,6 @@
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Snakefile for GLASS-WG pipeline
-## Floris Barthel 2018
-## Development branch
+## Authors: Floris Barthel, Samir Amin
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 import pandas as pd
@@ -16,6 +15,12 @@ def touch(fname, mode=0o666, dir_fd=None, **kwargs):
         os.utime(f.fileno() if os.utime in os.supports_fd else fname,
             dir_fd=None if os.supports_fd else dir_fd, **kwargs)
 
+## Turn an unnamed list of dicts into a nammed list of dicts
+## Taken from stackoverflow
+## https://stackoverflow.com/questions/4391697/find-the-index-of-a-dict-within-a-list-by-matching-the-dicts-value
+def build_dict(seq, key):
+    return dict((d[key], dict(d, index=index)) for (index, d) in enumerate(seq))
+
 ## Although this statement goes against all coding conventions, we want it here because we want to run
 ## everything on a temporary storage while we keep this script safe on a permanent drive
 ## TEMPORARY
@@ -29,95 +34,40 @@ KEYFILE     = config["gdc_token"]
 SAMPLES_META    = json.load(open(config["sample_json"]))
 CLUSTER_META    = json.load(open(config["cluster_json"]))
 
-CASES = json.load(open('/projects/barthf/GLASS-WG/data/manifest/tcga/cases.json'))
-SAMPLES = json.load(open('/projects/barthf/GLASS-WG/data/manifest/tcga/samples.json'))
-ALIQUOTS = json.load(open('/projects/barthf/GLASS-WG/data/manifest/tcga/aliquots.json'))
-FILES = json.load(open('/projects/barthf/GLASS-WG/data/manifest/tcga/files.json'))
-READGROUPS = json.load(open('/projects/barthf/GLASS-WG/data/manifest/tcga/readgroups.json'))
-PAIRS = json.load(open('/projects/barthf/GLASS-WG/data/manifest/tcga/pairs.json'))
+CASES 		= json.load(open(config["cases_json"]))
+SAMPLES 	= json.load(open(config["samples_json"]))
+ALIQUOTS 	= json.load(open(config["aliquots_json"]))
+FILES 		= json.load(open(config["files_json"]))
+READGROUPS 	= json.load(open(config["readgroups_json"]))
+PAIRS 		= json.load(open(config["pairs_json"]))
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## JSON processing
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# BAM_FILES = {}
-# BAM_FILES_UUIDS = {} ## Not nessecary, used together with BAM FILES (only one needed)
-# BAM_READGROUPS = {}
-# ALL_READGROUPS = {} ## Consider merge with BAM_RG
-# READGROUP_SAMPLE = {} ## Not used
-# FQ_FILES = {}
-# SAMPLES = [] ## Not used
-# PONBYBATCH = {} ## Not used
+# @sbamin Unless already implemented, we should be explicitly checking json input for 
+# 1. non-empty variables, and 
+# 2. unique RGID and RGPU but an identical RGSM tags, e.g., https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L25 
+# We can either check it upfront while making json or more preferable to check just before snakemake submits a workflow per case or sample.
+# That way, snakemake should STOP with error or emit WARN for non-compliant RG format. 
+# This is more practical if input is FQ and not BAM unless we already have RG info for BAM file.
 
-# PAIR_TO_TUMOR = { "A" : "testT-A" }
-# PAIR_TO_NORMAL = { "A" : "testN-A" }
-# PAIR_TO_BATCH = { "A" : "test"}
-# BATCH_TO_NORMAL = { "test" : [ "testN-A" ]}
+### NOTE NEED TO SPERATE BAM AND FASTQ READGROUPS
 
-# RGPL = {}
-# RGPU = {}
-# RGLB = {}
-# RGDT = {}
-# RGSM = {}
-# RGCN = {}
-
-# for case in SAMPLES_META:
-#     if case["case_project"] not in PONBYBATCH:
-#         PONBYBATCH[case["case_project"]] = []
-#     for sample in case["samples"]:
-#         if sample["sample_type"] == "Blood Derived Normal":
-#             PONBYBATCH[case["case_project"]].append(sample["sample_id"])
-#         SAMPLES.append(sample["sample_id"])
-#         FQ_FILES[sample["sample_id"]] = {}
-#         RGPL[sample["sample_id"]] = {}
-#         RGPU[sample["sample_id"]] = {}
-#         RGLB[sample["sample_id"]] = {}
-#         RGDT[sample["sample_id"]] = {}
-#         RGSM[sample["sample_id"]] = {}
-#         RGCN[sample["sample_id"]] = {}
-#         for file in sample["files"]:
-#             if file["file_format"] == "BAM":
-#                 BAM_FILES[sample["sample_id"]] = file["file_name"]
-#                 BAM_FILES_UUIDS[sample["sample_id"]] = file["file_uuid"]
-#                 BAM_READGROUPS[sample["sample_id"]] = [readgroup["rg_ID"] for readgroup in file["readgroups"]]
-#                 ALL_READGROUPS[sample["sample_id"]] = [readgroup["rg_ID"] for readgroup in file["readgroups"]]
-#                 for readgroup in file["readgroups"]:
-#                     READGROUP_SAMPLE[readgroup["rg_ID"]] = sample["sample_id"]
-#             if file["file_format"] == "FQ":
-#                 FQ_FILES[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["file_name"].split(",")
-#                 RGPL[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_PL"]
-#                 RGPU[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_PU"]
-#                 RGLB[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_LB"]
-#                 RGDT[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_DT"]
-#                 RGSM[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_SM"]
-#                 RGCN[sample["sample_id"]][file["readgroups"][0]["rg_ID"]] = file["readgroups"][0]["rg_CN"]
-#                 if sample["sample_id"] in ALL_READGROUPS:
-#                     ALL_READGROUPS[sample["sample_id"]].append(file["readgroups"][0]["rg_ID"])
-#                 else:
-#                     ALL_READGROUPS[sample["sample_id"]] = [ file["readgroups"][0]["rg_ID"] ]
-
-# FQ_FILES = dict((sample,readgroup) for sample,readgroup in FQ_FILES.items() if len(readgroup)>0)
-
-# @sbamin Unless already implemented, we should be explicitly checking json input for 1. non-empty variables, and 2. unique RGID and RGPU but an identical RGSM tags, e.g., https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L25 We can either check it upfront while making json or more preferable to check just before snakemake submits a workflow per case or sample. That way, snakemake should STOP with error or emit WARN for non-compliant RG format. This is more practical if input is FQ and not BAM unless we already have RG info for BAM file.
-
-WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in range(50)]
-
-## Turn an unnamed list of dicts into a nammed list of dicts
-## Taken from stackoverflow
-## https://stackoverflow.com/questions/4391697/find-the-index-of-a-dict-within-a-list-by-matching-the-dicts-value
-def build_dict(seq, key):
-    return dict((d[key], dict(d, index=index)) for (index, d) in enumerate(seq))
-
+## Validate CASES JSON
 ## CASES should be unique
 ## CHECK THAT ALL CASE_ID VALUES IN CASES ARE UNIQUE
-## IN PROGRESS
+## TO-DO
 
 
+## Validate FILES JSON
 ## FILES -> FILE_UUID should be unique
 ## CHECK THAT ALL FILE_UUID VALUES IN FILES ARE UNIQUE
-## IN PROGRESS
+## Check that input files exist
+## TO-DO
 
 
+## Validate PAIRS JSON
 ## PAIR -> PAIR_ID should be unique
 ## CHECK THAT ALL PAIR_ID VALUES IN PAIR ARE UNIQUE
 ## IN PROGRESS
@@ -136,6 +86,7 @@ PAIRS_DICT = build_dict(PAIRS, "pair_id")
 
 
 ## Aliquot IDs and BAM files map 1:1
+
 ALIQUOT_TO_BAM_PATH = {}
 for file in FILES:
     if file["file_format"] == "BAM":
@@ -143,6 +94,7 @@ for file in FILES:
 
 
 ## Aliquots and RGIDs map 1:many
+
 ALIQUOT_TO_RGID = {}        
 for readgroup in READGROUPS:
     if readgroup["aliquot_id"] not in ALIQUOT_TO_RGID:
@@ -154,6 +106,7 @@ for readgroup in READGROUPS:
 ## Batches and normal aliquot IDs map 1:many
 ## Normal aliquot IDs are repeated across multiple pairs from same case
 ## Each pair has one normal and one tumor
+
 BATCH_TO_NORMAL = {}
 for pair in PAIRS:
     pair["project_id"] = CASES_DICT[ pair["case_id"] ]["project_id"]
@@ -168,6 +121,7 @@ for pair in PAIRS:
 ## Aliquots and RGIDs map 1:many
 ## RGIDs are unique within an aliquot
 ## Aliquot IDs and fastQ files map 1:many
+
 ALIQUOT_TO_READGROUP = {} 
 for readgroup in READGROUPS:
     if readgroup["aliquot_id"] not in ALIQUOT_TO_READGROUP:
@@ -177,7 +131,10 @@ for readgroup in READGROUPS:
     ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_path"] = FILES_DICT[ ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_uuid"] ]["file_path"]
     ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_format"] = FILES_DICT[ ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_uuid"] ]["file_format"]
 
-### NOTE NEED TO SPERATE BAM AND FASTQ READGROUPS
+## List of scatterlist items to iterate over
+## Each Mutect2 run spawns 50 jobs based on this scatterlist
+
+WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in range(50)]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
@@ -254,61 +211,61 @@ rule snv:
 ## Unlikely this will get fixed any time soon
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# rule revertsam:
-#     input:
-#         lambda wildcards: "download/{uuid}/{file}".format(uuid=BAM_FILES_UUIDS[wildcards.aliquot_id], file=BAM_FILES[wildcards.aliquot_id])
-#     output:
-#         map = "results/ubam/{aliquot_id}/{aliquot_id}.output_map.txt",
-#         bams = temp(expand("results/ubam/{{aliquot_id}}/{{aliquot_id}}.{rg}.bam", rg=list(itertools.chain.from_iterable(ALIQUOT_TO_RGID.values()))))
-#     params:
-#         dir = "results/ubam/{aliquot_id}",
-#         mem = CLUSTER_META["revertsam"]["mem"]
-#     log: 
-#         "logs/revertsam/{aliquot_id}.log"
-#     threads:
-#         CLUSTER_META["revertsam"]["ppn"]
-#     benchmark:
-#         "benchmarks/revertsam/{aliquot_id}.txt"
-#     message:
-#         "Reverting sample back to unaligned BAM file, stripping any previous "
-#         "pre-processing and restoring original base quality scores. Output files are split "
-#         "by readgroup.\n"
-#         "Sample: {wildcards.aliquot_id}"
-#     run:
-#         ## Create a readgroup name / filename mapping file
-#         rgmap = pd.DataFrame(
-#             {
-#                 "READ_GROUP_ID": BAM_READGROUPS[wildcards["aliquot_id"]],
-#                 "OUTPUT": ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in BAM_READGROUPS[wildcards["aliquot_id"]]]
-#             },
-#             columns = ["READ_GROUP_ID", "OUTPUT"]
-#         )
-#         rgmap.to_csv(output["map"], sep="\t", index=False)
+rule revertsam:
+    input:
+        lambda wildcards: ALIQUOT_TO_BAM_PATH[wildcards.aliquot_id]
+    output:
+        map = "results/ubam/{aliquot_id}/{aliquot_id}.output_map.txt",
+        bams = temp(expand("results/ubam/{{aliquot_id}}/{{aliquot_id}}.{rg}.bam", rg=list(itertools.chain.from_iterable(ALIQUOT_TO_RGID.values()))))
+    params:
+        dir = "results/ubam/{aliquot_id}",
+        mem = CLUSTER_META["revertsam"]["mem"]
+    log: 
+        "logs/revertsam/{aliquot_id}.log"
+    threads:
+        CLUSTER_META["revertsam"]["ppn"]
+    benchmark:
+        "benchmarks/revertsam/{aliquot_id}.txt"
+    message:
+        "Reverting sample back to unaligned BAM file, stripping any previous "
+        "pre-processing and restoring original base quality scores. Output files are split "
+        "by readgroup.\n"
+        "Sample: {wildcards.aliquot_id}"
+    run:
+        ## Create a readgroup name / filename mapping file
+        rgmap = pd.DataFrame(
+            {
+                "READ_GROUP_ID": BAM_READGROUPS[wildcards["aliquot_id"]],
+                "OUTPUT": ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in BAM_READGROUPS[wildcards["aliquot_id"]]]
+            },
+            columns = ["READ_GROUP_ID", "OUTPUT"]
+        )
+        rgmap.to_csv(output["map"], sep="\t", index=False)
 
-#         ## Create empty files ("touch") for readgroups not in this BAM file
-#         ## Workaround for issue documented here: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
-#         other_rg_f = ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.bam".format(aliquot_id=wildcards["aliquot_id"],rg=rg) for sample, rgs in BAM_READGROUPS.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
-#         for f in other_rg_f:
-#             touch(f)
+        ## Create empty files ("touch") for readgroups not in this BAM file
+        ## Workaround for issue documented here: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
+        other_rg_f = ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.bam".format(aliquot_id=wildcards["aliquot_id"],rg=rg) for sample, rgs in BAM_READGROUPS.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
+        for f in other_rg_f:
+            touch(f)
 
-#         shell("gatk --java-options -Xmx{params.mem}g RevertSam \
-#             --INPUT={input} \
-#             --OUTPUT_BY_READGROUP=true \
-#             --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
-#             --OUTPUT_MAP={output.map} \
-#             --RESTORE_ORIGINAL_QUALITIES=true \
-#             --VALIDATION_STRINGENCY=SILENT \
-#             --ATTRIBUTE_TO_CLEAR=AS \
-#             --ATTRIBUTE_TO_CLEAR=FT \
-#             --ATTRIBUTE_TO_CLEAR=CO \
-#             --ATTRIBUTE_TO_CLEAR=XT \
-#             --ATTRIBUTE_TO_CLEAR=XN \
-#             --ATTRIBUTE_TO_CLEAR=OC \
-#             --ATTRIBUTE_TO_CLEAR=OP \
-#             --SANITIZE=true \
-#             --SORT_ORDER=queryname {config[revertsam_extra_args]}\
-#             --TMP_DIR={config[tempdir]} \
-#             2> {log}")
+        shell("gatk --java-options -Xmx{params.mem}g RevertSam \
+            --INPUT={input} \
+            --OUTPUT_BY_READGROUP=true \
+            --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
+            --OUTPUT_MAP={output.map} \
+            --RESTORE_ORIGINAL_QUALITIES=true \
+            --VALIDATION_STRINGENCY=SILENT \
+            --ATTRIBUTE_TO_CLEAR=AS \
+            --ATTRIBUTE_TO_CLEAR=FT \
+            --ATTRIBUTE_TO_CLEAR=CO \
+            --ATTRIBUTE_TO_CLEAR=XT \
+            --ATTRIBUTE_TO_CLEAR=XN \
+            --ATTRIBUTE_TO_CLEAR=OC \
+            --ATTRIBUTE_TO_CLEAR=OP \
+            --SANITIZE=true \
+            --SORT_ORDER=queryname {config[revertsam_extra_args]}\
+            --TMP_DIR={config[tempdir]} \
+            2> {log}")
 
 # ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 # ## Convert from FASTQ pair to uBAM
@@ -362,32 +319,35 @@ rule snv:
 ## URL: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# @sbamin Besides html, fastqc should provide a tab-delimited output, e.g., https://gist.github.com/chapmanb/3953983, https://gitlab.com/gmapps/railab_chipseq/tree/master/scripts A step further, that can be programmatically added to emit WARN or STOP if converted FQ fails to PASS base filters, e.g., per base or tile seq quality.
+# @sbamin Besides html, fastqc should provide a tab-delimited output, 
+# e.g., https://gist.github.com/chapmanb/3953983, 
+# https://gitlab.com/gmapps/railab_chipseq/tree/master/scripts 
+# A step further, that can be programmatically added to emit WARN or STOP if converted FQ fails to PASS base filters, e.g., per base or tile seq quality.
 
-# rule fastqc:
-#     input:
-#         "results/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.bam"
-#     output:
-#         "results/qc/{aliquot_id}/{aliquot_id}.{readgroup}_fastqc.html"
-#     params:
-#         dir = "results/qc/{aliquot_id}",
-#         mem = CLUSTER_META["fastqc"]["mem"]
-#     threads:
-#         CLUSTER_META["fastqc"]["ppn"]
-#     log:
-#         "logs/fastqc/{aliquot_id}.{readgroup}.log"
-#     benchmark:
-#         "benchmarks/fastqc/{aliquot_id}.{readgroup}.txt"
-#     message:
-#         "Running FASTQC\n"
-#         "Sample: {wildcards.aliquot_id}\n"
-#         "Readgroup: {wildcards.readgroup}"
-#     shell:
-#         "fastqc \
-#             -o {params.dir} \
-#             -f bam \
-#             {input} \
-#             2> {log}"
+rule fastqc:
+    input:
+        "results/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.bam"
+    output:
+        "results/qc/{aliquot_id}/{aliquot_id}.{readgroup}_fastqc.html"
+    params:
+        dir = "results/qc/{aliquot_id}",
+        mem = CLUSTER_META["fastqc"]["mem"]
+    threads:
+        CLUSTER_META["fastqc"]["ppn"]
+    log:
+        "logs/fastqc/{aliquot_id}.{readgroup}.log"
+    benchmark:
+        "benchmarks/fastqc/{aliquot_id}.{readgroup}.txt"
+    message:
+        "Running FASTQC\n"
+        "Sample: {wildcards.aliquot_id}\n"
+        "Readgroup: {wildcards.readgroup}"
+    shell:
+        "fastqc \
+            -o {params.dir} \
+            -f bam \
+            {input} \
+            2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Mark Illumina Adapters
@@ -396,33 +356,33 @@ rule snv:
 ## See: https://gatkforums.broadinstitute.org/gatk/discussion/6483/how-to-map-and-clean-up-short-read-sequence-data-efficiently
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# rule markadapters:
-#     input:
-#         "results/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.bam"
-#     output:
-#         bam = temp("results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.revertsam.markadapters.bam"),
-#         metric = "results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
-#     params:
-#         mem = CLUSTER_META["markadapters"]["mem"]
-#     threads:
-#         CLUSTER_META["markadapters"]["ppn"]
-#     params:
-#         mem = CLUSTER_META["markadapters"]["mem"]
-#     log: 
-#         dynamic("logs/markadapters/{aliquot_id}.{readgroup}.log")
-#     benchmark:
-#         "benchmarks/markadapters/{aliquot_id}.{readgroup}.txt"
-#     message:
-#         "Adding XT tags. This marks Illumina Adapters and allows them to be removed in later steps\n"
-#         "Sample: {wildcards.aliquot_id}\n"
-#         "Readgroup: {wildcards.readgroup}"
-#     shell:
-#         "gatk --java-options -Xmx{params.mem}g MarkIlluminaAdapters \
-#             --INPUT={input} \
-#             --OUTPUT={output.bam} \
-#             --METRICS={output.metric} \
-#             --TMP_DIR={config[tempdir]} \
-#             2> {log}"
+rule markadapters:
+    input:
+        "results/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.bam"
+    output:
+        bam = temp("results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.revertsam.markadapters.bam"),
+        metric = "results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
+    params:
+        mem = CLUSTER_META["markadapters"]["mem"]
+    threads:
+        CLUSTER_META["markadapters"]["ppn"]
+    params:
+        mem = CLUSTER_META["markadapters"]["mem"]
+    log: 
+        dynamic("logs/markadapters/{aliquot_id}.{readgroup}.log")
+    benchmark:
+        "benchmarks/markadapters/{aliquot_id}.{readgroup}.txt"
+    message:
+        "Adding XT tags. This marks Illumina Adapters and allows them to be removed in later steps\n"
+        "Sample: {wildcards.aliquot_id}\n"
+        "Readgroup: {wildcards.readgroup}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g MarkIlluminaAdapters \
+            --INPUT={input} \
+            --OUTPUT={output.bam} \
+            --METRICS={output.metric} \
+            --TMP_DIR={config[tempdir]} \
+            2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## (1) BAM to FASTQ
@@ -443,59 +403,59 @@ rule snv:
 ## input data is good
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# @sbamin I am new to this step. Are read groups, including RGID per read incorporated in final merge bam? I am more familiar with bwa mem -R '@RG\tID:foo\tSM:bar' format. https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L103
+# @sbamin I am new to this step. Are read groups, including RGID per read incorporated in final merge bam
+# I am more familiar with bwa mem -R '@RG\tID:foo\tSM:bar' format. 
+# https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L103
+# @sbamin If original bam file (and so coverted fastq) are using ref genome with chr prefix for chromosomes, 
+# does workflow take care of removing chr prefix (or vice versa) while aligning to ref genome from GATK b37 legacy bundle?
 
-# @sbamin If original bam file (and so coverted fastq) are using ref genome with chr prefix for chromosomes, does workflow take care of removing chr prefix (or vice versa) while aligning to ref genome from GATK b37 legacy bundle?
-
-##            --VALIDATION_STRINGENCY=SILENT removed from SamToFastq
-
-# rule samtofastq_bwa_mergebamalignment:
-#     input:
-#         bam = "results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.revertsam.markadapters.bam",
-#         metric = "results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
-#     output:
-#         bam = temp("results/bwa/{aliquot_id}/{aliquot_id}.{readgroup}.realn.bam"),
-#         bai = temp("results/bwa/{aliquot_id}/{aliquot_id}.{readgroup}.realn.bai")
-#     threads:
-#         CLUSTER_META["samtofastq_bwa_mergebamalignment"]["ppn"]
-#     params:
-#         mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
-#     log: 
-#         "logs/samtofastq_bwa_mergebamalignment/{aliquot_id}.{readgroup}.log"
-#     benchmark:
-#         "benchmarks/revertsam/{aliquot_id}.{readgroup}.txt"
-#     message:
-#         "BAM to FASTQ --> BWA-MEM --> Merge BAM Alignment.\n"
-#         "The first step converts the reverted BAM to an interleaved FASTQ, removing Illumina "
-#         "adapters. The output is then piped to BWA-MEM and aligned. Aligned reads are merged "
-#         "with the original pre-aligned BAM to preserve original metadata, including read groups.\n"
-#         "Sample: {wildcards.aliquot_id}\n"
-#         "Readgroup: {wildcards.readgroup}"
-#     shell:
-#         "gatk --java-options {config[samtofastq_java_opt]} SamToFastq \
-#             --INPUT={input.bam} \
-#             --FASTQ=/dev/stdout \
-#             --CLIPPING_ATTRIBUTE=XT \
-#             --CLIPPING_ACTION=2 \
-#             --INTERLEAVE=true \
-#             --NON_PF=true \
-#             --TMP_DIR={config[tempdir]} | \
-#          bwa mem -M -t {threads} -p {config[reference_fasta]} /dev/stdin | \
-#          gatk --java-options {config[mergebamalignment_java_opt]} MergeBamAlignment \
-#             --ALIGNED_BAM=/dev/stdin \
-#             --UNMAPPED_BAM={input.bam} \
-#             --OUTPUT={output.bam} \
-#             --REFERENCE_SEQUENCE={config[reference_fasta]} \
-#             --CREATE_INDEX=true \
-#             --ADD_MATE_CIGAR=true \
-#             --CLIP_ADAPTERS=false \
-#             --CLIP_OVERLAPPING_READS=true \
-#             --INCLUDE_SECONDARY_ALIGNMENTS=true \
-#             --MAX_INSERTIONS_OR_DELETIONS=-1 \
-#             --PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
-#             --ATTRIBUTES_TO_RETAIN=XS \
-#             --TMP_DIR={config[tempdir]} \
-#             2> {log}"
+rule samtofastq_bwa_mergebamalignment:
+    input:
+        bam = "results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.revertsam.markadapters.bam",
+        metric = "results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
+    output:
+        bam = temp("results/bwa/{aliquot_id}/{aliquot_id}.{readgroup}.realn.bam"),
+        bai = temp("results/bwa/{aliquot_id}/{aliquot_id}.{readgroup}.realn.bai")
+    threads:
+        CLUSTER_META["samtofastq_bwa_mergebamalignment"]["ppn"]
+    params:
+        mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
+    log: 
+        "logs/samtofastq_bwa_mergebamalignment/{aliquot_id}.{readgroup}.log"
+    benchmark:
+        "benchmarks/revertsam/{aliquot_id}.{readgroup}.txt"
+    message:
+        "BAM to FASTQ --> BWA-MEM --> Merge BAM Alignment.\n"
+        "The first step converts the reverted BAM to an interleaved FASTQ, removing Illumina "
+        "adapters. The output is then piped to BWA-MEM and aligned. Aligned reads are merged "
+        "with the original pre-aligned BAM to preserve original metadata, including read groups.\n"
+        "Sample: {wildcards.aliquot_id}\n"
+        "Readgroup: {wildcards.readgroup}"
+    shell:
+        "gatk --java-options {config[samtofastq_java_opt]} SamToFastq \
+            --INPUT={input.bam} \
+            --FASTQ=/dev/stdout \
+            --CLIPPING_ATTRIBUTE=XT \
+            --CLIPPING_ACTION=2 \
+            --INTERLEAVE=true \
+            --NON_PF=true \
+            --TMP_DIR={config[tempdir]} | \
+         bwa mem -M -t {threads} -p {config[reference_fasta]} /dev/stdin | \
+         gatk --java-options {config[mergebamalignment_java_opt]} MergeBamAlignment \
+            --ALIGNED_BAM=/dev/stdin \
+            --UNMAPPED_BAM={input.bam} \
+            --OUTPUT={output.bam} \
+            --REFERENCE_SEQUENCE={config[reference_fasta]} \
+            --CREATE_INDEX=true \
+            --ADD_MATE_CIGAR=true \
+            --CLIP_ADAPTERS=false \
+            --CLIP_OVERLAPPING_READS=true \
+            --INCLUDE_SECONDARY_ALIGNMENTS=true \
+            --MAX_INSERTIONS_OR_DELETIONS=-1 \
+            --PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
+            --ATTRIBUTES_TO_RETAIN=XS \
+            --TMP_DIR={config[tempdir]} \
+            2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Mark Duplicates & merge readgroups
@@ -503,35 +463,39 @@ rule snv:
 ## See: https://gatkforums.broadinstitute.org/gatk/discussion/2799
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# rule markduplicates:
-#     input:
-#         lambda wildcards: expand("results/bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.aliquot_id, rg=ALL_READGROUPS[wildcards.aliquot_id]) #get_readgroup_BAMs_sample
-#     output:
-#         bam = temp("results/markduplicates/{aliquot_id}.realn.mdup.bam"),
-#         bai = temp("results/markduplicates/{aliquot_id}.realn.mdup.bai"),
-#         metrics = "results/markduplicates/{aliquot_id}.metrics.txt"
-#     params:
-#         mem = CLUSTER_META["markduplicates"]["mem"]
-#     threads:
-#         CLUSTER_META["markduplicates"]["ppn"]
-#     log:
-#         "logs/markduplicates/{aliquot_id}.log"
-#     benchmark:
-#         "benchmarks/markduplicates/{aliquot_id}.txt"
-#     message:
-#         "Readgroup-specific BAM files are combined into a single BAM. "
-#         "Potential PCR duplicates are marked.\n"
-#         "Sample: {wildcards.aliquot_id}"
-#     run:
-#         multi_input = " ".join(["--INPUT=" + s for s in input])
-#         shell("gatk --java-options -Xmx{params.mem}g MarkDuplicates \
-#             {multi_input} \
-#             --OUTPUT={output.bam} \
-#             --METRICS_FILE={output.metrics} \
-#             --CREATE_INDEX=true \
-#             2> {log}")
+rule markduplicates:
+    input:
+        lambda wildcards: expand("results/bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.aliquot_id, rg=ALIQUOT_TO_RGID[wildcards.aliquot_id])
+    output:
+        bam = temp("results/markduplicates/{aliquot_id}.realn.mdup.bam"),
+        bai = temp("results/markduplicates/{aliquot_id}.realn.mdup.bai"),
+        metrics = "results/markduplicates/{aliquot_id}.metrics.txt"
+    params:
+        mem = CLUSTER_META["markduplicates"]["mem"]
+    threads:
+        CLUSTER_META["markduplicates"]["ppn"]
+    log:
+        "logs/markduplicates/{aliquot_id}.log"
+    benchmark:
+        "benchmarks/markduplicates/{aliquot_id}.txt"
+    message:
+        "Readgroup-specific BAM files are combined into a single BAM. "
+        "Potential PCR duplicates are marked.\n"
+        "Sample: {wildcards.aliquot_id}"
+    run:
+        multi_input = " ".join(["--INPUT=" + s for s in input])
+        shell("gatk --java-options -Xmx{params.mem}g MarkDuplicates \
+            {multi_input} \
+            --OUTPUT={output.bam} \
+            --METRICS_FILE={output.metrics} \
+            --CREATE_INDEX=true \
+            2> {log}")
 
-# @sbamin A few notes on IndelRealignment step at annotated link: https://hyp.is/8_20bK-aEeerk1MduBFv6w/gatkforums.broadinstitute.org/gatk/discussion/7847 IndelRealinger adds OC:Z tag to realigned reads (GATK Doc # 7156), shifts MAPQ by +10. For high-quality data (>75bp read length, 30x plus, PCR-free lib), and MAPQ > 20, there seems to have minimal impact of +MAPQ10. Perhaps, we should get clarification from GATK team based on GATK Doc # 7847 on pros and cons of keeping IndelRealigner step in the workflow. If there is minimal impact, we should add IndelRealigner. I have not yet seen but OC:Z tag may be required by other indel callers.
+# @sbamin A few notes on IndelRealignment step at annotated link: https://hyp.is/8_20bK-aEeerk1MduBFv6w/gatkforums.broadinstitute.org/gatk/discussion/7847 
+# IndelRealinger adds OC:Z tag to realigned reads (GATK Doc # 7156), shifts MAPQ by +10. 
+# For high-quality data (>75bp read length, 30x plus, PCR-free lib), and MAPQ > 20, there seems to have minimal impact of +MAPQ10. 
+# Perhaps, we should get clarification from GATK team based on GATK Doc # 7847 on pros and cons of keeping IndelRealigner step in the workflow. 
+# If there is minimal impact, we should add IndelRealigner. I have not yet seen but OC:Z tag may be required by other indel callers.
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Recalibrate base quality scores
@@ -539,29 +503,30 @@ rule snv:
 ## See: https://software.broadinstitute.org/gatk/best-practices/workflow?id=11165
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# rule baserecalibrator:
-#     input:
-#         "results/markduplicates/{aliquot_id}.realn.mdup.bam"
-#     output:
-#         "results/bqsr/{aliquot_id}.bqsr.txt"
-#     params:
-#         mem = CLUSTER_META["baserecalibrator"]["mem"]
-#     threads:
-#         CLUSTER_META["baserecalibrator"]["ppn"]
-#     log:
-#         "logs/bqsr/{aliquot_id}.recal.log"
-#     benchmark:
-#         "benchmarks/bqsr/{aliquot_id}.recal.txt"
-#     message:
-#         "Calculating base recalibration scores.\n"
-#         "Sample: {wildcards.aliquot_id}"
-#     shell:
-#         "gatk --java-options -Xmx{params.mem}g BaseRecalibrator \
-#             -R {config[reference_fasta]} \
-#             -I {input} \
-#             -O {output} \
-#             --known-sites {config[gnomad_vcf]} \
-#             2> {log}"
+rule baserecalibrator:
+    input:
+        "results/markduplicates/{aliquot_id}.realn.mdup.bam"
+    output:
+        "results/bqsr/{aliquot_id}.bqsr.txt"
+    params:
+        mem = CLUSTER_META["baserecalibrator"]["mem"]
+    threads:
+        CLUSTER_META["baserecalibrator"]["ppn"]
+    log:
+        "logs/bqsr/{aliquot_id}.recal.log"
+    benchmark:
+        "benchmarks/bqsr/{aliquot_id}.recal.txt"
+    message:
+        "Calculating base recalibration scores.\n"
+        "Sample: {wildcards.aliquot_id}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g BaseRecalibrator \
+            -R {config[reference_fasta]} \
+            -I {input} \
+            -O {output} \
+            --known-sites {config[gnomad_vcf]} \
+            --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
+            2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Apply BQSR
@@ -570,83 +535,80 @@ rule snv:
 ## See: https://software.broadinstitute.org/gatk/best-practices/workflow?id=11165
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# rule applybqsr:
-#     input:
-#         bam = "results/markduplicates/{aliquot_id}.realn.mdup.bam",
-#         bqsr = "results/bqsr/{aliquot_id}.bqsr.txt"
-#     output:
-#         protected("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam")
-#     params:
-#         mem = CLUSTER_META["applybqsr"]["mem"]
-#     threads:
-#         CLUSTER_META["applybqsr"]["ppn"]
-#     log:
-#         "logs/bqsr/{aliquot_id}.apply.log"
-#     benchmark:
-#         "benchmarks/bqsr/{aliquot_id}.apply.txt"
-#     message:
-#         "Applying base recalibration scores and generating final BAM file\n"
-#         "Sample: {wildcards.aliquot_id}"
-#     shell:
-#         "gatk --java-options -Xmx{params.mem}g ApplyBQSR \
-#             -R {config[reference_fasta]} \
-#             -I {input.bam} \
-#             -OQ true \
-#             -O {output} \
-#             -bqsr {input.bqsr} \
-#             --create-output-bam-md5 true \
-#             2> {log}"
+rule applybqsr:
+    input:
+        bam = "results/markduplicates/{aliquot_id}.realn.mdup.bam",
+        bqsr = "results/bqsr/{aliquot_id}.bqsr.txt"
+    output:
+        protected("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam")
+    params:
+        mem = CLUSTER_META["applybqsr"]["mem"]
+    threads:
+        CLUSTER_META["applybqsr"]["ppn"]
+    log:
+        "logs/bqsr/{aliquot_id}.apply.log"
+    benchmark:
+        "benchmarks/bqsr/{aliquot_id}.apply.txt"
+    message:
+        "Applying base recalibration scores and generating final BAM file\n"
+        "Sample: {wildcards.aliquot_id}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g ApplyBQSR \
+            -R {config[reference_fasta]} \
+            -I {input.bam} \
+            -OQ true \
+            -O {output} \
+            -bqsr {input.bqsr} \
+            --create-output-bam-md5 true \
+            --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
+            2> {log}"
 
-# @sbamin I haven't used WgsMetrics. Does it cover Depth of Coverage like metrics? I guess we need a plot like this one, 
-# http://www.gettinggeneticsdone.com/2014/03/visualize-coverage-exome-targeted-ngs-bedtools.html .  
-# https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L582
+rule wgsmetrics:
+    input:
+        "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+    output:
+        "results/qc/{aliquot_id}.WgsMetrics.txt"
+    params:
+        mem = CLUSTER_META["wgsmetrics"]["mem"]
+    threads:
+        CLUSTER_META["wgsmetrics"]["ppn"]
+    log:
+        "logs/wgsmetrics/{aliquot_id}.WgsMetrics.log"
+    benchmark:
+        "benchmarks/wgsmetrics/{aliquot_id}.WgsMetrics.txt"
+    message:
+        "Computing WGS Metrics\n"
+        "Sample: {wildcards.aliquot_id}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g CollectWgsMetrics \
+            -R {config[reference_fasta]} \
+            -I {input} \
+            -O {output} \
+            --USE_FAST_ALGORITHM true \
+            2> {log}"
 
-# rule wgsmetrics:
-#     input:
-#         "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
-#     output:
-#         "results/qc/{aliquot_id}.WgsMetrics.txt"
-#     params:
-#         mem = CLUSTER_META["wgsmetrics"]["mem"]
-#     threads:
-#         CLUSTER_META["wgsmetrics"]["ppn"]
-#     log:
-#         "logs/wgsmetrics/{aliquot_id}.WgsMetrics.log"
-#     benchmark:
-#         "benchmarks/wgsmetrics/{aliquot_id}.WgsMetrics.txt"
-#     message:
-#         "Computing WGS Metrics\n"
-#         "Sample: {wildcards.aliquot_id}"
-#     shell:
-#         "gatk --java-options -Xmx{params.mem}g CollectWgsMetrics \
-#             -R {config[reference_fasta]} \
-#             -I {input} \
-#             -O {output} \
-#             --USE_FAST_ALGORITHM true \
-#             2> {log}"
-
-# rule validatebam:
-#     input:
-#         "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
-#     output:
-#         "results/qc/{aliquot_id}.ValidateSamFile.txt"
-#     params:
-#         mem = CLUSTER_META["validatebam"]["mem"]
-#     threads:
-#         CLUSTER_META["validatebam"]["ppn"]
-#     log:
-#         "logs/validatebam/{aliquot_id}.ValidateSamFile.log"
-#     benchmark:
-#         "benchmarks/validatebam/{aliquot_id}.ValidateSamFile.txt"
-#     message:
-#         "Validating BAM file\n"
-#         "Sample: {wildcards.aliquot_id}"
-#     shell:
-#         "gatk --java-options -Xmx{params.mem}g ValidateSamFile \
-#             -I {input} \
-#             -O {output} \
-#             -M SUMMARY \
-#             2> {log}"
+rule validatebam:
+    input:
+        "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+    output:
+        "results/qc/{aliquot_id}.ValidateSamFile.txt"
+    params:
+        mem = CLUSTER_META["validatebam"]["mem"]
+    threads:
+        CLUSTER_META["validatebam"]["ppn"]
+    log:
+        "logs/validatebam/{aliquot_id}.ValidateSamFile.log"
+    benchmark:
+        "benchmarks/validatebam/{aliquot_id}.ValidateSamFile.txt"
+    message:
+        "Validating BAM file\n"
+        "Sample: {wildcards.aliquot_id}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g ValidateSamFile \
+            -I {input} \
+            -O {output} \
+            -M SUMMARY \
+            2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## MultiQC
@@ -657,43 +619,48 @@ rule snv:
 ## export LANG=en_US.UTF-8
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# rule multiqc:
-#     input:
-#         expand("results/qc/{sample}.ValidateSamFile.txt", sample=ALL_READGROUPS.keys()),
-#         expand("results/qc/{sample}.WgsMetrics.txt", sample=ALL_READGROUPS.keys()),
-#         lambda wildcards: ["results/qc/{sample}/{sample}.{rg}_fastqc.html".format(sample=sample, rg=readgroup)
-#           for sample, readgroups in ALL_READGROUPS.items()
-#           for readgroup in readgroups] 
-#     output:
-#         "results/qc/multiqc/multiqc_report.html"
-#     params:
-#         dir = "results/qc/multiqc",
-#         mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
-#     threads:
-#         CLUSTER_META["multiqc"]["ppn"]
-#     log:
-#         "logs/multiqc/multiqc.log"
-#     benchmark:
-#         "benchmarks/multiqc/multiqc.txt"
-#     message:
-#         "Running MultiQC"
-#     shell:
-#         "multiqc -o {params.dir} {config[workdir]}/results \
-#             2> {log}; \
-#             cp -R {params.dir}/* {config[html_dir]}"
+rule multiqc:
+    input:
+        expand("results/qc/{sample}.ValidateSamFile.txt", sample=ALIQUOT_TO_RGID.keys()),
+        expand("results/qc/{sample}.WgsMetrics.txt", sample=ALIQUOT_TO_RGID.keys()),
+        lambda wildcards: ["results/qc/{sample}/{sample}.{rg}_fastqc.html".format(sample=sample, rg=readgroup)
+          for sample, readgroups in ALIQUOT_TO_RGID.items()
+          for readgroup in readgroups] 
+    output:
+        "results/qc/multiqc/multiqc_report.html"
+    params:
+        dir = "results/qc/multiqc",
+        mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
+    threads:
+        CLUSTER_META["multiqc"]["ppn"]
+    log:
+        "logs/multiqc/multiqc.log"
+    benchmark:
+        "benchmarks/multiqc/multiqc.txt"
+    message:
+        "Running MultiQC"
+    shell:
+        "multiqc -o {params.dir} {config[workdir]}/results \
+            2> {log}; \
+            cp -R {params.dir}/* {config[html_dir]}"
 
-# @sbamin Haven't looked deep into PON commands but just checking if it is running only on matched normals and not on both, tumor and normal samples.
-
-# @sbamin Regarding command similar to `echo $TUMOR_SM`, we want to have some stringecy there (unless snakemake takes care of it) to avoid empty variable being passed downstream.
-
-# @sbamin :imp: Per GATK Doc # 11136, M2 prefilters sites present in PON before using those sites for somatic variant calling. So, I would rather benchmark PON first before using it explicitly to filter out sites which may turn out to be false negative or true somatic variant. Alternately, we can use `--genotype-pon-sites` (beta) so as to keep PON sites in M2 output but tag those using VCF INFO tag, `IN_PON`. Also, doubt if we need --germline-resource and --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter for PON. See https://software.broadinstitute.org/gatk/documentation/article?id=11136#2
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## CallPON
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## This rule uses Mutect2 in tumor-only mode (artifact detection mode) to detect ALL
+## variants in a given non-tumor sample
+## No germline resource in included because this would exclude these variants from the
+## PON
+## See: 
+## https://gatkforums.broadinstitute.org/gatk/discussion/11136/how-to-call-somatic-mutations-using-gatk4-mutect2
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule callpon:
     input:
         bam = "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam",
         intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
     output:
-        "results/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf"
+        temp("results/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf")
     params:
         mem = CLUSTER_META["callpon"]["mem"]
     threads:
@@ -715,17 +682,25 @@ rule callpon:
             -I {input.bam} \
             -L {input.intervallist} \
             --tumor-sample $TUMOR_SM \
-            --germline-resource {config[gnomad_vcf]} \
-            --af-of-alleles-not-in-resource 0.00000406055 \
-            --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter \
+            --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             -O {output} \
             2> {log}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## MergePON
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## This is an intermediate "gather" step. Because `callpon` is run in scatter mode, using
+## and interval list and spread across 50 jobs for each normal sample, this step uses
+## MergeVCF to merge all intermediate VCF files into one VCF per normal sample
+## See: 
+## https://gatkforums.broadinstitute.org/gatk/discussion/11136/how-to-call-somatic-mutations-using-gatk4-mutect2
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule mergepon:
     input:
         lambda wildcards: expand("results/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf", batch=wildcards.batch, aliquot_id=wildcards.aliquot_id, interval=WGS_SCATTERLIST)
     output:
-        "results/mergepon/{batch}/{aliquot_id}.pon.vcf"
+        temp("results/mergepon/{batch}/{aliquot_id}.pon.vcf")
     params:
         mem = CLUSTER_META["mergepon"]["mem"]
     threads:
@@ -744,11 +719,21 @@ rule mergepon:
             -O {output} \
             2> {log}")
 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## CreatePON
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Because PON calls on normal samples were done individually for each normal, this step
+## merges calls from all samples from a given batch to build a confident PON
+## Protected output, this is the final batch-specifc PON file
+## See: 
+## https://gatkforums.broadinstitute.org/gatk/discussion/11136/how-to-call-somatic-mutations-using-gatk4-mutect2
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 rule createpon:
     input:
         lambda wildcards: expand("results/mergepon/{batch}/{aliquot_id}.pon.vcf", batch=wildcards.batch, aliquot_id=BATCH_TO_NORMAL[wildcards.batch])
     output:
-        "results/pon/{batch}.pon.vcf"
+        protected("results/pon/{batch}.pon.vcf")
     params:
         dir = "results/qc/multiqc",
         mem = CLUSTER_META["createpon"]["mem"]
@@ -770,16 +755,19 @@ rule createpon:
             2> {log}")
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Call SNV
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## This step uses Mutect2 to call variants on a tumor-normal pair, using a panel-of-normals
+## and a germline resource as reference
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## GATK parameters taken from "GATK4_SomaticSNVindel_worksheet.pdf"
 ## Extract SM tag from BAM file
 ## Code snippet taken from https://github.com/IARCbioinfo/BAM-tricks
-## Added "dont-use-soft-clipped-bases" and "standard-min-confidence-threshold-for-calling"
-## Based on GATK best practices RNAseq 04/05/18
 ## https://software.broadinstitute.org/gatk/documentation/article.php?id=3891
 ## Calculate af-of-alleles: 1/(2*123136) = 0.00000406055 (6 sign. digits)
+## 06/09/2018
+## Removed -disable-read-filter MateOnSameContigOrNoMappedMateReadFilter
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-# @sbamin  :imp: I am vary of beta function: `--disable-read-filter MateOnSameContigOrNoMappedMateReadFilter` as it is more relevant to alt-aware processed alignments using GRCh38 genome (GATK Doc # 11136). Alternately, it should be ok to keep this filter disabled (allow discordant reads to be counted towards variant calling) as long as realigned bam has a *tag* for these reads. Then, we can use those for manual review of calls, esp. when discordant reads are supporting ALT allele.
 
 rule callsnv:
     input:
@@ -788,7 +776,7 @@ rule callsnv:
         pon = lambda wildcards: "results/pon/{batch}.pon.vcf".format(batch=PAIRS_DICT[wildcards.pair_id]["project_id"]),
         intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
     output:
-        vcf = "results/m2vcf-scatter/{pair_id}.{interval}.vcf",
+        vcf = temp("results/m2vcf-scatter/{pair_id}.{interval}.vcf"),
         bam = "results/m2bam/{pair_id}.{interval}.bam"
     params:
         mem = CLUSTER_META["callsnv"]["mem"]
@@ -814,21 +802,29 @@ rule callsnv:
             --normal-sample $CTRL_NAM \
             --panel-of-normals {input.pon} \
             --germline-resource {config[gnomad_vcf]} \
-            --af-of-alleles-not-in-resource 0.00000406055 \
+            --af-of-alleles-not-in-resource {config[af_of_alleles_not_in_resource]} \
             --dont-use-soft-clipped-bases true \
             --standard-min-confidence-threshold-for-calling 20 \
-            --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter \
             -O {output.vcf} \
             -bamout {output.bam} \
+            --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             2> {log}"
 
-# @sbamin may need to supply .dict file if chr-wise vcf header is missing chr index (1:21,X,Y,MT). Usually, this is not a case but just writing here anyways!
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Merge SNV
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## This is an intermediate "gather" step. Like `callpon`, `callsnv` is run in scatter mode, 
+## using an interval list and spread across 50 jobs for each normal sample, this step uses
+## MergeVCF to merge all intermediate VCF files into one VCF per normal sample
+## See: 
+## https://gatkforums.broadinstitute.org/gatk/discussion/11136/how-to-call-somatic-mutations-using-gatk4-mutect2
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule mergesnv:
     input:
         lambda wildcards: expand("results/m2vcf-scatter/{pair_id}.{interval}.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST)
     output:
-        "results/m2vcf/{pair_id}.vcf"
+        protected("results/m2vcf/{pair_id}.vcf")
     params:
         mem = CLUSTER_META["mergesnv"]["mem"]
     threads:
@@ -874,6 +870,7 @@ rule pileupsummaries:
             -I {input} \
             -V {config[tiny_vcf]} \
             -O {output} \
+            --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -882,7 +879,9 @@ rule pileupsummaries:
 ## Output: contamination table
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# @sbamin We don't necessarily need contamination table based on variants across all chrs, and 2-3 large chrs are good enough. Idea is to query sufficient population level variants to estimate normal contamination of tumor sample.
+# @sbamin We don't necessarily need contamination table based on variants across all chrs, and 2-3 large chrs are good enough.
+# Idea is to query sufficient population level variants to estimate normal contamination of tumor sample.
+# @barthf this is fast enough that I'm just gonna leave this for now
 
 rule calculatecontamination:
     input:
@@ -917,7 +916,7 @@ rule filtermutect:
         vcf = "results/m2vcf/{pair_id}.vcf",
         tab = "results/contamination/{pair_id}.contamination.txt"
     output:
-        "results/m2filter/{pair_id}.filtered.vcf"
+        temp("results/m2filter/{pair_id}.filtered.vcf")
     params:
         mem = CLUSTER_META["filtermutect"]["mem"]
     threads:
@@ -934,6 +933,7 @@ rule filtermutect:
             -V {input.vcf} \
             --contamination-table {input.tab} \
             -O {output} \
+            --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -993,9 +993,16 @@ rule filterorientation:
             -V {input.vcf} \
             -P {input.art} \
             -O {output} \
+            --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             2> {log}"
 
-# @sbamin I suggest that we should put hold at VEP step until we finalize consensus calls. Idea is too get how many filtered calls we have and with what level of confidence (based on consensus calls from other callers). To me, VEP with extended anntoations is of little value until vcfs are at freeze level. Also, we should have uniform processing past alignment step across both canine and human (adult + pediatric) life history projects. A few callers and filtering steps that we already have run on canine are at https://github.com/TheJacksonLaboratory/hourglass/issues/9. If we are in need of base annotations, like exonic vs promoter vs non-coding, that should be quick enough from VEP, but I suggest to have a hold on extended annotations using vcf2maf as I guess we will end up doing those iteratively until we freeze vcfs.
+# @sbamin I suggest that we should put hold at VEP step until we finalize consensus calls. 
+# Idea is too get how many filtered calls we have and with what level of confidence (based on consensus calls from other callers).
+# To me, VEP with extended anntoations is of little value until vcfs are at freeze level.
+# Also, we should have uniform processing past alignment step across both canine and human (adult + pediatric) life history projects.
+# A few callers and filtering steps that we already have run on canine are at https://github.com/TheJacksonLaboratory/hourglass/issues/9.
+# If we are in need of base annotations, like exonic vs promoter vs non-coding, that should be quick enough from VEP, 
+# but I suggest to have a hold on extended annotations using vcf2maf as I guess we will end up doing those iteratively until we freeze vcfs.
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## USE VEP
@@ -1036,5 +1043,4 @@ rule vep:
             --ncbi-build GRCh37 \
             2> {log}"
 
-# @sbamin For GATK runner: --seconds-between-progress-updates 900 to reduce log size. --TMP_DIR Optional: Most times, tmp is relative to workdir. But, if you see it is being under /tmp/, then it may fill up fast as /tmp is typically mounted on RAM at compute nodes.
 ## END ##
