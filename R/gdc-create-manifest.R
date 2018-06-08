@@ -6,7 +6,10 @@ library(GenomicDataCommons)
 library(listviewer)
 library(tidyverse)
 
-setwd("/Volumes/Helix-Projects/GLASS-WG")
+## record base directory, typically ./.git dir is present
+mybasedir = here::here()
+setwd(mybasedir)
+getwd()
 
 cases_file      = "data/manifest/tcga/cases"
 samples_file    = "data/manifest/tcga/samples"
@@ -17,75 +20,6 @@ pairs_file      = "data/manifest/tcga/pairs"
 
 json_ext = "json"
 text_ext = "tsv"
-
-## Make sure to include case ids
-# "cases.project.project_id" = project (eg. TCGA-LGG)
-# "cases.samples.sample_type" = sample type (eg. Primary Tumor)
-# "cases.samples.portions.analytes.aliquots.submitter_id" = TCGA barcode
-
-add_fields = c("cases.project.project_id",
-               "cases.samples.sample_type", 
-               "cases.samples.portions.analytes.aliquots.submitter_id")
-
-## Inspect data types
-files(legacy = TRUE) %>% facet(c('data_type')) %>% aggregations()
-
-## Get a list of all WXS/RNA-Seq aligned BAM files from primary tumors
-fq = files(legacy = TRUE) %>% 
-  GenomicDataCommons::filter( ~ cases.project.project_id %in% c("TCGA-LGG", "TCGA-GBM") & 
-                                experimental_strategy == "WGS" & 
-                                data_type == "Aligned reads") %>% 
-  GenomicDataCommons::select(c(default_fields(files()), add_fields))
-
-message(sprintf("Found %s hits", GenomicDataCommons::count(fq)))
-
-## Extract results
-fres = results_all(fq)
-
-## Inspect list using listviewer::jsonedit
-jsonedit(fres)
-
-## Flatten nested variables
-fres$project = map(fres$cases, "project") %>% map_chr("project_id")
-fres$sample_type = map(fres$cases, "samples") %>% map(unlist) %>% map_chr("sample_type")
-fres$aliquot_id = map(fres$cases, "samples") %>% map(unlist) %>% map_chr("portions.analytes.aliquots.submitter_id")
-
-## Convert to dataframe (finally!)
-df = as.data.frame(fres[-which(names(fres) %in% c("cases", "acl", "analysis"))], stringsAsFactors = F) %>%
-  select(id, aliquot_id, project, sample_type, experimental_strategy, file_size, md5sum, file_name, created_datetime, updated_datetime) %>%
-  filter(grepl("TCGA", project)) %>%
-  mutate(sample_id = substr(aliquot_id,1,16),
-         case_id = substr(aliquot_id,1,12),
-         format = "BAM")
-
-## Pair primary-recurrent-2ndrecurrence samples
-filtered_files = df %>% 
-  group_by(sample_id) %>%
-  mutate(p = order(file_size, decreasing = T)) %>%
-  ungroup() %>%
-  group_by(case_id) %>%
-  mutate(hasRec = any(sample_type == "Recurrent Tumor")) %>%
-  ungroup() %>%
-  filter(hasRec, p == 1) %>%
-  select(-hasRec, -p, -created_datetime, -updated_datetime, -experimental_strategy) %>%
-  mutate(file_size_readable = gdata::humanReadable(file_size, standard="Unix"),
-         sample_type_code = recode_factor(substr(aliquot_id, 14,16), "01A" = "TP", "01B" = "TP", "02A" = "R1", "02B" = "R2", "10A" = "NB", "10B" = "NB", "10D" = "NB"))
-
-## Full-join
-filtered_files_rgs = filtered_files %>% right_join(rgs)
-
-## Nest
-nested_filtered_files_rgs = filtered_files_rgs %>%
-  mutate(file_uuid = id, case_project = project, file_md5sum = md5sum, file_format = format) %>%
-  select(starts_with("case"), starts_with("sample"), starts_with("file"), starts_with("rg")) %>%
-  nest(-starts_with("case"), -starts_with("sample"), -starts_with("file"), .key=readgroups) %>% # starts_with("RG")
-  nest(-starts_with("case"), -starts_with("sample"),.key=files) %>%
-  nest(-starts_with("case"),.key=samples)
-
-jsonlite::toJSON(nested_filtered_files_rgs, pretty = T)
-write(jsonlite::toJSON(nested_filtered_files_rgs, pretty = T), file = unpaired_json)
-
-####################################################################################
 
 ## Aliquots
 df2 = read.delim("data/sequencing-information/master_life_history_uniform_naming_incomplete.txt", as.is=T)
@@ -161,6 +95,7 @@ p3 = samples %>%
 
 pairs = rbind(p1,p2,p3) %>% filter(complete.cases(tumor_aliquot_id, normal_aliquot_id))
 
+print(sprintf("Exporting manifest as json files"))
 write(jsonlite::toJSON(files, pretty = T), file = sprintf("%s.%s", files_file, json_ext))
 write(jsonlite::toJSON(cases, pretty = T), file = sprintf("%s.%s", cases_file, json_ext))
 write(jsonlite::toJSON(samples, pretty = T), file = sprintf("%s.%s", samples_file, json_ext))
@@ -194,4 +129,10 @@ renamemap = samples %>% left_join(aliquots) %>%
 
 write.table(renamemap, file="results_bqsr_renamemap.tsv", quote=F, row.names=F, sep="\t")
 
+mysession_info <- devtools::session_info()
 
+timetag = make.names(format(Sys.time(),"t%d_%b_%y_%H%M%S%Z"))
+save.image(file.path(sprintf("R/RData/gdc-create-manifest_%s.RData", timetag)))
+print(sprintf("Done! Manifest RData file saved to R/RData/gdc-create-manifest_%s.RData\nManifest files in json formats are at data/manifest/tcga/", timetag))
+
+## end ##
