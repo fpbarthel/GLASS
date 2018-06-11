@@ -41,7 +41,7 @@ seconds_between_progress_updates: 900
 vepdata: "/projects/barthf/opt/.vep"
 
 ## Reference genome
-reference_fasta: "/projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta"
+reference_fasta: "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/human_g1k_v37_decoy.fasta"
 
 ## HTML dir
 # @sbamin helix ~/ has 50GB limit. multiqc and fastqc files may grow in size.

@@ -51,6 +51,7 @@ PAIRS 		= json.load(open(config["pairs_json"]))
 # We can either check it upfront while making json or more preferable to check just before snakemake submits a workflow per case or sample.
 # That way, snakemake should STOP with error or emit WARN for non-compliant RG format. 
 # This is more practical if input is FQ and not BAM unless we already have RG info for BAM file.
+## @barthf : TO-DO
 
 ### NOTE NEED TO SPERATE BAM AND FASTQ READGROUPS
 
@@ -164,26 +165,26 @@ rule snv:
 ## GDC key needs to be re-downloaded and updated from time to time
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##
 
-# rule download:
-#     output:
-#         "download/{uuid}/{filename}.bam"
-#     threads:
-#         CLUSTER_META["download"]["ppn"]
-#     message:
-#         "Downloading from GDC\n"
-#         "UUID {wildcards.uuid}\n"
-#         "File {wildcards.filename}"
-#     log:
-#         "logs/download/{uuid}.log"
-#     benchmark:
-#         "benchmarks/download/{uuid}.txt"
-#     shell:
-#         "gdc-client download \
-#             -d download \
-#             -n {threads} \
-#             -t {config[gdc_token]} \
-#             {wildcards.uuid} \
-#             > {log} 2>&1"
+rule download:
+    output:
+        "data/download/{uuid}/{filename}.bam"
+    threads:
+        CLUSTER_META["download"]["ppn"]
+    message:
+        "Downloading from GDC\n"
+        "UUID {wildcards.uuid}\n"
+        "File {wildcards.filename}"
+    log:
+        "logs/download/{uuid}.log"
+    benchmark:
+        "benchmarks/download/{uuid}.txt"
+    shell:
+        "gdc-client download \
+            -d download \
+            -n {threads} \
+            -t {config[gdc_token]} \
+            {wildcards.uuid} \
+            > {log} 2>&1"
 
 # ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 # ## RevertSAM and FASTQ-2-uBAM both output uBAM files to the same directory
@@ -211,61 +212,61 @@ rule snv:
 ## Unlikely this will get fixed any time soon
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# rule revertsam: ## 5/8 this rule is causing trouble, comment for now
-#     input:
-#         lambda wildcards: ALIQUOT_TO_BAM_PATH[wildcards.aliquot_id]
-#     output:
-#         map = "results/ubam/{aliquot_id}/{aliquot_id}.output_map.txt",
-#         bams = temp(expand("results/ubam/{{aliquot_id}}/{{aliquot_id}}.{rg}.bam", rg=list(itertools.chain.from_iterable(ALIQUOT_TO_RGID.values()))))
-#     params:
-#         dir = "results/ubam/{aliquot_id}",
-#         mem = CLUSTER_META["revertsam"]["mem"]
-#     log: 
-#         "logs/revertsam/{aliquot_id}.log"
-#     threads:
-#         CLUSTER_META["revertsam"]["ppn"]
-#     benchmark:
-#         "benchmarks/revertsam/{aliquot_id}.txt"
-#     message:
-#         "Reverting sample back to unaligned BAM file, stripping any previous "
-#         "pre-processing and restoring original base quality scores. Output files are split "
-#         "by readgroup.\n"
-#         "Sample: {wildcards.aliquot_id}"
-#     run:
-#         ## Create a readgroup name / filename mapping file
-#         rgmap = pd.DataFrame(
-#             {
-#                 "READ_GROUP_ID": BAM_READGROUPS[wildcards["aliquot_id"]],
-#                 "OUTPUT": ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in BAM_READGROUPS[wildcards["aliquot_id"]]]
-#             },
-#             columns = ["READ_GROUP_ID", "OUTPUT"]
-#         )
-#         rgmap.to_csv(output["map"], sep="\t", index=False)
+rule revertsam: ## 5/8 this rule is causing trouble, comment for now
+    input:
+        lambda wildcards: ALIQUOT_TO_BAM_PATH[wildcards.aliquot_id]
+    output:
+        map = "results/ubam/{aliquot_id}/{aliquot_id}.output_map.txt",
+        bams = temp(expand("results/ubam/{{aliquot_id}}/{{aliquot_id}}.{rg}.bam", rg=list(itertools.chain.from_iterable(ALIQUOT_TO_RGID.values()))))
+    params:
+        dir = "results/ubam/{aliquot_id}",
+        mem = CLUSTER_META["revertsam"]["mem"]
+    log: 
+        "logs/revertsam/{aliquot_id}.log"
+    threads:
+        CLUSTER_META["revertsam"]["ppn"]
+    benchmark:
+        "benchmarks/revertsam/{aliquot_id}.txt"
+    message:
+        "Reverting sample back to unaligned BAM file, stripping any previous "
+        "pre-processing and restoring original base quality scores. Output files are split "
+        "by readgroup.\n"
+        "Sample: {wildcards.aliquot_id}"
+    run:
+        ## Create a readgroup name / filename mapping file
+        rgmap = pd.DataFrame(
+            {
+                "READ_GROUP_ID": BAM_READGROUPS[wildcards["aliquot_id"]],
+                "OUTPUT": ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in BAM_READGROUPS[wildcards["aliquot_id"]]]
+            },
+            columns = ["READ_GROUP_ID", "OUTPUT"]
+        )
+        rgmap.to_csv(output["map"], sep="\t", index=False)
 
-#         ## Create empty files ("touch") for readgroups not in this BAM file
-#         ## Workaround for issue documented here: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
-#         other_rg_f = ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.bam".format(aliquot_id=wildcards["aliquot_id"],rg=rg) for sample, rgs in BAM_READGROUPS.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
-#         for f in other_rg_f:
-#             touch(f)
+        ## Create empty files ("touch") for readgroups not in this BAM file
+        ## Workaround for issue documented here: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
+        other_rg_f = ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.bam".format(aliquot_id=wildcards["aliquot_id"],rg=rg) for sample, rgs in BAM_READGROUPS.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
+        for f in other_rg_f:
+            touch(f)
 
-#         shell("gatk --java-options -Xmx{params.mem}g RevertSam \
-#             --INPUT={input} \
-#             --OUTPUT_BY_READGROUP=true \
-#             --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
-#             --OUTPUT_MAP={output.map} \
-#             --RESTORE_ORIGINAL_QUALITIES=true \
-#             --VALIDATION_STRINGENCY=SILENT \
-#             --ATTRIBUTE_TO_CLEAR=AS \
-#             --ATTRIBUTE_TO_CLEAR=FT \
-#             --ATTRIBUTE_TO_CLEAR=CO \
-#             --ATTRIBUTE_TO_CLEAR=XT \
-#             --ATTRIBUTE_TO_CLEAR=XN \
-#             --ATTRIBUTE_TO_CLEAR=OC \
-#             --ATTRIBUTE_TO_CLEAR=OP \
-#             --SANITIZE=true \
-#             --SORT_ORDER=queryname {config[revertsam_extra_args]}\
-#             --TMP_DIR={config[tempdir]} \
-#             > {log} 2>&1")
+        shell("gatk --java-options -Xmx{params.mem}g RevertSam \
+            --INPUT={input} \
+            --OUTPUT_BY_READGROUP=true \
+            --OUTPUT_BY_READGROUP_FILE_FORMAT=bam \
+            --OUTPUT_MAP={output.map} \
+            --RESTORE_ORIGINAL_QUALITIES=true \
+            --VALIDATION_STRINGENCY=SILENT \
+            --ATTRIBUTE_TO_CLEAR=AS \
+            --ATTRIBUTE_TO_CLEAR=FT \
+            --ATTRIBUTE_TO_CLEAR=CO \
+            --ATTRIBUTE_TO_CLEAR=XT \
+            --ATTRIBUTE_TO_CLEAR=XN \
+            --ATTRIBUTE_TO_CLEAR=OC \
+            --ATTRIBUTE_TO_CLEAR=OP \
+            --SANITIZE=true \
+            --SORT_ORDER=queryname {config[revertsam_extra_args]}\
+            --TMP_DIR={config[tempdir]} \
+            > {log} 2>&1")
 
 # ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 # ## Convert from FASTQ pair to uBAM
@@ -323,6 +324,7 @@ rule snv:
 # e.g., https://gist.github.com/chapmanb/3953983, 
 # https://gitlab.com/gmapps/railab_chipseq/tree/master/scripts 
 # A step further, that can be programmatically added to emit WARN or STOP if converted FQ fails to PASS base filters, e.g., per base or tile seq quality.
+## @barthf Added --extract parameter, which includes a "summary.txt" file which gives WARN, FAIL, PASS on various aspects 6/11/18
 
 rule fastqc:
     input:
@@ -344,6 +346,7 @@ rule fastqc:
         "Readgroup: {wildcards.readgroup}"
     shell:
         "fastqc \
+            --extract \
             -o {params.dir} \
             -f bam \
             {input} \
