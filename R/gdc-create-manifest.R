@@ -39,7 +39,7 @@ df = tmp %>% unnest(samples) %>%
   left_join(df2)
 
 files = df %>% 
-  mutate(file_path = sprintf("/fastscratch/barthf/GLASS-WG/download/data/%s/%s", file_uuid, file_name)) %>%
+  mutate(file_path = sprintf("/fastscratch/barthf/GLASS-WG/data/download/%s/%s", file_uuid, file_name)) %>%
   select(aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format) %>%
   distinct()
 
