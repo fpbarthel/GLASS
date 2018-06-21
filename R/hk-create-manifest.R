@@ -1,15 +1,15 @@
 #######################################################
 # Create manifest for hong kong samples (GLASS)
 # Date: 2018.06.20
-# Author: Kevin J.
+# Author: Kevin J., Floris B.
 #######################################################
 
-# Directory for github repo.
+# Local directory for github repo.
 mybasedir = "/Users/johnsk/Documents/Life-History/GLASS-WG"
 setwd(mybasedir)
 
+# Files with information about fastq information and barcodes.
 HK_file_path = "data/sequencing-information/HK/hk_all_files_test.txt"
-HK_meta_path = "data/sequencing-information/HK/hong-kong-sample-maps.txt"
 life_history_barcodes = "data/sequencing-information/master_life_history_uniform_naming_incomplete.txt"
 
 # Create extensions for samples.
@@ -35,10 +35,10 @@ library(stringi)
 library(stringr)
 
 #######################################################
-# We need to generate the following fields required by the SNV snakemake:
-# aliquots, cases, files, pairs, readgroups, and samples.
+# We need to generate the following fields required by the SNV snakemake pipeline:
+# aliquots, files, cases, samples, pairs, and readgroups.
 
-# Generate aliquot tsv.
+### Aliquot ####
 master_sheet = read.delim("data/sequencing-information/master_life_history_uniform_naming_incomplete.txt", as.is=T)
 aliquot_sheet = master_sheet %>% select(aliquot_uuid = uuid, sample_id = Barcode) %>%
   mutate(aliquot_id = sprintf("%s-%s", sample_id, aliquot_uuid),
@@ -47,17 +47,16 @@ aliquot_sheet = master_sheet %>% select(aliquot_uuid = uuid, sample_id = Barcode
          portion = 1) %>%
   filter(grepl("HK", sample_id))
 
-### aliquots
+# Aliquot file to be written.
 aliquots = aliquot_sheet %>% select(sample_id, aliquot_uuid, aliquot_id, portion, analyte_type, analysis_type) %>% distinct()
-print(sprintf("Exporting manifest as json files"))
-write(jsonlite::toJSON(aliquots, pretty = T), file = sprintf("%s.%s", aliquots_file, json_ext))
-write.table(aliquots, file = sprintf("%s.%s", aliquots_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
 
+
+
+### Files ####
 # Generate *file* tsv containing: aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
-# Load in samples from the Hong Kong data set.
 hk_df = read.table(HK_file_path, header=T, stringsAsFactors = F)
 
-# Retrieve the sample name to map to study center provided covariate sheet.
+# Retrieve the original sample name to map to study center provided covariate sheet.
 hk_df$sample_id = sub(".*/WG_ *(.*?) *_USPD.*", "\\1", hk_df$filenames)
 
 # Create a new identifier on which to group mate pairs onto the same line (i.e., R1 and R2).
@@ -66,7 +65,7 @@ hk_df$read_group = paste(hk_df$Library_ID, hk_df$FlowCell_ID, hk_df$Lane_ID, sep
 # Retrieve the file_name from the file_path. 
 hk_df$file_name_single = sapply(strsplit(hk_df$filenames, "/"), "[[", 6)
 
-# comma separated file_paths and file_names.
+# Comma separated file_paths and file_names.
 merged_hk_files = hk_df %>% 
   group_by(read_group) %>% 
   mutate(file_path = paste(filenames, collapse=","),
@@ -81,7 +80,7 @@ hk_map_df = merged_hk_files %>%
   ungroup()
 
 # Generate uuids for each of the hong kong files.
-# 24c6f54a-e7a2-4148-8335-045e3c74096e
+# Example from TCGA: 24c6f54a-e7a2-4148-8335-045e3c74096e
 set.seed(1)
 hk_map_df$file_uuid = paste(stri_rand_strings(dim(hk_map_df)[1], 8, "[a-z0-9]"),
   stri_rand_strings(dim(hk_map_df)[1], 4, "[a-z0-9]"),
@@ -97,31 +96,89 @@ n_distinct(hk_map_df$file_uuid)
 hk_map_df = hk_map_df %>% mutate(file_size = "NA",
                      file_md5sum = "NA",
                      aliquot_id = sprintf("%s-%s", Barcode, uuid))
-# aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
 
-## files
+# Order needs to be: # aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
 files = hk_map_df %>% select(aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format = File_Type) %>% distinct()
+
+
+
+### Cases ####
+hk_map_df = hk_map_df %>% 
+  mutate(case_id = substring(Barcode, 1, 12), 
+         project_id = "GLSS-HK")
+# Select only those relevant fields.
+cases = hk_map_df %>% select(case_id, project_id)
+
+
+
+
+### Samples ####
+# Grab last two characrters of barcode.
+hk_map_df$sample_type = substring(hk_map_df$Barcode, 14, 15)
+# Recode variables to match Floris' fields.
+samples = hk_map_df %>% select(case_id, sample_id = Barcode, legacy_sample_id = Verhaak_Sample_ID, sample_type) %>% distinct()
+
+
+
+### Pairs ####
+p1 = samples %>% 
+  left_join(aliquots) %>%
+  select(sample_type, aliquot_id, case_id) %>%
+  filter(sample_type %in% c("TP", "NB")) %>% 
+  spread(sample_type, aliquot_id) %>%
+  mutate(pair_id = TP) %>%
+  select(case_id, pair_id, tumor_aliquot_id = TP, normal_aliquot_id = NB)
+
+p2 = samples %>% 
+  left_join(aliquots) %>%
+  select(sample_type, aliquot_id, case_id) %>%
+  filter(sample_type %in% c("R1", "NB")) %>%
+  spread(sample_type, aliquot_id) %>%
+  mutate(pair_id = R1) %>%
+  select(case_id, pair_id, tumor_aliquot_id = R1, normal_aliquot_id = NB)
+
+# Note: Hong Kong samples do not have second recurrences.
+pairs = rbind(p1,p2) %>% filter(complete.cases(tumor_aliquot_id, normal_aliquot_id))
+
+
+
+### Readgroups ####
+# Necessary information: file_uuid, aliquot_id, RGID, RGPL, RGPU, RGLB, RGPI, RGDT, RGSM, RGCN.
+test_df = hk_map_df %>% 
+  mutate(RGPL = "ILLUMINA",
+    RGPU = paste(substr(file_name, nchar(file_name)-19, nchar(file_name)-12), 
+                 substr(file_name, nchar(file_name)-8, nchar(file_name)-8), sep="."),
+    RGLB = sub(".*_ *(.*?) *_H.*", "\\1", file_name),
+    RGPI = 0,
+    RGDT = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%dT%H:%M:%S%z"), 
+    RGSM = Barcode,
+    RGCN = "NVGN_HK",
+    RGID = paste0(substring(RGPU, 1, 4), substring(RGPU, nchar(RGPU)-1, nchar(RGPU)), ""))
+
+# Finalize readgroup information in predefined order.
+readgroups = test_df %>% select(file_uuid, aliquot_id, RGID, RGPL, RGPU, RGLB, RGPI, RGDT, RGSM, RGCN) %>% distinct()
+
+### OUTPUT ####
+# Output the json and .tsv files.
+print(sprintf("Exporting manifest as json files for snakemake use."))
+write(jsonlite::toJSON(aliquots, pretty = T), file = sprintf("%s.%s", aliquots_file, json_ext))
 write(jsonlite::toJSON(files, pretty = T), file = sprintf("%s.%s", files_file, json_ext))
+write(jsonlite::toJSON(cases, pretty = T), file = sprintf("%s.%s", cases_file, json_ext))
+write(jsonlite::toJSON(pairs, pretty = T), file = sprintf("%s.%s", pairs_file, json_ext))
+write(jsonlite::toJSON(readgroups, pretty = T), file = sprintf("%s.%s", readgroups_file, json_ext))
+write(jsonlite::toJSON(samples, pretty = T), file = sprintf("%s.%s", samples_file, json_ext))
+
+print(sprintf("Exporting manifest as tsv files for visualization ease."))
+write.table(aliquots, file = sprintf("%s.%s", aliquots_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
 write.table(files, file = sprintf("%s.%s", files_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(cases, file = sprintf("%s.%s", cases_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(pairs, file = sprintf("%s.%s", pairs_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(readgroups, file = sprintf("%s.%s", readgroups_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(samples, file = sprintf("%s.%s", samples_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
 
 
-## Samples
-samples =  %>% select(case_id, sample_id, legacy_sample_id, sample_type = sample_type_code) %>% distinct()
+# Output RData object and timestamp along with package versions.
+mysession_info <- devtools::session_info()
+timetag = make.names(format(Sys.time(),"t%d_%b_%y_%H%M%S%Z"))
 
-# Generate some read group information.
-hk_rg_df = hk_map_barcode_df %>% 
-  mutate(case_id = substr(Barcode, 1, 12)) %>% 
-  mutate(case_project = "hong_kong") %>% 
-  rename(sample_id = Barcode) %>% 
-  mutate(rg_PL = "ILLUMINA") %>% 
-  mutate(file_format = "FQ") %>% 
-  mutate(rg_DT = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%dT%H:%M:%S%z")) %>% 
-  mutate(rg_PU = paste(substr(file_name, nchar(file_name)-19, nchar(file_name)-12), 
-                       substr(file_name, nchar(file_name)-9, nchar(file_name)-9), sep=".")) %>% 
-  mutate(rg_LB = sub(".*_ *(.*?) *_H.*", "\\1", file_name)) %>% 
-  mutate(sample_type = recode_factor(Sample_Type, "Primary" = "Primary Tumor", "Blood" = "Blood Derived Normal", "Recurrence" = "First Recurrence Tumor")) %>% 
-  mutate(sample_type_code = recode_factor(sample_type, "Primary Tumor" = "TP", "Blood Derived Normal" = "NB", "First Recurrence Tumor" = "R1")) %>% 
-  mutate(rg_SM = sample_id) %>% 
-  mutate(rg_CN = "NVGN_HK") %>% 
-  mutate(rg_ID = paste0(substring(rg_PU, 1, 4), substring(rg_PU, nchar(rg_PU)-1, nchar(rg_PU)), "")) %>% 
-  select(-one_of("GT_Sample_ID", "Patient_ID", "Cohort", "Sex", "Age", "Sample_Type", "Seq_Type", "SeqMachine", "WGS_ReadLength", "Verhaak_Sample_ID", "uuid"))
+

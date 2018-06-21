@@ -49,7 +49,7 @@ HK_df$New_Sample_ID = str_pad(HK_df$New_Sample_ID, width = 8, side = "right", pa
 HongKong_sample_map = HK_df %>% 
   mutate(SeqID = "GLSS") %>% 
   mutate(TSS = "HK") %>% 
-  mutate(SubjectCode = recode_factor(Patient_ID, "CHUK5" = "0001", "CHUK4" = "0002", "CHUK3" = "0003", "CHUK2" = "0002", "CHUK1" = "0001")) %>%
+  mutate(SubjectCode = recode_factor(Patient_ID, "CHUK5" = "0005", "CHUK4" = "0004", "CHUK3" = "0003", "CHUK2" = "0002", "CHUK1" = "0001")) %>%
   rename(SampleCode = New_Sample_ID) %>%
   mutate(TissueCode = recode_factor(Sample_Type, "Blood" = "NB", "Primary" = "TP", "Recurrence" = "R1")) %>%
   unite(Barcode, SeqID:TissueCode, sep = "-", remove = FALSE)
