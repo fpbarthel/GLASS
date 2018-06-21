@@ -1,6 +1,6 @@
 #######################################################
 # Create manifest for hong kong samples (GLASS)
-# Date: 2018.06.20
+# Date: 2018.06.21
 # Author: Kevin J., Floris B.
 #######################################################
 
@@ -9,7 +9,7 @@ mybasedir = "/Users/johnsk/Documents/Life-History/GLASS-WG"
 setwd(mybasedir)
 
 # Files with information about fastq information and barcodes.
-HK_file_path = "data/sequencing-information/HK/hk_all_files_test.txt"
+HK_file_path = "data/sequencing-information/HK/hongkong-path-list.20180621.txt"
 life_history_barcodes = "data/sequencing-information/master_life_history_uniform_naming_incomplete.txt"
 
 # Create extensions for samples.
@@ -54,19 +54,24 @@ aliquots = aliquot_sheet %>% select(sample_id, aliquot_uuid, aliquot_id, portion
 
 ### Files ####
 # Generate *file* tsv containing: aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
-hk_df = read.table(HK_file_path, header=T, stringsAsFactors = F)
+# hk_df = read.table(HK_file_path, header=T, stringsAsFactors = F)
+hk_df = read.table(HK_file_path, col.names="filenames", stringsAsFactors = F)
 
 # Retrieve the original sample name to map to study center provided covariate sheet.
-hk_df$sample_id = sub(".*/WG_ *(.*?) *_USPD.*", "\\1", hk_df$filenames)
+hk_df_meta = hk_df %>% 
+  mutate(verhaak_sample_id = sub(".*/WG_ *(.*?) *_USPD.*", "\\1", filenames),
+         library_id = sub(".*_ *(.*?) *_H.*", "\\1", filenames), 
+         flowcell_id = substr(filenames, nchar(filenames)-19, nchar(filenames)-12),
+         lane_id = substr(filenames, nchar(filenames)-8, nchar(filenames)-8))
 
 # Create a new identifier on which to group mate pairs onto the same line (i.e., R1 and R2).
-hk_df$read_group = paste(hk_df$Library_ID, hk_df$FlowCell_ID, hk_df$Lane_ID, sep = '-')
+hk_df_meta$read_group = paste(hk_df_meta$library_id, hk_df$flowcell_id, hk_df$lane_id, sep = '-')
 
 # Retrieve the file_name from the file_path. 
-hk_df$file_name_single = sapply(strsplit(hk_df$filenames, "/"), "[[", 6)
+hk_df_meta$file_name_single = sapply(strsplit(hk_df_meta$filenames, "/"), "[[", 8)
 
 # Comma separated file_paths and file_names.
-merged_hk_files = hk_df %>% 
+merged_hk_files = hk_df_meta %>% 
   group_by(read_group) %>% 
   mutate(file_path = paste(filenames, collapse=","),
          file_name = paste(file_name_single, collapse=",")) %>% 
@@ -76,7 +81,7 @@ merged_hk_files = hk_df %>%
 # Combine with study center provided covariate sheet.
 master_sheet$Original_ID = gsub("-","_", master_sheet$Original_ID)
 hk_map_df = merged_hk_files %>% 
-  inner_join(master_sheet, by = c("sample_id" = "Original_ID")) %>%  
+  inner_join(master_sheet, by = c("verhaak_sample_id" = "Original_ID")) %>%  
   ungroup()
 
 # Generate uuids for each of the hong kong files.
@@ -95,10 +100,11 @@ n_distinct(hk_map_df$file_uuid)
 # Need to record the file_size and file_md5sum for these samples.
 hk_map_df = hk_map_df %>% mutate(file_size = "NA",
                      file_md5sum = "NA",
-                     aliquot_id = sprintf("%s-%s", Barcode, uuid))
+                     aliquot_id = sprintf("%s-%s", Barcode, uuid), 
+                     file_format = "FQ")
 
 # Order needs to be: # aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
-files = hk_map_df %>% select(aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format = File_Type) %>% distinct()
+files = hk_map_df %>% select(aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format) %>% distinct()
 
 
 
@@ -116,7 +122,7 @@ cases = hk_map_df %>% select(case_id, project_id)
 # Grab last two characrters of barcode.
 hk_map_df$sample_type = substring(hk_map_df$Barcode, 14, 15)
 # Recode variables to match Floris' fields.
-samples = hk_map_df %>% select(case_id, sample_id = Barcode, legacy_sample_id = Verhaak_Sample_ID, sample_type) %>% distinct()
+samples = hk_map_df %>% select(case_id, sample_id = Barcode, legacy_sample_id = verhaak_sample_id, sample_type) %>% distinct()
 
 
 
@@ -144,7 +150,7 @@ pairs = rbind(p1,p2) %>% filter(complete.cases(tumor_aliquot_id, normal_aliquot_
 
 ### Readgroups ####
 # Necessary information: file_uuid, aliquot_id, RGID, RGPL, RGPU, RGLB, RGPI, RGDT, RGSM, RGCN.
-test_df = hk_map_df %>% 
+readgroup_df = hk_map_df %>% 
   mutate(RGPL = "ILLUMINA",
     RGPU = paste(substr(file_name, nchar(file_name)-19, nchar(file_name)-12), 
                  substr(file_name, nchar(file_name)-8, nchar(file_name)-8), sep="."),
@@ -156,7 +162,7 @@ test_df = hk_map_df %>%
     RGID = paste0(substring(RGPU, 1, 4), substring(RGPU, nchar(RGPU)-1, nchar(RGPU)), ""))
 
 # Finalize readgroup information in predefined order.
-readgroups = test_df %>% select(file_uuid, aliquot_id, RGID, RGPL, RGPU, RGLB, RGPI, RGDT, RGSM, RGCN) %>% distinct()
+readgroups = readgroup_df %>% select(file_uuid, aliquot_id, RGID, RGPL, RGPU, RGLB, RGPI, RGDT, RGSM, RGCN) %>% distinct()
 
 ### OUTPUT ####
 # Output the json and .tsv files.
@@ -180,5 +186,5 @@ write.table(samples, file = sprintf("%s.%s", samples_file, text_ext), sep="\t", 
 # Output RData object and timestamp along with package versions.
 mysession_info <- devtools::session_info()
 timetag = make.names(format(Sys.time(),"t%d_%b_%y_%H%M%S%Z"))
-
+save.image(file.path(sprintf("R/RData/hk-create-manifest_%s.RData", timetag)))
 
