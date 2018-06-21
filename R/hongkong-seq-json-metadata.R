@@ -34,7 +34,7 @@ library(listviewer)
 # sample: sample_type, sample_id, sample_type_code.
 # file: file_name, file_format, file_uuid.
 # readgroups: rg_ID, rg_PL, rg_PU, rg_LB, rg_DT, rg_SM, rg_CN.
-  
+
 # Load in samples from the Hong Kong data set.
 hk_df = read.table(HK_file_path, col.names="file_name", stringsAsFactors = F)
 
@@ -87,6 +87,4 @@ write(jsonlite::toJSON(nested_filtered_files_rgs, pretty = T), file = "data/sequ
 # 3) add a pairs directive at case level that maps all pair of tumor/normal of interest for that case
 # 4) consider havin rg_CN and case_project be identical (not sure on this but a thought)
 # P.S. rg_SM should also match new sample ID
-
-
 
