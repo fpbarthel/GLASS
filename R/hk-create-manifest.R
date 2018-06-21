@@ -65,7 +65,7 @@ hk_df_meta = hk_df %>%
          lane_id = substr(filenames, nchar(filenames)-8, nchar(filenames)-8))
 
 # Create a new identifier on which to group mate pairs onto the same line (i.e., R1 and R2).
-hk_df_meta$read_group = paste(hk_df_meta$library_id, hk_df$flowcell_id, hk_df$lane_id, sep = '-')
+hk_df_meta$read_group = paste(hk_df_meta$library_id, hk_df_meta$flowcell_id, hk_df_meta$lane_id, sep = '-')
 
 # Retrieve the file_name from the file_path. 
 hk_df_meta$file_name_single = sapply(strsplit(hk_df_meta$filenames, "/"), "[[", 8)
