@@ -142,7 +142,7 @@ rule fastqc:
     input:
         "results/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam"
     output:
-        "results/qc/{aliquot_id}/{aliquot_id}.{readgroup}_fastqc.html"
+        "results/qc/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned_fastqc.html"
     params:
         dir = "results/qc/{aliquot_id}",
         mem = CLUSTER_META["fastqc"]["mem"]
@@ -450,7 +450,7 @@ rule multiqc:
     input:
         expand("results/qc/{sample}.ValidateSamFile.txt", sample=ALIQUOT_TO_RGID.keys()),
         expand("results/qc/{sample}.WgsMetrics.txt", sample=ALIQUOT_TO_RGID.keys()),
-        lambda wildcards: ["results/qc/{sample}/{sample}.{rg}_fastqc.html".format(sample=sample, rg=readgroup)
+        lambda wildcards: ["results/qc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample=sample, rg=readgroup)
           for sample, readgroups in ALIQUOT_TO_RGID.items()
           for readgroup in readgroups] 
     output:

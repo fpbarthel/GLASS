@@ -70,4 +70,4 @@ fi
 
 echo "Starting snakemake..."
 sleep 1
-snakemake ${OPTS} --jobs 500 --latency-wait 120 --max-jobs-per-second 8 --configfile "${CONFIGFILE}" --cluster-config "${CLUSTRCONF}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e {cluster.stderr} -o {cluster.stdout}" ${EXTRA_OPTS} ${TARGET}
+snakemake ${OPTS} --jobs 500 -k --latency-wait 120 --max-jobs-per-second 8 --configfile "${CONFIGFILE}" --cluster-config "${CLUSTRCONF}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e {cluster.stderr} -o {cluster.stdout}" ${EXTRA_OPTS} ${TARGET}
