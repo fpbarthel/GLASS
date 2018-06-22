@@ -88,18 +88,18 @@ rule revertsam: ## 5/8 this rule is causing trouble, comment for now
 
 rule fq2ubam:
     input:
-        R1 = lambda wildcards: "fastq/{sample}/{file}".format(sample=wildcards.aliquot_id, file=FQ_FILES[wildcards.aliquot_id][wildcards.readgroup][0]),
-        R2 = lambda wildcards: "fastq/{sample}/{file}".format(sample=wildcards.aliquot_id, file=FQ_FILES[wildcards.aliquot_id][wildcards.readgroup][1])
+        R1 = lambda wildcards: "{file}".format(sample=wildcards.aliquot_id, file=ALIQUOT_TO_FQ_PATH[wildcards.aliquot_id][wildcards.readgroup][0]),
+        R2 = lambda wildcards: "{file}".format(sample=wildcards.aliquot_id, file=ALIQUOT_TO_FQ_PATH[wildcards.aliquot_id][wildcards.readgroup][1])
     output:
         temp("results/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam")
     params:
         RGID = lambda wildcards: wildcards.readgroup,
-        RGPL = lambda wildcards: RGPL[wildcards.aliquot_id][wildcards.readgroup],
-        RGPU = lambda wildcards: RGPU[wildcards.aliquot_id][wildcards.readgroup],
-        RGLB = lambda wildcards: RGLB[wildcards.aliquot_id][wildcards.readgroup],
-        RGDT = lambda wildcards: RGDT[wildcards.aliquot_id][wildcards.readgroup],
-        RGSM = lambda wildcards: RGSM[wildcards.aliquot_id][wildcards.readgroup],
-        RGCN = lambda wildcards: RGCN[wildcards.aliquot_id][wildcards.readgroup],
+        RGPL = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPL"],
+        RGPU = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPU"],
+        RGLB = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGLB"],
+        RGDT = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGDT"],
+        RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGSM"],
+        RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGCN"],
         mem = CLUSTER_META["fq2ubam"]["mem"]
     log:
         "logs/fq2ubam/{aliquot_id}.{readgroup}.log"

@@ -86,7 +86,7 @@ FILES_DICT = build_dict(FILES, "file_uuid")
 PAIRS_DICT = build_dict(PAIRS, "pair_id")
 
 
-## Aliquot IDs and BAM files map 1:1
+## Aliquot IDs and BAM/FQ files map 1:1 (or 1:2 for FQ)
 
 ALIQUOT_TO_BAM_PATH = {}
 for file in FILES:
@@ -123,7 +123,8 @@ for pair in PAIRS:
 ## RGIDs are unique within an aliquot
 ## Aliquot IDs and fastQ files map 1:many
 
-ALIQUOT_TO_READGROUP = {} 
+ALIQUOT_TO_READGROUP = {}
+ALIQUOT_TO_FQ_PATH = {}
 for readgroup in READGROUPS:
     if readgroup["aliquot_id"] not in ALIQUOT_TO_READGROUP:
         ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ] = { readgroup["RGID"] : readgroup }
@@ -131,6 +132,10 @@ for readgroup in READGROUPS:
         ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ] = readgroup
     ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_path"] = FILES_DICT[ ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_uuid"] ]["file_path"]
     ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_format"] = FILES_DICT[ ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_uuid"] ]["file_format"]
+    if ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_format"] == "FQ":
+        if readgroup["aliquot_id"] not in ALIQUOT_TO_FQ_PATH:
+            ALIQUOT_TO_FQ_PATH[ readgroup["aliquot_id"] ] = {}
+        ALIQUOT_TO_FQ_PATH[ readgroup["aliquot_id"] ][ readgroup["RGID"] ] = ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_path"].split(",")
 
 ## List of scatterlist items to iterate over
 ## Each Mutect2 run spawns 50 jobs based on this scatterlist
