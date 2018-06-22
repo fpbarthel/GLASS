@@ -1,0 +1,35 @@
+[Fri Jun  1 13:13:45 2018] Building DAG of jobs...
+[Fri Jun  1 13:13:45 2018] Using shell: /bin/bash
+[Fri Jun  1 13:13:45 2018] Provided cores: 56
+[Fri Jun  1 13:13:45 2018] Rules claiming more threads will be scaled down.
+[Fri Jun  1 13:13:45 2018] Job counts:
+[Fri Jun  1 13:13:45 2018] 	count	jobs
+[Fri Jun  1 13:13:45 2018] 	1	markadapters
+[Fri Jun  1 13:13:45 2018] 	1
+
+[Fri Jun  1 13:13:45 2018] Job 0: Adding XT tags. This marks Illumina Adapters and allows them to be removed in later steps
+[Fri Jun  1 13:13:45 2018] Sample: testT-A
+[Fri Jun  1 13:13:45 2018] Readgroup: 6209_2#3
+
+[Fri Jun  1 13:13:45 2018] gatk --java-options -Xmx12g MarkIlluminaAdapters             --INPUT=results/ubam/testT-A/testT-A.6209_2#3.bam             --OUTPUT=results/markadapters/testT-A/testT-A.6209_2#3.revertsam.markadapters.bam             --METRICS=results/markadapters/testT-A/testT-A.6209_2#3.markadapters.metrics.txt             --TMP_DIR=/fastscratch/barthf/GLASS-WG/tmp             2> logs/markadapters/testT-A.6209_2#3.log
+Tool returned:
+0
+[Fri Jun  1 13:13:48 2018] Finished job 0.
+[Fri Jun  1 13:13:48 2018] 1 of 1 steps (100%) done
+[Fri Jun  1 13:13:48 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-06-01T131344.774528.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6628537.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=00:30:00
+|  Resources Consumed:
+|      cput=00:00:08,mem=56596kb,vmem=546044kb,walltime=00:00:05
+|  Walltime accuracy: 0.3%
+|
+| Epilogue Host (TORQUE Mother Superior): helix126
+|
+--------------------------------------------------------------------------------

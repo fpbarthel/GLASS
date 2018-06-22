@@ -1,0 +1,97 @@
+[Fri Jun  1 13:23:21 2018] Building DAG of jobs...
+[Fri Jun  1 13:23:21 2018] Using shell: /bin/bash
+[Fri Jun  1 13:23:21 2018] Provided cores: 56
+[Fri Jun  1 13:23:21 2018] Rules claiming more threads will be scaled down.
+[Fri Jun  1 13:23:21 2018] Job counts:
+[Fri Jun  1 13:23:21 2018] 	count	jobs
+[Fri Jun  1 13:23:21 2018] 	1	callsnv
+[Fri Jun  1 13:23:21 2018] 	1
+
+[Fri Jun  1 13:23:21 2018] Job 0: Calling SNVs (Mutect2)
+[Fri Jun  1 13:23:21 2018] Pair: A
+[Fri Jun  1 13:23:21 2018] Interval: temp_0046_of_50
+
+[Fri Jun  1 13:23:21 2018] TEST_NAM=`samtools view -H results/bqsr/testT-A.realn.dedup.bqsr.bam | grep '^@RG' | sed "s/.*SM:\([^\t]*\).*/\1/g" | uniq`;CTRL_NAM=`samtools view -H results/bqsr/testN-A.realn.dedup.bqsr.bam | grep '^@RG' | sed "s/.*SM:\([^\t]*\).*/\1/g" | uniq`;gatk --java-options -Xmx12g Mutect2             -R /projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta             -I results/bqsr/testT-A.realn.dedup.bqsr.bam             -I results/bqsr/testN-A.realn.dedup.bqsr.bam             -L /projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50/temp_0046_of_50/scattered.interval_list             --tumor-sample $TEST_NAM             --normal-sample $CTRL_NAM             --panel-of-normals results/pon/test.pon.vcf             --germline-resource /projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz             --af-of-alleles-not-in-resource 0.00000406055             --dont-use-soft-clipped-bases true             --standard-min-confidence-threshold-for-calling 20             --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter             -O results/m2vcf-scatter/A.temp_0046_of_50.vcf             -bamout results/m2bam/A.temp_0046_of_50.bam
+Using GATK jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=1 -Xmx12g -jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar Mutect2 -R /projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta -I results/bqsr/testT-A.realn.dedup.bqsr.bam -I results/bqsr/testN-A.realn.dedup.bqsr.bam -L /projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50/temp_0046_of_50/scattered.interval_list --tumor-sample QTL190044 --normal-sample QTL190044 --panel-of-normals results/pon/test.pon.vcf --germline-resource /projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz --af-of-alleles-not-in-resource 0.00000406055 --dont-use-soft-clipped-bases true --standard-min-confidence-threshold-for-calling 20 --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter -O results/m2vcf-scatter/A.temp_0046_of_50.vcf -bamout results/m2bam/A.temp_0046_of_50.bam
+13:23:34.431 WARN  GATKReadFilterPluginDescriptor - Disabled filter (MateOnSameContigOrNoMappedMateReadFilter) is not enabled by this tool
+13:23:34.509 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+13:23:34.775 INFO  Mutect2 - ------------------------------------------------------------
+13:23:34.776 INFO  Mutect2 - The Genome Analysis Toolkit (GATK) v4.0.2.1
+13:23:34.776 INFO  Mutect2 - For support and documentation go to https://software.broadinstitute.org/gatk/
+13:23:34.777 INFO  Mutect2 - Executing as barthf@helix131 on Linux v2.6.32-696.18.7.el6.x86_64 amd64
+13:23:34.777 INFO  Mutect2 - Java runtime: Java HotSpot(TM) 64-Bit Server VM v1.8.0_73-b02
+13:23:34.777 INFO  Mutect2 - Start Date/Time: June 1, 2018 1:23:34 PM EDT
+13:23:34.777 INFO  Mutect2 - ------------------------------------------------------------
+13:23:34.777 INFO  Mutect2 - ------------------------------------------------------------
+13:23:34.778 INFO  Mutect2 - HTSJDK Version: 2.14.3
+13:23:34.778 INFO  Mutect2 - Picard Version: 2.17.2
+13:23:34.778 INFO  Mutect2 - HTSJDK Defaults.COMPRESSION_LEVEL : 1
+13:23:34.778 INFO  Mutect2 - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+13:23:34.778 INFO  Mutect2 - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+13:23:34.779 INFO  Mutect2 - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+13:23:34.779 INFO  Mutect2 - Deflater: IntelDeflater
+13:23:34.779 INFO  Mutect2 - Inflater: IntelInflater
+13:23:34.779 INFO  Mutect2 - GCS max retries/reopens: 20
+13:23:34.779 INFO  Mutect2 - Using google-cloud-java patch 6d11bef1c81f885c26b2b56c8616b7a705171e4f from https://github.com/droazen/google-cloud-java/tree/dr_all_nio_fixes
+13:23:34.779 INFO  Mutect2 - Initializing engine
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bqsr/testT-A.realn.dedup.bqsr.bai is older than BAM /projects/barthf/GLASS-WG/results/bqsr/testT-A.realn.dedup.bqsr.bam
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bqsr/testN-A.realn.dedup.bqsr.bai is older than BAM /projects/barthf/GLASS-WG/results/bqsr/testN-A.realn.dedup.bqsr.bam
+13:23:36.761 INFO  FeatureManager - Using codec VCFCodec to read file file:///projects/barthf/GLASS-WG/results/pon/test.pon.vcf
+13:23:36.787 INFO  FeatureManager - Using codec VCFCodec to read file file:///projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz
+13:23:36.972 INFO  IntervalArgumentCollection - Processing 60175091 bp from intervals
+13:23:36.976 WARN  IndexUtils - Feature file "/projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz" appears to contain no sequence dictionary. Attempting to retrieve a sequence dictionary from the associated index file
+13:23:37.112 INFO  Mutect2 - Done initializing engine
+13:23:42.649 INFO  NativeLibraryLoader - Loading libgkl_utils.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_utils.so
+13:23:42.652 INFO  NativeLibraryLoader - Loading libgkl_pairhmm_omp.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_pairhmm_omp.so
+13:23:42.687 WARN  IntelPairHmm - Flush-to-zero (FTZ) is enabled when running PairHMM
+13:23:42.687 INFO  IntelPairHmm - Available threads: 56
+13:23:42.687 INFO  IntelPairHmm - Requested threads: 4
+13:23:42.687 INFO  PairHMM - Using the OpenMP multi-threaded AVX-accelerated native PairHMM implementation
+13:23:42.767 INFO  ProgressMeter - Starting traversal
+13:23:42.768 INFO  ProgressMeter -        Current Locus  Elapsed Minutes     Regions Processed   Regions/Minute
+13:23:53.951 INFO  ProgressMeter -           20:4001701              0.2                 13140          70506.2
+13:24:04.528 INFO  ProgressMeter -           20:5021701              0.4                 16540          45608.7
+13:24:15.579 INFO  ProgressMeter -          20:10979701              0.5                 36400          66563.0
+13:24:26.012 INFO  ProgressMeter -          20:11111701              0.7                 36840          51115.8
+13:24:36.129 INFO  ProgressMeter -          20:11186701              0.9                 37090          41704.6
+13:24:46.469 INFO  ProgressMeter -          20:11288701              1.1                 37430          35255.3
+13:24:56.595 INFO  ProgressMeter -          20:12320701              1.2                 40870          33215.5
+13:25:07.399 INFO  ProgressMeter -          20:12407701              1.4                 41160          29180.8
+13:25:17.545 INFO  ProgressMeter -          20:12461701              1.6                 41340          26171.2
+13:25:27.544 INFO  ProgressMeter -          20:13340701              1.7                 44270          25351.2
+13:25:38.683 INFO  ProgressMeter -          20:23531701              1.9                 78240          40498.6
+13:25:49.069 INFO  ProgressMeter -          20:24410701              2.1                 81170          38560.3
+13:25:59.648 INFO  ProgressMeter -          20:24920701              2.3                 82870          36325.2
+13:26:09.648 INFO  ProgressMeter -          20:59229986              2.4                185070          75600.5
+13:26:10.762 INFO  Mutect2 - No reads filtered by: ((((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND ) AND GoodCigarReadFilter) AND WellformedReadFilter)
+13:26:10.762 INFO  ProgressMeter -          21:11175572              2.5                200608          81330.9
+13:26:10.762 INFO  ProgressMeter - Traversal complete. Processed 200608 total regions in 2.5 minutes.
+13:26:10.777 INFO  VectorLoglessPairHMM - Time spent in setup for JNI call : 0.0
+13:26:10.777 INFO  PairHMM - Total compute time in PairHMM computeLogLikelihoods() : 0.0
+13:26:10.777 INFO  SmithWatermanAligner - Total compute time in java Smith-Waterman : 0.00 sec
+13:26:10.812 INFO  Mutect2 - Shutting down engine
+[June 1, 2018 1:26:10 PM EDT] org.broadinstitute.hellbender.tools.walkers.mutect.Mutect2 done. Elapsed time: 2.61 minutes.
+Runtime.totalMemory()=4956618752
+Tool returned:
+SUCCESS
+[Fri Jun  1 13:26:11 2018] Finished job 0.
+[Fri Jun  1 13:26:11 2018] 1 of 1 steps (100%) done
+[Fri Jun  1 13:26:11 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-06-01T132320.098059.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6628722.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=00:30:00
+|  Resources Consumed:
+|      cput=00:07:07,mem=4257172kb,vmem=19262256kb,walltime=00:02:53
+|  Walltime accuracy: 9.6%
+|
+| Epilogue Host (TORQUE Mother Superior): helix131
+|
+--------------------------------------------------------------------------------

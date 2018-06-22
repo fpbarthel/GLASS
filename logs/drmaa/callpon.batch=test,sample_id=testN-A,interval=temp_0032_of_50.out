@@ -1,0 +1,98 @@
+[Fri Jun  1 13:16:58 2018] Building DAG of jobs...
+[Fri Jun  1 13:16:58 2018] Using shell: /bin/bash
+[Fri Jun  1 13:16:58 2018] Provided cores: 40
+[Fri Jun  1 13:16:58 2018] Rules claiming more threads will be scaled down.
+[Fri Jun  1 13:16:58 2018] Job counts:
+[Fri Jun  1 13:16:58 2018] 	count	jobs
+[Fri Jun  1 13:16:58 2018] 	1	callpon
+[Fri Jun  1 13:16:58 2018] 	1
+
+[Fri Jun  1 13:16:58 2018] Job 0: Calling Mutect2 in tumor-only mode to build a panel of normals
+[Fri Jun  1 13:16:58 2018] Batch: test
+[Fri Jun  1 13:16:58 2018] Sample: testN-A
+[Fri Jun  1 13:16:58 2018] Interval: temp_0032_of_50
+
+[Fri Jun  1 13:16:58 2018] TUMOR_SM=`samtools view -H results/bqsr/testN-A.realn.dedup.bqsr.bam /projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50/temp_0032_of_50/scattered.interval_list | grep '^@RG' | sed "s/.*SM:\([^\t]*\).*/\1/g" | uniq`;         echo $TUMOR_SM;         gatk --java-options -Xmx12g Mutect2             -R /projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta             -I results/bqsr/testN-A.realn.dedup.bqsr.bam             -L /projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50/temp_0032_of_50/scattered.interval_list             --tumor-sample $TUMOR_SM             --germline-resource /projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz             --af-of-alleles-not-in-resource 0.00000406055             --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter             -O results/callpon/test/testN-A/testN-A.temp_0032_of_50.pon.vcf
+QTL190044
+Using GATK jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=1 -Xmx12g -jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar Mutect2 -R /projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta -I results/bqsr/testN-A.realn.dedup.bqsr.bam -L /projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50/temp_0032_of_50/scattered.interval_list --tumor-sample QTL190044 --germline-resource /projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz --af-of-alleles-not-in-resource 0.00000406055 --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter -O results/callpon/test/testN-A/testN-A.temp_0032_of_50.pon.vcf
+13:17:02.773 WARN  GATKReadFilterPluginDescriptor - Disabled filter (MateOnSameContigOrNoMappedMateReadFilter) is not enabled by this tool
+13:17:02.826 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+13:17:03.994 INFO  Mutect2 - ------------------------------------------------------------
+13:17:03.994 INFO  Mutect2 - The Genome Analysis Toolkit (GATK) v4.0.2.1
+13:17:03.994 INFO  Mutect2 - For support and documentation go to https://software.broadinstitute.org/gatk/
+13:17:03.994 INFO  Mutect2 - Executing as barthf@helix042 on Linux v2.6.32-696.18.7.el6.x86_64 amd64
+13:17:03.994 INFO  Mutect2 - Java runtime: Java HotSpot(TM) 64-Bit Server VM v1.8.0_73-b02
+13:17:03.995 INFO  Mutect2 - Start Date/Time: June 1, 2018 1:17:02 PM EDT
+13:17:03.995 INFO  Mutect2 - ------------------------------------------------------------
+13:17:03.995 INFO  Mutect2 - ------------------------------------------------------------
+13:17:03.995 INFO  Mutect2 - HTSJDK Version: 2.14.3
+13:17:03.995 INFO  Mutect2 - Picard Version: 2.17.2
+13:17:03.995 INFO  Mutect2 - HTSJDK Defaults.COMPRESSION_LEVEL : 1
+13:17:03.995 INFO  Mutect2 - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+13:17:03.995 INFO  Mutect2 - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+13:17:03.996 INFO  Mutect2 - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+13:17:03.996 INFO  Mutect2 - Deflater: IntelDeflater
+13:17:03.996 INFO  Mutect2 - Inflater: IntelInflater
+13:17:03.996 INFO  Mutect2 - GCS max retries/reopens: 20
+13:17:03.996 INFO  Mutect2 - Using google-cloud-java patch 6d11bef1c81f885c26b2b56c8616b7a705171e4f from https://github.com/droazen/google-cloud-java/tree/dr_all_nio_fixes
+13:17:03.996 INFO  Mutect2 - Initializing engine
+WARNING: BAM index file /projects/barthf/GLASS-WG/results/bqsr/testN-A.realn.dedup.bqsr.bai is older than BAM /projects/barthf/GLASS-WG/results/bqsr/testN-A.realn.dedup.bqsr.bam
+13:17:04.758 INFO  FeatureManager - Using codec VCFCodec to read file file:///projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz
+13:17:04.908 INFO  IntervalArgumentCollection - Processing 60542504 bp from intervals
+13:17:04.911 WARN  IndexUtils - Feature file "/projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz" appears to contain no sequence dictionary. Attempting to retrieve a sequence dictionary from the associated index file
+13:17:05.032 INFO  Mutect2 - Done initializing engine
+13:17:06.556 INFO  NativeLibraryLoader - Loading libgkl_utils.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_utils.so
+13:17:06.561 INFO  NativeLibraryLoader - Loading libgkl_pairhmm_omp.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_pairhmm_omp.so
+13:17:06.622 WARN  IntelPairHmm - Flush-to-zero (FTZ) is enabled when running PairHMM
+13:17:06.622 INFO  IntelPairHmm - Available threads: 40
+13:17:06.622 INFO  IntelPairHmm - Requested threads: 4
+13:17:06.622 INFO  PairHMM - Using the OpenMP multi-threaded AVX-accelerated native PairHMM implementation
+13:17:06.736 INFO  ProgressMeter - Starting traversal
+13:17:06.737 INFO  ProgressMeter -        Current Locus  Elapsed Minutes     Regions Processed   Regions/Minute
+13:17:16.739 INFO  ProgressMeter -         10:130959070              0.2                 16300          97800.0
+13:17:26.737 INFO  ProgressMeter -           11:9835636              0.3                 63640         190920.0
+13:17:37.192 INFO  ProgressMeter -          11:12028636              0.5                 70950         139780.0
+13:17:47.192 INFO  ProgressMeter -          11:44134636              0.7                177970         263952.5
+13:17:49.025 INFO  Mutect2 - 7 read(s) filtered by: ((((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND ) AND GoodCigarReadFilter) AND WellformedReadFilter)
+  7 read(s) filtered by: (((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND ) AND GoodCigarReadFilter)
+      7 read(s) filtered by: ((((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter) AND )
+          7 read(s) filtered by: (((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter) AND NonZeroReferenceLengthAlignmentReadFilter)
+              7 read(s) filtered by: ((((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter) AND PassesVendorQualityCheckReadFilter)
+                  7 read(s) filtered by: (((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter) AND NotDuplicateReadFilter)
+                      7 read(s) filtered by: ((((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter) AND NotSecondaryAlignmentReadFilter)
+                          7 read(s) filtered by: (((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter) AND MappedReadFilter)
+                              7 read(s) filtered by: ((MappingQualityReadFilter AND MappingQualityAvailableReadFilter) AND MappingQualityNotZeroReadFilter)
+                                  7 read(s) filtered by: (MappingQualityReadFilter AND MappingQualityAvailableReadFilter)
+                                      7 read(s) filtered by: MappingQualityReadFilter 
+
+13:17:49.025 INFO  ProgressMeter -          11:51593354              0.7                201812         286339.4
+13:17:49.026 INFO  ProgressMeter - Traversal complete. Processed 201812 total regions in 0.7 minutes.
+13:17:49.039 INFO  VectorLoglessPairHMM - Time spent in setup for JNI call : 0.0
+13:17:49.039 INFO  PairHMM - Total compute time in PairHMM computeLogLikelihoods() : 0.0
+13:17:49.039 INFO  SmithWatermanAligner - Total compute time in java Smith-Waterman : 0.00 sec
+13:17:49.039 INFO  Mutect2 - Shutting down engine
+[June 1, 2018 1:17:49 PM EDT] org.broadinstitute.hellbender.tools.walkers.mutect.Mutect2 done. Elapsed time: 0.77 minutes.
+Runtime.totalMemory()=5728894976
+Tool returned:
+SUCCESS
+[Fri Jun  1 13:17:49 2018] Finished job 0.
+[Fri Jun  1 13:17:49 2018] 1 of 1 steps (100%) done
+[Fri Jun  1 13:17:49 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-06-01T131657.735408.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6628639.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=00:30:00
+|  Resources Consumed:
+|      cput=00:02:26,mem=3573720kb,vmem=19178272kb,walltime=00:00:53
+|  Walltime accuracy: 2.9%
+|
+| Epilogue Host (TORQUE Mother Superior): helix042
+|
+--------------------------------------------------------------------------------

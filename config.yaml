@@ -1,38 +1,65 @@
+## Snakemake configuration
+## @Author Floris Barthel
 
-## Full path to GDC keyfile
-gdc_token: "/home/barthf/gdc_token.key"
-
-## Extra args for revertsam, testing purpose only
-## COMMENT FOR ACTUAL RUN
-#revertsam_extra_args : "--MAX_DISCARD_FRACTION=0.05 "
-
-## Full path to sample list JSON
-sample_json: "/projects/barthf/GLASS-WG/data/ref/TCGA_WGS_GDC_legacy_UUIDs.json"
-
-## COMMENT FOR ACTUAL RUN
-#sample_json: "/projects/barthf/GLASS-WG/data/ref/test_samples.json" 
-
-## Full path
-cluster_json: "/projects/barthf/GLASS-WG/cluster.json"
-
-## COMMENT FOR ACTUAL RUN
-#cluster_json: "/projects/barthf/GLASS-WG/test_cluster.json"
+## Full path to cluster settings
+cluster_json:     "/projects/barthf/GLASS-WG/cluster.json"
 
 ## Working directory
-#workdir: "/projects/barthf/GLASS-WG"
+workdir:          "/fastscratch/barthf/GLASS-WG"
 
-workdir: "/fastscratch/barthf/GLASS-WG"
+## HTML dir
+# @sbamin helix ~/ has 50GB limit. multiqc and fastqc files may grow in size.
+html_dir:         "/home/barthf/ShinyApps/hongkong"
+
+#### JSON files
+cases_json:       "/projects/barthf/GLASS-WG/data/manifest/hongkong/cases.json"
+samples_json:     "/projects/barthf/GLASS-WG/data/manifest/hongkong/samples.json"
+aliquots_json:    "/projects/barthf/GLASS-WG/data/manifest/hongkong/aliquots.json"
+files_json:       "/projects/barthf/GLASS-WG/data/manifest/hongkong/files.json"
+readgroups_json:  "/projects/barthf/GLASS-WG/data/manifest/hongkong/readgroups.json"
+pairs_json:       "/projects/barthf/GLASS-WG/data/manifest/hongkong/pairs.json"
+
+#### GLOBAL PARAMETERS
+
+## Full path to GDC keyfile
+gdc_token:        "/home/barthf/gdc-user-token.2018-05-23T11_13_25-04_00.txt"
 
 ## Temporary directory
-tempdir: "/fastscratch/barthf/GLASS-WG/tmp"
+tempdir:          "/fastscratch/barthf/GLASS-WG/tmp"
 
-## GnomAD VCF file
-gnomad_vcf: "/projects/barthf/GTex-somatic/data/gnomad/af-only-gnomad.raw.sites.b37.vcf.gz"
+## WGS scatter intervals
+wgs_scatterdir:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50"
 
 ## Reference genome
-reference_fasta: "/projects/barthf/hg19broad/Homo_sapiens_assembly19.fasta"
+reference_fasta:  "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/human_g1k_v37_decoy.fasta"
+
+## GnomAD VCF file
+gnomad_vcf:       "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/af-only-gnomad.raw.sites.b37.vcf.gz"
+
+## Tiny VCF
+tiny_vcf:         "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/GetPileupSummaries/small_exac_common_3_b37.vcf.gz"
+
+## Vcf2MAF Perl Script location
+vcf2maf:          "/projects/barthf/opt/mskcc-vcf2maf-747a1bb/vcf2maf.pl"
+
+## VEP installation
+veppath:          "/projects/barthf/opt/ensembl-vep"
+
+## VEP cache directory
+vepdata:          "/projects/barthf/opt/.vep"
+
+## Based on GATK best practices RNAseq 04/05/18
+## https://software.broadinstitute.org/gatk/documentation/article.php?id=3891
+## Calculate af-of-alleles: 1/(2*123136) = 0.00000406055 (6 sign. digits)
+af_of_alleles_not_in_resource: 0.00000406055
+
+seconds_between_progress_updates: 900
 
 ## JAVA options
-standard_java_opt: "'-Xmx12G'"
 samtofastq_java_opt: "'-Dsamjdk.buffer_size=131072 -Dsamjdk.compression_level=1 -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Xmx128m'"
 mergebamalignment_java_opt: "'-Dsamjdk.buffer_size=131072 -Dsamjdk.use_async_io=true -Dsamjdk.compression_level=1 -XX:+UseStringCache -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Xmx5000m'"
+
+#### ACTUAL RUN
+revertsam_extra_args : ""
+
+## END ##

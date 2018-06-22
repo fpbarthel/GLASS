@@ -1,0 +1,35 @@
+[Fri Jun  1 13:12:52 2018] Building DAG of jobs...
+[Fri Jun  1 13:12:53 2018] Using shell: /bin/bash
+[Fri Jun  1 13:12:53 2018] Provided cores: 56
+[Fri Jun  1 13:12:53 2018] Rules claiming more threads will be scaled down.
+[Fri Jun  1 13:12:53 2018] Job counts:
+[Fri Jun  1 13:12:53 2018] 	count	jobs
+[Fri Jun  1 13:12:53 2018] 	1	fq2ubam
+[Fri Jun  1 13:12:53 2018] 	1
+
+[Fri Jun  1 13:12:53 2018] Job 0: Converting FASTQ file to uBAM format
+[Fri Jun  1 13:12:53 2018] Sample: testN-A
+[Fri Jun  1 13:12:53 2018] Readgroup: 6209_7#3
+
+[Fri Jun  1 13:12:53 2018] gatk --java-options -Xmx12g FastqToSam             --FASTQ=fastq/testN-A/testN-A_QTL190044_B05B0ABXX_L7_R1.fq             --FASTQ2=fastq/testN-A/testN-A_QTL190044_B05B0ABXX_L7_R2.fq             --OUTPUT=results/ubam/testN-A/testN-A.6209_7#3.bam             --READ_GROUP_NAME="6209_7#3"             --PLATFORM_UNIT="110430_HS6_06209_B_B05B0ABXX_7#3"             --SAMPLE_NAME="QTL190044"             --PLATFORM="ILLUMINA"             --LIBRARY_NAME="QTL190044_2515160"             --SEQUENCING_CENTER="SC"             --SORT_ORDER=queryname             2> logs/fq2ubam/testN-A.6209_7#3.log
+Tool returned:
+0
+[Fri Jun  1 13:12:56 2018] Finished job 0.
+[Fri Jun  1 13:12:56 2018] 1 of 1 steps (100%) done
+[Fri Jun  1 13:12:56 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-06-01T131251.349025.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6628507.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=00:30:00
+|  Resources Consumed:
+|      cput=00:00:08,mem=0kb,vmem=0kb,walltime=00:00:07
+|  Walltime accuracy: 0.4%
+|
+| Epilogue Host (TORQUE Mother Superior): helix137
+|
+--------------------------------------------------------------------------------

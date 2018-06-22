@@ -1,0 +1,64 @@
+[Fri Jun  1 13:18:07 2018] Building DAG of jobs...
+[Fri Jun  1 13:18:07 2018] Using shell: /bin/bash
+[Fri Jun  1 13:18:07 2018] Provided cores: 40
+[Fri Jun  1 13:18:07 2018] Rules claiming more threads will be scaled down.
+[Fri Jun  1 13:18:07 2018] Job counts:
+[Fri Jun  1 13:18:07 2018] 	count	jobs
+[Fri Jun  1 13:18:07 2018] 	1	calculatecontamination
+[Fri Jun  1 13:18:07 2018] 	1
+
+[Fri Jun  1 13:18:07 2018] Job 0: Computing contamination
+[Fri Jun  1 13:18:07 2018] Pair: A
+
+[Fri Jun  1 13:18:07 2018] gatk --java-options -Xmx12g CalculateContamination             -I results/pileupsummaries/testT-A.pileupsummaries.txt             --matched-normal results/pileupsummaries/testN-A.pileupsummaries.txt             -O results/contamination/A.contamination.txt
+Using GATK jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=1 -Xmx12g -jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar CalculateContamination -I results/pileupsummaries/testT-A.pileupsummaries.txt --matched-normal results/pileupsummaries/testN-A.pileupsummaries.txt -O results/contamination/A.contamination.txt
+13:18:09.733 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+13:18:10.883 INFO  CalculateContamination - ------------------------------------------------------------
+13:18:10.883 INFO  CalculateContamination - The Genome Analysis Toolkit (GATK) v4.0.2.1
+13:18:10.883 INFO  CalculateContamination - For support and documentation go to https://software.broadinstitute.org/gatk/
+13:18:10.884 INFO  CalculateContamination - Executing as barthf@helix054 on Linux v2.6.32-696.18.7.el6.x86_64 amd64
+13:18:10.884 INFO  CalculateContamination - Java runtime: Java HotSpot(TM) 64-Bit Server VM v1.8.0_73-b02
+13:18:10.884 INFO  CalculateContamination - Start Date/Time: June 1, 2018 1:18:09 PM EDT
+13:18:10.884 INFO  CalculateContamination - ------------------------------------------------------------
+13:18:10.884 INFO  CalculateContamination - ------------------------------------------------------------
+13:18:10.884 INFO  CalculateContamination - HTSJDK Version: 2.14.3
+13:18:10.884 INFO  CalculateContamination - Picard Version: 2.17.2
+13:18:10.884 INFO  CalculateContamination - HTSJDK Defaults.COMPRESSION_LEVEL : 1
+13:18:10.885 INFO  CalculateContamination - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+13:18:10.885 INFO  CalculateContamination - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+13:18:10.885 INFO  CalculateContamination - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+13:18:10.885 INFO  CalculateContamination - Deflater: IntelDeflater
+13:18:10.885 INFO  CalculateContamination - Inflater: IntelInflater
+13:18:10.885 INFO  CalculateContamination - GCS max retries/reopens: 20
+13:18:10.885 INFO  CalculateContamination - Using google-cloud-java patch 6d11bef1c81f885c26b2b56c8616b7a705171e4f from https://github.com/droazen/google-cloud-java/tree/dr_all_nio_fixes
+13:18:10.885 INFO  CalculateContamination - Initializing engine
+13:18:10.885 INFO  CalculateContamination - Done initializing engine
+13:18:11.087 WARN  CalculateContamination - No hom alt sites found!  Perhaps GetPileupSummaries was run on too small of an interval, or perhaps the sample was extremely inbred or haploid.
+13:18:11.088 WARN  CalculateContamination - No hom alt sites found!  Perhaps GetPileupSummaries was run on too small of an interval, or perhaps the sample was extremely inbred or haploid.
+13:18:11.089 WARN  CalculateContamination - No hom alt sites found!  Perhaps GetPileupSummaries was run on too small of an interval, or perhaps the sample was extremely inbred or haploid.
+13:18:11.098 INFO  CalculateContamination - Shutting down engine
+[June 1, 2018 1:18:11 PM EDT] org.broadinstitute.hellbender.tools.walkers.contamination.CalculateContamination done. Elapsed time: 0.02 minutes.
+Runtime.totalMemory()=1570766848
+Tool returned:
+SUCCESS
+[Fri Jun  1 13:18:11 2018] Finished job 0.
+[Fri Jun  1 13:18:11 2018] 1 of 1 steps (100%) done
+[Fri Jun  1 13:18:11 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-06-01T131806.279902.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6628650.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=00:30:00
+|  Resources Consumed:
+|      cput=00:00:08,mem=0kb,vmem=0kb,walltime=00:00:06
+|  Walltime accuracy: 0.3%
+|
+| Epilogue Host (TORQUE Mother Superior): helix054
+|
+--------------------------------------------------------------------------------

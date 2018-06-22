@@ -1,0 +1,70 @@
+[Fri Jun  1 13:22:38 2018] Building DAG of jobs...
+[Fri Jun  1 13:22:39 2018] Using shell: /bin/bash
+[Fri Jun  1 13:22:39 2018] Provided cores: 40
+[Fri Jun  1 13:22:39 2018] Rules claiming more threads will be scaled down.
+[Fri Jun  1 13:22:39 2018] Job counts:
+[Fri Jun  1 13:22:39 2018] 	count	jobs
+[Fri Jun  1 13:22:39 2018] 	1	createpon
+[Fri Jun  1 13:22:39 2018] 	1
+
+[Fri Jun  1 13:22:39 2018] Job 0: Creating panel of normals from multiple Mutect2 VCFs
+[Fri Jun  1 13:22:39 2018] Batch: test
+
+[Fri Jun  1 13:22:39 2018] gatk --java-options -Xmx12g CreateSomaticPanelOfNormals             --vcfs=results/mergepon/test/testN-A.pon.vcf             --duplicate-sample-strategy THROW_ERROR             --output results/pon/test.pon.vcf
+Using GATK jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar
+Running:
+    java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=1 -Xmx12g -jar /home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar CreateSomaticPanelOfNormals --vcfs=results/mergepon/test/testN-A.pon.vcf --duplicate-sample-strategy THROW_ERROR --output results/pon/test.pon.vcf
+13:22:44.863 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/barthf/opt/gatk-4.0.2.1/gatk-package-4.0.2.1-local.jar!/com/intel/gkl/native/libgkl_compression.so
+13:22:46.079 INFO  CreateSomaticPanelOfNormals - ------------------------------------------------------------
+13:22:46.079 INFO  CreateSomaticPanelOfNormals - The Genome Analysis Toolkit (GATK) v4.0.2.1
+13:22:46.080 INFO  CreateSomaticPanelOfNormals - For support and documentation go to https://software.broadinstitute.org/gatk/
+13:22:46.080 INFO  CreateSomaticPanelOfNormals - Executing as barthf@helix025 on Linux v2.6.32-696.18.7.el6.x86_64 amd64
+13:22:46.080 INFO  CreateSomaticPanelOfNormals - Java runtime: Java HotSpot(TM) 64-Bit Server VM v1.8.0_73-b02
+13:22:46.081 INFO  CreateSomaticPanelOfNormals - Start Date/Time: June 1, 2018 1:22:44 PM EDT
+13:22:46.081 INFO  CreateSomaticPanelOfNormals - ------------------------------------------------------------
+13:22:46.081 INFO  CreateSomaticPanelOfNormals - ------------------------------------------------------------
+13:22:46.082 INFO  CreateSomaticPanelOfNormals - HTSJDK Version: 2.14.3
+13:22:46.082 INFO  CreateSomaticPanelOfNormals - Picard Version: 2.17.2
+13:22:46.082 INFO  CreateSomaticPanelOfNormals - HTSJDK Defaults.COMPRESSION_LEVEL : 1
+13:22:46.082 INFO  CreateSomaticPanelOfNormals - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+13:22:46.083 INFO  CreateSomaticPanelOfNormals - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+13:22:46.083 INFO  CreateSomaticPanelOfNormals - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+13:22:46.083 INFO  CreateSomaticPanelOfNormals - Deflater: IntelDeflater
+13:22:46.083 INFO  CreateSomaticPanelOfNormals - Inflater: IntelInflater
+13:22:46.083 INFO  CreateSomaticPanelOfNormals - GCS max retries/reopens: 20
+13:22:46.083 INFO  CreateSomaticPanelOfNormals - Using google-cloud-java patch 6d11bef1c81f885c26b2b56c8616b7a705171e4f from https://github.com/droazen/google-cloud-java/tree/dr_all_nio_fixes
+13:22:46.084 WARN  CreateSomaticPanelOfNormals - 
+
+[1m[31m   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   Warning: CreateSomaticPanelOfNormals is a BETA tool and is not yet ready for use in production
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!![0m
+
+
+13:22:46.084 INFO  CreateSomaticPanelOfNormals - Initializing engine
+13:22:46.084 INFO  CreateSomaticPanelOfNormals - Done initializing engine
+13:22:46.307 INFO  CreateSomaticPanelOfNormals - Shutting down engine
+[June 1, 2018 1:22:46 PM EDT] org.broadinstitute.hellbender.tools.walkers.mutect.CreateSomaticPanelOfNormals done. Elapsed time: 0.02 minutes.
+Runtime.totalMemory()=1487929344
+Tool returned:
+SUCCESS
+[Fri Jun  1 13:22:46 2018] Finished job 0.
+[Fri Jun  1 13:22:46 2018] 1 of 1 steps (100%) done
+[Fri Jun  1 13:22:46 2018] Complete log: /projects/barthf/GLASS-WG/.snakemake/log/2018-06-01T132237.776732.snakemake.log
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 6628670.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=12gb,nodes=1:ppn=2,walltime=00:30:00
+|  Resources Consumed:
+|      cput=00:00:12,mem=0kb,vmem=0kb,walltime=00:00:10
+|  Walltime accuracy: 0.6%
+|
+| Epilogue Host (TORQUE Mother Superior): helix025
+|
+--------------------------------------------------------------------------------

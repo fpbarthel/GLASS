@@ -1,0 +1,22 @@
+Sample	Filename	File type	Encoding	Total Sequences	Sequences flagged as poor quality	Sequence length	%GC	total_deduplicated_percentage	avg_sequence_length	basic_statistics	per_base_sequence_quality	per_tile_sequence_quality	per_sequence_quality_scores	per_base_sequence_content	per_sequence_gc_content	per_base_n_content	sequence_length_distribution	sequence_duplication_levels	overrepresented_sequences	adapter_content	kmer_content
+testN-A.6172_7#3	testN-A.6172_7#3.bam	Conventional base calls	Sanger / Illumina 1.9	494.0	0.0	100.0	39.0	98.78542510121457	100.0	pass	pass	fail	pass	pass	fail	pass	pass	pass	warn	pass	pass
+testN-A.6206_7#3	testN-A.6206_7#3.bam	Conventional base calls	Sanger / Illumina 1.9	426.0	0.0	100.0	40.0	99.76525821596243	100.0	pass	warn	fail	pass	pass	fail	pass	pass	pass	warn	pass	pass
+testN-A.6209_1#3	testN-A.6209_1#3.bam	Conventional base calls	Sanger / Illumina 1.9	444.0	0.0	100.0	39.0	99.54954954954955	100.0	pass	pass	fail	pass	warn	warn	pass	pass	pass	warn	pass	pass
+testN-A.6209_2#3	testN-A.6209_2#3.bam	Conventional base calls	Sanger / Illumina 1.9	454.0	0.0	100.0	40.0	99.55947136563876	100.0	pass	pass	fail	pass	pass	warn	pass	pass	pass	warn	pass	pass
+testN-A.6209_3#3	testN-A.6209_3#3.bam	Conventional base calls	Sanger / Illumina 1.9	496.0	0.0	100.0	40.0	99.19354838709677	100.0	pass	pass	fail	pass	pass	fail	pass	pass	pass	warn	pass	pass
+testN-A.6209_4#3	testN-A.6209_4#3.bam	Conventional base calls	Sanger / Illumina 1.9	476.0	0.0	100.0	40.0	99.36974789915966	100.0	pass	pass	fail	pass	pass	fail	pass	pass	pass	warn	pass	pass
+testN-A.6209_5#3	testN-A.6209_5#3.bam	Conventional base calls	Sanger / Illumina 1.9	438.0	0.0	100.0	39.0	98.17351598173516	100.0	pass	pass	fail	pass	warn	fail	pass	pass	pass	warn	pass	pass
+testN-A.6209_6#3	testN-A.6209_6#3.bam	Conventional base calls	Sanger / Illumina 1.9	430.0	0.0	100.0	40.0	99.30232558139535	100.0	pass	pass	fail	pass	warn	fail	pass	pass	pass	warn	pass	pass
+testN-A.6209_7#3	testN-A.6209_7#3.bam	Conventional base calls	Sanger / Illumina 1.9	422.0	0.0	100.0	41.0	99.76303317535546	100.0	pass	pass	fail	pass	pass	fail	pass	pass	pass	warn	pass	pass
+testN-A.6209_8#3	testN-A.6209_8#3.bam	Conventional base calls	Sanger / Illumina 1.9	426.0	0.0	100.0	39.0	99.06103286384976	100.0	pass	pass	fail	pass	pass	warn	pass	pass	pass	warn	pass	pass
+testT-A.6172_7#3	testT-A.6172_7#3.bam	Conventional base calls	Sanger / Illumina 1.9	494.0	0.0	100.0	39.0	98.78542510121457	100.0	pass	pass	fail	pass	pass	fail	pass	pass	pass	warn	pass	pass
+testT-A.6206_7#3	testT-A.6206_7#3.bam	Conventional base calls	Sanger / Illumina 1.9	426.0	0.0	100.0	40.0	99.76525821596243	100.0	pass	warn	fail	pass	pass	fail	pass	pass	pass	warn	pass	pass
+testT-A.6209_1#3	testT-A.6209_1#3.bam	Conventional base calls	Sanger / Illumina 1.9	444.0	0.0	100.0	39.0	99.54954954954955	100.0	pass	pass	fail	pass	warn	warn	pass	pass	pass	warn	pass	pass
+testT-A.6209_2#3	testT-A.6209_2#3.bam	Conventional base calls	Sanger / Illumina 1.9	454.0	0.0	100.0	40.0	99.55947136563876	100.0	pass	pass	fail	pass	pass	warn	pass	pass	pass	warn	pass	pass
+testT-A.6209_3#3	testT-A.6209_3#3.bam	Conventional base calls	Sanger / Illumina 1.9	496.0	0.0	100.0	40.0	99.19354838709677	100.0	pass	pass	fail	pass	pass	fail	pass	pass	pass	warn	pass	pass
+testT-A.6209_4#3	testT-A.6209_4#3.bam	Conventional base calls	Sanger / Illumina 1.9	476.0	0.0	100.0	40.0	99.36974789915966	100.0	pass	pass	fail	pass	pass	fail	pass	pass	pass	warn	pass	pass
+testT-A.6209_5#3	testT-A.6209_5#3.bam	Conventional base calls	Sanger / Illumina 1.9	438.0	0.0	100.0	39.0	98.17351598173516	100.0	pass	pass	fail	pass	warn	fail	pass	pass	pass	warn	pass	pass
+testT-A.6209_6#3	testT-A.6209_6#3.bam	Conventional base calls	Sanger / Illumina 1.9	430.0	0.0	100.0	40.0	99.30232558139535	100.0	pass	pass	fail	pass	warn	fail	pass	pass	pass	warn	pass	pass
+testT-A.6209_7#3	testT-A.6209_7#3.bam	Conventional base calls	Sanger / Illumina 1.9	422.0	0.0	100.0	41.0	99.76303317535546	100.0	pass	pass	fail	pass	pass	fail	pass	pass	pass	warn	pass	pass
+testT-A.6209_8#3	testT-A.6209_8#3.bam	Conventional base calls	Sanger / Illumina 1.9	426.0	0.0	100.0	39.0	99.06103286384976	100.0	pass	pass	fail	pass	pass	warn	pass	pass	pass	warn	pass	pass
+testT-B.1	testT-B.1.bam	Conventional base calls	Sanger / Illumina 1.9	6052.0	0.0	50.0	61.0	39.5902181097158	50.0	pass	pass	warn	pass	pass	fail	pass	pass	fail	warn	pass	pass
