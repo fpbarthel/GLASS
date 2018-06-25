@@ -2,7 +2,7 @@
 ## @Author Floris Barthel
 
 ## Full path to cluster settings
-cluster_json:     "/projects/barthf/GLASS-WG/conf/cluster.json"
+cluster_json:     "/fastscratch/verhaak-lab/GLASS-WG/conf/cluster.json"
 
 ## Working directory
 workdir:          "/fastscratch/verhaak-lab/GLASS-WG"
@@ -12,12 +12,12 @@ workdir:          "/fastscratch/verhaak-lab/GLASS-WG"
 html_dir:         "/home/barthf/ShinyApps/"
 
 #### JSON files
-cases_json:       "/projects/barthf/GLASS-WG/data/manifest/cases.json"
-samples_json:     "/projects/barthf/GLASS-WG/data/manifest/samples.json"
-aliquots_json:    "/projects/barthf/GLASS-WG/data/manifest/aliquots.json"
-files_json:       "/projects/barthf/GLASS-WG/data/manifest/files.json"
-readgroups_json:  "/projects/barthf/GLASS-WG/data/manifest/readgroups.json"
-pairs_json:       "/projects/barthf/GLASS-WG/data/manifest/pairs.json"
+cases_json:       "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/cases.json"
+samples_json:     "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/samples.json"
+aliquots_json:    "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/aliquots.json"
+files_json:       "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/files.json"
+readgroups_json:  "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/readgroups.json"
+pairs_json:       "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/pairs.json"
 
 #### GLOBAL PARAMETERS
 
