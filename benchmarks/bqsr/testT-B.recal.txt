@@ -1,2 +1,0 @@
-s	h:m:s	max_rss	max_vms	max_uss	max_pss	io_in	io_out	mean_load
-12.3432	0:00:12	802.11	17935.49	770.75	784.22	15.95	0.83	0.00

@@ -1,4 +1,8 @@
-documents/**
+benchmarks/**
+data/fastq/**
+data/download/**
+results/**
+logs/**
 sandbox/**
 archive/**
 documents/**

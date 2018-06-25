@@ -1,2 +1,0 @@
-level	contamination	error
-whole_bam	0.0	1.0
