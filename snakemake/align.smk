@@ -124,6 +124,7 @@ rule fq2ubam:
             --LIBRARY_NAME=\"{params.RGLB}\" \
             --SEQUENCING_CENTER=\"{params.RGCN}\" \
             --SORT_ORDER=queryname \
+            --TMP_DIR={config[tempdir]} \
             > {log} 2>&1")
         #            --RUN_DATE=\"{params.RGDT}\" \
 
