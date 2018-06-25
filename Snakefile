@@ -21,10 +21,7 @@ def touch(fname, mode=0o666, dir_fd=None, **kwargs):
 def build_dict(seq, key):
     return dict((d[key], dict(d, index=index)) for (index, d) in enumerate(seq))
 
-## Although this statement goes against all coding conventions, we want it here because we want to run
-## everything on a temporary storage while we keep this script safe on a permanent drive
-## TEMPORARY
-configfile: "config.yaml"
+## Set working directory based on configuration file
 workdir: config["workdir"]
 
 ## GDC token file for authentication
