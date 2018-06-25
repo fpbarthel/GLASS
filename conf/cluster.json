@@ -11,15 +11,15 @@
         "walltime" : "12:00:00",
         "mem" : 6,
         "queu" : "batch",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.aliquot_id}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.aliquot_id}.err",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_id}.err",
         "d" : "/fastscratch/barthf/GLASS-WG"
     },
     "download" :
     {
         "name" : "{rule}.{wildcards.uuid}",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.err",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.uuid}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.uuid}.err",
         "ppn" : 6,
         "mem" : 12,
         "walltime" : "70:00:00"
@@ -87,8 +87,8 @@
     "multiqc" :
     {
         "name" : "{rule}",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.err",
+        "stdout" : "logs/drmaa/{rule}.out",
+        "stderr" : "logs/drmaa/{rule}.err",
         "ppn" : 2,
         "walltime" : "70:00:00",
         "mem" : 12
@@ -107,8 +107,8 @@
     "createpon" :
     {
         "name" : "{rule}{wildcards.batch}",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.err",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.batch}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.batch}.err",
         "ppn" : 2,
         "walltime" : "70:00:00",
         "mem" : 12
@@ -119,8 +119,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "mergesnv" :
     {
@@ -128,8 +128,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "pileupsummaries" :
     {
@@ -143,8 +143,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "filtermutect" :
     {
@@ -152,8 +152,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "collectartifacts" :
     {
@@ -167,8 +167,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "vep" :
     {
@@ -176,7 +176,7 @@
         "mem" : 24,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/barthf/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     }
 }
