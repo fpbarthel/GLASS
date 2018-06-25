@@ -1,5 +1,6 @@
 benchmarks/**
-data/**
+data/fastq/**
+data/download/**
 results/**
 logs/**
 sandbox/**
