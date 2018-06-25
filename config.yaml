@@ -9,15 +9,15 @@ workdir:          "/fastscratch/barthf/GLASS-WG"
 
 ## HTML dir
 # @sbamin helix ~/ has 50GB limit. multiqc and fastqc files may grow in size.
-html_dir:         "/home/barthf/ShinyApps/hongkong"
+html_dir:         "/home/barthf/ShinyApps/"
 
 #### JSON files
-cases_json:       "/projects/barthf/GLASS-WG/data/manifest/hongkong/cases.json"
-samples_json:     "/projects/barthf/GLASS-WG/data/manifest/hongkong/samples.json"
-aliquots_json:    "/projects/barthf/GLASS-WG/data/manifest/hongkong/aliquots.json"
-files_json:       "/projects/barthf/GLASS-WG/data/manifest/hongkong/files.json"
-readgroups_json:  "/projects/barthf/GLASS-WG/data/manifest/hongkong/readgroups.json"
-pairs_json:       "/projects/barthf/GLASS-WG/data/manifest/hongkong/pairs.json"
+cases_json:       "/projects/barthf/GLASS-WG/data/manifest/cases.json"
+samples_json:     "/projects/barthf/GLASS-WG/data/manifest/samples.json"
+aliquots_json:    "/projects/barthf/GLASS-WG/data/manifest/aliquots.json"
+files_json:       "/projects/barthf/GLASS-WG/data/manifest/files.json"
+readgroups_json:  "/projects/barthf/GLASS-WG/data/manifest/readgroups.json"
+pairs_json:       "/projects/barthf/GLASS-WG/data/manifest/pairs.json"
 
 #### GLOBAL PARAMETERS
 
