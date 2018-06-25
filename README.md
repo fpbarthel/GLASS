@@ -4,6 +4,28 @@ This Github is home to alignment, variant calling and analysis pipelines for the
 
 The "home" directory for the project on Helix was moved to `/fastscratch/verhaak-lab/GLASS-WG`. This will always contain a mirror of the `master` branch. Keep your own testing/development branches (eg. `devel`) under a personal directory, eg. I keep mine under `/projects/barthf/GLASS-WG`.
 
+## Results
+
+folder | workflow | description
+---|---|---
+artifacts | mutect2 | Collect metrics on sequencing context artifacts
+bqsr | align | Output for BaseRecalibrator (BQSR text file) and final BAM (w/ BQSR applied)
+bwa | align | BWA aligned BAMs
+callpon | mutect2 | VCF files for each control sample
+contamination | mutect2 | Estimate contamination
+m2bam | mutect2 | Run M2 - output BAM files
+m2filter | mutect2 | Filter M2
+m2vcf | mutect2 | Run M2 - output VCF files
+m2vcf-scatter | mutect2 | M2 output files per scatter interval
+markadapters | align | Mark Illumina adapters
+markduplicates | align | Mark duplicates and merge readgroup BAMs into a single sample BAM
+mergepon | mutect2 | Merges individual PON VCFs
+pileupsummaries | mutect2 | Get pileup summaries
+pon | mutect2 | Final per-batch PON VCF
+qc | align | QC metrics
+ubam | align | Unaligned BAM files (uBAM)
+vep | mutect2 | Annotated MAF files
+
 ## Changelog
 
 ### Version 0.3
