@@ -6,12 +6,14 @@ The "home" directory for the project on Helix was moved to `/fastscratch/verhaak
 
 ## Results
 
+Description of the directory structure under `results\`. Most of the directories here store temporary and intermediate files that are deleted upon completion of the subsequent step. 
+
 folder | workflow | description
 ---|---|---
 artifacts | mutect2 | Collect metrics on sequencing context artifacts
-bqsr | align | Output for BaseRecalibrator (BQSR text file) and final BAM (w/ BQSR applied)
+bqsr | align | Output for BaseRecalibrator (BQSR text file) and final BAM (w/ BQSR applied) *protected*
 bwa | align | BWA aligned BAMs
-callpon | mutect2 | VCF files for each control sample
+callpon | mutect2 | VCF files for each control sample per scatter interval
 contamination | mutect2 | Estimate contamination
 m2bam | mutect2 | Run M2 - output BAM files
 m2filter | mutect2 | Filter M2
@@ -19,12 +21,12 @@ m2vcf | mutect2 | Run M2 - output VCF files
 m2vcf-scatter | mutect2 | M2 output files per scatter interval
 markadapters | align | Mark Illumina adapters
 markduplicates | align | Mark duplicates and merge readgroup BAMs into a single sample BAM
-mergepon | mutect2 | Merges individual PON VCFs
+mergepon | mutect2 | Merges scattered individual PON VCFs into per-control PON VCFs
 pileupsummaries | mutect2 | Get pileup summaries
-pon | mutect2 | Final per-batch PON VCF
+pon | mutect2 | Merges per-control PON VCF into a final per-batch PON VCF *protected*
 qc | align | QC metrics
 ubam | align | Unaligned BAM files (uBAM)
-vep | mutect2 | Annotated MAF files
+vep | mutect2 | Annotated MAF files *protected*
 
 ## Changelog
 
