@@ -1,3 +1,7 @@
+benchmarks/**
+data/**
+results/**
+logs/**
 sandbox/**
 archive/**
 documents/**
