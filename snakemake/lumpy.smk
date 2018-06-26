@@ -10,9 +10,9 @@ rule extractsplitter:
         sorted = "results/lumpy/{aliquot_id}.realn.mdup.bqsr.splitters.sorted.bam"
     params:
         prefix = "results/lumpy/{aliquot_id}",
-        mem = CLUSTER_META["fastqc"]["mem"]
+        mem = CLUSTER_META["extractsplitter"]["mem"]
     threads:
-        CLUSTER_META["fastqc"]["ppn"]
+        CLUSTER_META["extractsplitter"]["ppn"]
     log:
         "logs/extractsplitter/{aliquot_id}.log"
     benchmark:
@@ -45,9 +45,9 @@ rule extractdiscordant:
         sorted = "results/lumpy/{aliquot_id}.realn.mdup.bqsr.discordant.sorted.bam"
     params:
         prefix = "results/lumpy/{aliquot_id}",
-        mem = CLUSTER_META["fastqc"]["mem"]
+        mem = CLUSTER_META["extractdiscordant"]["mem"]
     threads:
-        CLUSTER_META["fastqc"]["ppn"]
+        CLUSTER_META["extractdiscordant"]["ppn"]
     log:
         "logs/extractdiscordant/{aliquot_id}.log"
     benchmark:
