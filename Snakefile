@@ -21,10 +21,7 @@ def touch(fname, mode=0o666, dir_fd=None, **kwargs):
 def build_dict(seq, key):
     return dict((d[key], dict(d, index=index)) for (index, d) in enumerate(seq))
 
-## Although this statement goes against all coding conventions, we want it here because we want to run
-## everything on a temporary storage while we keep this script safe on a permanent drive
-## TEMPORARY
-configfile: "config.yaml"
+## Set working directory based on configuration file
 workdir: config["workdir"]
 
 ## GDC token file for authentication
@@ -80,6 +77,12 @@ CASES_DICT = build_dict(CASES, "case_id")
 
 ## FILES -> DICT
 FILES_DICT = build_dict(FILES, "file_uuid")
+
+## ALIQUOTS -> DICT
+ALIQUOTS_DICT = build_dict(ALIQUOTS, "aliquot_id")
+
+## SAMPLES -> DICT
+SAMPLES_DICT = build_dict(SAMPLES, "sample_id")
 
 
 ## Pair IDs are unique, PAIRS -> DICT
@@ -147,6 +150,8 @@ include: "snakemake/download.smk"
 include: "snakemake/align.smk"
 include: "snakemake/mutect2.smk"
 include: "snakemake/vep.smk"
+include: "snakemake/lumpy.smk"
+include: "snakemake/cnv-gatk.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
@@ -170,5 +175,23 @@ rule download_only:
 
 rule snv:
     input: expand("results/vep/{pair_id}.filtered2.anno.maf", pair_id=PAIRS_DICT.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## SV preprocessing rule
+## Run snakemake with target 'svprepare'
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule svprepare:
+    input:
+    	expand("results/lumpy/{aliquot_id}.realn.mdup.bqsr.splitters.sorted.bam", aliquot_id=ALIQUOT_TO_BAM_PATH.keys()),
+    	expand("results/lumpy/{aliquot_id}.realn.mdup.bqsr.discordant.sorted.bam", aliquot_id=ALIQUOT_TO_BAM_PATH.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## CNV calling pipeline
+## Run snakemake with target 'svprepare'
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule cnv:
+    input: expand("results/callsegments/{pair_id}.called.seg", pair_id=PAIRS_DICT.keys())
 
 ## END ##

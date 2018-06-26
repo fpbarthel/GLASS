@@ -2,22 +2,22 @@
 ## @Author Floris Barthel
 
 ## Full path to cluster settings
-cluster_json:     "/projects/barthf/GLASS-WG/cluster.json"
+cluster_json:     "/fastscratch/verhaak-lab/GLASS-WG/conf/cluster.json"
 
 ## Working directory
-workdir:          "/fastscratch/barthf/GLASS-WG"
+workdir:          "/fastscratch/verhaak-lab/GLASS-WG"
 
 ## HTML dir
 # @sbamin helix ~/ has 50GB limit. multiqc and fastqc files may grow in size.
 html_dir:         "/home/barthf/ShinyApps/"
 
 #### JSON files
-cases_json:       "/projects/barthf/GLASS-WG/data/manifest/cases.json"
-samples_json:     "/projects/barthf/GLASS-WG/data/manifest/samples.json"
-aliquots_json:    "/projects/barthf/GLASS-WG/data/manifest/aliquots.json"
-files_json:       "/projects/barthf/GLASS-WG/data/manifest/files.json"
-readgroups_json:  "/projects/barthf/GLASS-WG/data/manifest/readgroups.json"
-pairs_json:       "/projects/barthf/GLASS-WG/data/manifest/pairs.json"
+cases_json:       "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/cases.json"
+samples_json:     "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/samples.json"
+aliquots_json:    "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/aliquots.json"
+files_json:       "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/files.json"
+readgroups_json:  "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/readgroups.json"
+pairs_json:       "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/pairs.json"
 
 #### GLOBAL PARAMETERS
 
@@ -25,13 +25,19 @@ pairs_json:       "/projects/barthf/GLASS-WG/data/manifest/pairs.json"
 gdc_token:        "/home/barthf/gdc-user-token.2018-05-23T11_13_25-04_00.txt"
 
 ## Temporary directory
-tempdir:          "/fastscratch/barthf/GLASS-WG/tmp"
+tempdir:          "/fastscratch/verhaak-lab/GLASS-WG/tmp"
 
 ## WGS scatter intervals
 wgs_scatterdir:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50"
 
+## CNV intervals
+cnv_intervals:    "/fastscratch/verhaak-lab/GLASS-WG/data/ref/human_g1k_v37_decoy_CNV.interval_list"
+
 ## Reference genome
 reference_fasta:  "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/human_g1k_v37_decoy.fasta"
+
+## Reference dictionary
+reference_dict:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/human_g1k_v37_decoy.dict"
 
 ## GnomAD VCF file
 gnomad_vcf:       "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/af-only-gnomad.raw.sites.b37.vcf.gz"
