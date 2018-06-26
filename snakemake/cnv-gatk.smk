@@ -84,7 +84,6 @@ rule denoisereadcounts:
         "gatk --java-options -Xmx{params.mem}g DenoiseReadCounts \
             -I {input.sample} \
             --count-panel-of-normals {input.pon} \
-            --interval-merging-rule OVERLAPPING_ONLY \
             --standardized-copy-ratios {output.standardized} \
             --denoised-copy-ratios {output.denoised} \
             > {log} 2>&1"
@@ -171,19 +170,19 @@ rule modelsegments:
         tumor_counts = lambda wildcards: "results/collectalleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
         normal_counts = lambda wildcards: "results/collectalleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"])
     output:
-        "results/modelsegments/{pair_id}.modelBegin.seg",
-        "results/modelsegments/{pair_id}.modelFinal.seg",
-        "results/modelsegments/{pair_id}.cr.seg",
-        "results/modelsegments/{pair_id}.modelBegin.af.param",
-        "results/modelsegments/{pair_id}.modelBegin.cr.param",
-        "results/modelsegments/{pair_id}.modelFinal.af.param",
-        "results/modelsegments/{pair_id}.modelFinal.cr.param",
-        "results/modelsegments/{pair_id}.hets.normal.tsv",
-        "results/modelsegments/{pair_id}.hets.tsv"
+        "results/modelsegments/{pair_id}/{pair_id}.modelBegin.seg",
+        "results/modelsegments/{pair_id}/{pair_id}.modelFinal.seg",
+        "results/modelsegments/{pair_id}/{pair_id}.cr.seg",
+        "results/modelsegments/{pair_id}/{pair_id}.modelBegin.af.param",
+        "results/modelsegments/{pair_id}/{pair_id}.modelBegin.cr.param",
+        "results/modelsegments/{pair_id}/{pair_id}.modelFinal.af.param",
+        "results/modelsegments/{pair_id}/{pair_id}.modelFinal.cr.param",
+        "results/modelsegments/{pair_id}/{pair_id}.hets.normal.tsv",
+        "results/modelsegments/{pair_id}/{pair_id}.hets.tsv"
     params:
         mem = CLUSTER_META["modelsegments"]["mem"],
-        outputdir = "results/modelsegments/{wildcards.pair_id}",
-        outputprefix = "File_{wildcards.pair_id}_"
+        outputdir = "results/modelsegments/{pair_id}",
+        outputprefix = "{pair_id}"
     threads:
         CLUSTER_META["modelsegments"]["ppn"]
     log:
@@ -210,7 +209,7 @@ rule modelsegments:
 
 rule callsegments:
     input:
-        "results/modelsegments/{pair_id}.cr.seg"
+        "results/modelsegments/{pair_id}/{pair_id}.cr.seg"
     output:
         "results/callsegments/{pair_id}.called.seg"
     params:
@@ -236,35 +235,35 @@ rule callsegments:
 ## See: https://gatkforums.broadinstitute.org/dsde/discussion/11683/
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# rule plotmodeledsegments:
-#     input:
-#         tumor_denoised = lambda wildcards: "results/denoisereadcounts/{aliquot_id}.denoisedCR.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-#         tumor_counts = lambda wildcards: "results/collectalleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-#         tumor_segments = "results/modelsegments/{pair_id}.modelFinal.seg"
-#     output:
-#         xx
-#     params:
-#         mem = CLUSTER_META["plotmodeledsegments"]["mem"],
-#         outputdir = "results/plotmodeledsegments/{pair_id}",
-#         outputprefix = "{pair_id}"
-#     threads:
-#         CLUSTER_META["plotmodeledsegments"]["ppn"]
-#     log:
-#         "logs/plotmodeledsegments/{pair_id}.log"
-#     benchmark:
-#         "benchmarks/plotmodeledsegments/{pair_id}.txt"
-#     message:
-#         "Plot modelled segments\n"
-#         "Pair ID: {wildcards.pair_id}"
-#     shell:
-#         "gatk --java-options -Xmx{params.mem}g PlotModeledSegments \
-#             --denoised-copy-ratios {input.tumor_denoised} \
-#             --allelic-counts {input.tumor_counts} \
-#             --segments {input.tumor_segments}} \
-#             --sequence-dictionary {config[reference_dict]} \
-#             --minimum-contig-length 46709983 \
-#             --output {params.outputdir} \
-#             --output-prefix {params.outputprefix} \
-#             > {log} 2>&1"
+rule plotmodeledsegments:
+    input:
+        tumor_denoised = lambda wildcards: "results/denoisereadcounts/{aliquot_id}.denoisedCR.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
+        tumor_counts = "results/modelsegments/{pair_id}/{pair_id}.hets.tsv",
+        tumor_segments = "results/modelsegments/{pair_id}/{pair_id}.modelFinal.seg"
+    output:
+        "results/plotmodeledsegments/{pair_id}/{pair_id}.modeled.png"
+    params:
+        mem = CLUSTER_META["plotmodeledsegments"]["mem"],
+        outputdir = "results/plotmodeledsegments/{pair_id}",
+        outputprefix = "{pair_id}"
+    threads:
+        CLUSTER_META["plotmodeledsegments"]["ppn"]
+    log:
+        "logs/plotmodeledsegments/{pair_id}.log"
+    benchmark:
+        "benchmarks/plotmodeledsegments/{pair_id}.txt"
+    message:
+        "Plot modelled segments\n"
+        "Pair ID: {wildcards.pair_id}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g PlotModeledSegments \
+            --denoised-copy-ratios {input.tumor_denoised} \
+            --allelic-counts {input.tumor_counts} \
+            --segments {input.tumor_segments}} \
+            --sequence-dictionary {config[reference_dict]} \
+            --minimum-contig-length 46709983 \
+            --output {params.outputdir} \
+            --output-prefix {params.outputprefix} \
+            > {log} 2>&1"
 
 ## END ##
