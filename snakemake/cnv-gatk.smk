@@ -35,7 +35,7 @@ rule collectreadcounts:
 
 rule createcnvpon:
     input:
-        lambda wildcards: expand("results/collectreadcounts/{batch}/{aliquot_id}.pon.vcf", batch=wildcards.batch, aliquot_id=BATCH_TO_NORMAL[wildcards.batch]) 
+        lambda wildcards: expand("results/collectreadcounts/{batch}/{aliquot_id}.counts.hdf5", batch=wildcards.batch, aliquot_id=BATCH_TO_NORMAL[wildcards.batch]) 
     output:
         "results/createcnvpon/{batch}.pon.hdf5"
     params:
@@ -49,13 +49,13 @@ rule createcnvpon:
     message:
         "Creating CNV panel of normals\n"
         "Batch: {wildcards.batch}"
-    # run:
-    #     vcfs = " ".join(["-I " + s for s in input])
-    #     shell("gatk --java-options -Xmx{params.mem}g CreateReadCountPanelOfNormals \
-    #             {vcfs} \
-    #             --minimum-interval-median-percentile 5.0 \
-    #             -O {output} \
-    #             > {log} 2>&1"
+    run:
+        vcfs = " ".join(["-I " + s for s in input])
+        shell("gatk --java-options -Xmx{params.mem}g CreateReadCountPanelOfNormals \
+                {vcfs} \
+                --minimum-interval-median-percentile 5.0 \
+                -O {output} \
+                > {log} 2>&1")
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Denoise read counts
@@ -64,8 +64,8 @@ rule createcnvpon:
 
 rule denoisereadcounts:
     input:
-        sample = "results/collectreadcounts/{batch}/{aliquot_id}.counts.hdf5",
-        pon = "results/createcnvpon/{batch}.pon.hdf5"
+        sample = lambda wildcards: "results/collectreadcounts/{batch}/{aliquot_id}.counts.hdf5".format(batch = CASES_DICT[SAMPLES_DICT[ALIQUOTS_DICT[wildcards.aliquot_id]["sample_id"]]["case_id"]]["project_id"], aliquot_id=wildcards.aliquot_id),
+        pon =  lambda wildcards: "results/createcnvpon/{batch}.pon.hdf5".format(batch = CASES_DICT[SAMPLES_DICT[ALIQUOTS_DICT[wildcards.aliquot_id]["sample_id"]]["case_id"]]["project_id"])
     output:
         standardized = "results/denoisereadcounts/{aliquot_id}.standardizedCR.tsv",
         denoised = "results/denoisereadcounts/{aliquot_id}.denoisedCR.tsv"
@@ -155,7 +155,7 @@ rule collectalleliccounts:
         "gatk --java-options -Xmx{params.mem}g CollectAllelicCounts \
             -I {input} \
             -L {config[tiny_vcf]} \
-            -R {config[reference_fasta]}} \
+            -R {config[reference_fasta]} \
             -O {output} \
             > {log} 2>&1"
 
@@ -182,8 +182,8 @@ rule modelsegments:
         "results/modelsegments/{pair_id}.hets.tsv"
     params:
         mem = CLUSTER_META["modelsegments"]["mem"],
-        outputdir = "results/modelsegments/{pair_id}",
-        outputprefix = "{pair_id}"
+        outputdir = "results/modelsegments/{wildcards.pair_id}",
+        outputprefix = "File_{wildcards.pair_id}_"
     threads:
         CLUSTER_META["modelsegments"]["ppn"]
     log:
@@ -197,7 +197,7 @@ rule modelsegments:
         "gatk --java-options -Xmx{params.mem}g ModelSegments \
             --denoised-copy-ratios {input.tumor_denoised} \
             --allelic-counts {input.tumor_counts} \
-            -normal-allelic-counts {input.normal_counts}} \
+            --normal-allelic-counts {input.normal_counts} \
             --output {params.outputdir} \
             --output-prefix {params.outputprefix} \
             > {log} 2>&1"

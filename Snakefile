@@ -78,6 +78,12 @@ CASES_DICT = build_dict(CASES, "case_id")
 ## FILES -> DICT
 FILES_DICT = build_dict(FILES, "file_uuid")
 
+## ALIQUOTS -> DICT
+ALIQUOTS_DICT = build_dict(ALIQUOTS, "aliquot_id")
+
+## SAMPLES -> DICT
+SAMPLES_DICT = build_dict(SAMPLES, "sample_id")
+
 
 ## Pair IDs are unique, PAIRS -> DICT
 PAIRS_DICT = build_dict(PAIRS, "pair_id")
