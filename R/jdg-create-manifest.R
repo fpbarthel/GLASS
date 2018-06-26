@@ -1,5 +1,5 @@
 #######################################################
-# Create manifest for low pass Henry Ford sample (hGBM)
+# Create manifest for low pass MD Anderson samples (Roel-JDG)
 # Date: 2018.06.26
 # Author: Kevin J., Floris B.
 #######################################################
@@ -9,7 +9,7 @@ mybasedir = "/Users/johnsk/Documents/Life-History/GLASS-WG"
 setwd(mybasedir)
 
 # Files with information about fastq information and barcodes.
-HF_file_path = "data/sequencing-information/HenryFord/henry_ford_readgroups.txt"
+JDG_file_path = "data/sequencing-information/Roel-JDG/Roel_JDG_readgroups.txt"
 life_history_barcodes = "data/sequencing-information/master_life_history_uniform_naming_incomplete.txt"
 
 # Create extensions for samples.
@@ -17,12 +17,12 @@ json_ext = "json"
 text_ext = "tsv"
 
 # Create output files for each metadata set.
-cases_file      = "data/manifest/henryford/cases"
-samples_file    = "data/manifest/henryford/samples"
-aliquots_file   = "data/manifest/henryford/aliquots"
-readgroups_file = "data/manifest/henryford/readgroups"
-files_file      = "data/manifest/henryford/files"
-pairs_file      = "data/manifest/henryford/pairs"
+cases_file      = "data/manifest/roel-jdg/cases"
+samples_file    = "data/manifest/roel-jdg/samples"
+aliquots_file   = "data/manifest/roel-jdg/aliquots"
+readgroups_file = "data/manifest/roel-jdg/readgroups"
+files_file      = "data/manifest/roel-jdg/files"
+pairs_file      = "data/manifest/roel-jdg/pairs"
 
 #######################################################
 
@@ -40,12 +40,13 @@ library(stringr)
 
 ### Aliquot ####
 master_sheet = read.delim("data/sequencing-information/master_life_history_uniform_naming_incomplete.txt", as.is=T)
+# grepl low-pass (LP) samples.
 aliquot_sheet = master_sheet %>% select(aliquot_uuid = uuid, sample_id = Barcode) %>%
   mutate(aliquot_id = sprintf("%s-%s", sample_id, aliquot_uuid),
          analyte_type = "DNA",
          analysis_type = "WGS",
          portion = 1) %>%
-  filter(grepl("HF", sample_id))
+  filter(grepl("LP", sample_id))
 
 # Aliquot file to be written.
 aliquots = aliquot_sheet %>% select(sample_id, aliquot_uuid, aliquot_id, portion, analyte_type, analysis_type) %>% distinct()
@@ -53,54 +54,53 @@ aliquots = aliquot_sheet %>% select(sample_id, aliquot_uuid, aliquot_id, portion
 ### Files ####
 # Generate *file* tsv containing: aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
 # hk_df = read.table(HK_file_path, header=T, stringsAsFactors = F)
-hf_df = read.table(HF_file_path, stringsAsFactors = F)
-colnames(hf_df) = c("file_path", "@RG" , "RGID", "RGPL", "RGLB", "RGSM", "RGCN")
+jdg_df = read.table(JDG_file_path, stringsAsFactors = F)
+colnames(jdg_df) = c("file_path", "@RG" , "RGID", "RGPL", "RGLB", "RGSM", "RGCN")
 # Remove RG identifier before colon.
 drop_prefix = function(x) {gsub(".*:","", x) }
-hf_df[3:7] <- lapply(hf_df[3:7], drop_prefix)
+jdg_df[3:7] <- lapply(jdg_df[3:7], drop_prefix)
 
 # Retrieve the file_name from the file_path. 
-hf_map_df = hf_df %>%  
-  mutate(file_name = sapply(strsplit(hf_df$file_path, "/"), "[[", 6),
-  legacy_sample_id = sub(".*FORD- *(.*?) *_1.*", "\\1", file_name)) %>% 
+jdf_map_df = jdg_df %>%  
+  mutate(file_name = sapply(strsplit(jdg_df$file_path, "/"), "[[", 6),
+         legacy_sample_id = sub(".*ROEL-JDG- *(.*?) *_.*", "\\1", file_name)) %>% 
   inner_join(master_sheet, by = c("legacy_sample_id" = "Original_ID")) 
 
-# Generate uuids for each of the henry ford files.
+# Generate uuids for each of the roel-jdg  files.
 # Example from TCGA: 24c6f54a-e7a2-4148-8335-045e3c74096e
 set.seed(1)
-hf_map_df$file_uuid = paste(stri_rand_strings(dim(hf_map_df)[1], 8, "[a-z0-9]"),
-                            stri_rand_strings(dim(hf_map_df)[1], 4, "[a-z0-9]"),
-                            stri_rand_strings(dim(hf_map_df)[1], 4, "[a-z0-9]"),
-                            stri_rand_strings(dim(hf_map_df)[1], 4, "[a-z0-9]"),
-                            stri_rand_strings(dim(hf_map_df)[1], 12, "[a-z0-9]"),
+jdf_map_df$file_uuid = paste(stri_rand_strings(dim(jdf_map_df)[1], 8, "[a-z0-9]"),
+                            stri_rand_strings(dim(jdf_map_df)[1], 4, "[a-z0-9]"),
+                            stri_rand_strings(dim(jdf_map_df)[1], 4, "[a-z0-9]"),
+                            stri_rand_strings(dim(jdf_map_df)[1], 4, "[a-z0-9]"),
+                            stri_rand_strings(dim(jdf_map_df)[1], 12, "[a-z0-9]"),
                             sep = "-")
 
 # Sanity check: make sure each is unique.
-n_distinct(hf_map_df$file_uuid)
+n_distinct(jdf_map_df$file_uuid)
 
 # Need to record the file_size and file_md5sum for these samples. Floris says not necessary.
-hf_map_df = hf_map_df %>% mutate(file_size = "NA",
+jdf_map_df = jdf_map_df %>% mutate(file_size = "NA",
                                  file_md5sum = "NA",
                                  aliquot_id = sprintf("%s-%s", Barcode, uuid), 
                                  file_format = "BAM")
 
 # Order needs to be: # aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
-files = hf_map_df %>% select(aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format) %>% distinct()
+files = jdf_map_df %>% select(aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format) %>% distinct()
 
 
 ### Cases ####
-hf_map_df = hf_map_df %>% 
+jdf_map_df = jdf_map_df %>% 
   mutate(case_id = substring(Barcode, 1, 12), 
-         project_id = "GLSS-HF")
+         project_id = "GLSS-MD")
 # Select only those relevant fields.
-cases = hf_map_df %>% select(case_id, project_id)
-
+cases = jdf_map_df %>% select(case_id, project_id)
 
 ### Samples ####
 # Grab last two characrters of barcode.
-hf_map_df$sample_type = substring(hf_map_df$Barcode, 14, 15)
+jdf_map_df$sample_type = substring(jdf_map_df$Barcode, 14, 15)
 # Recode variables to match Floris' fields.
-samples = hf_map_df %>% select(case_id, sample_id = Barcode, legacy_sample_id, sample_type) %>% distinct()
+samples = jdf_map_df %>% select(case_id, sample_id = Barcode, legacy_sample_id, sample_type) %>% distinct()
 
 
 ### Pairs ####
@@ -124,20 +124,19 @@ p2 = samples %>%
 # it was presumed to be taken at first timepoint.
 pairs = rbind(p1,p2) %>% filter(complete.cases(tumor_aliquot_id, normal_aliquot_id))
 
-
-
 ### Readgroups ####
 # Necessary information: file_uuid, aliquot_id, RGID, RGPL, RGPU, RGLB, RGPI, RGDT, RGSM, RGCN.
 # *** Note: had to generate a new time stamp because it was not found in the RG header for the bams. ****
-readgroup_df = hf_map_df %>% 
-  mutate(RGPU = paste(sub(".*[0-9]{4}_ *(.*?) *_s.*", "\\1", hf_map_df$file_name), 
-                      sub(".*s_ *(.*?) *_rg.*", "\\1", hf_map_df$file_name) , sep="."),
+readgroup_df = jdf_map_df %>% 
+  mutate(RGPU = paste(sub(".*[0-9]{4}_ *(.*?) *_s.*", "\\1", jdf_map_df$file_name), 
+                      sub(".*s_ *(.*?) *_[A-Za-z]{2}.*", "\\1", jdf_map_df$file_name), sep="."),
          RGPI = 0,
          RGDT = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%dT%H:%M:%S%z"),
          RGID = paste0(substring(RGPU, 1, 4), substring(RGPU, nchar(RGPU)-1, nchar(RGPU)), ""))
 
 # Finalize readgroup information in predefined order.
 readgroups = readgroup_df %>% select(file_uuid, aliquot_id, RGID, RGPL, RGPU, RGLB, RGPI, RGDT, RGSM, RGCN) %>% distinct()
+
 
 ### OUTPUT ####
 # Output the json and .tsv files.
@@ -161,5 +160,13 @@ write.table(samples, file = sprintf("%s.%s", samples_file, text_ext), sep="\t", 
 # Output RData object and timestamp along with package versions.
 mysession_info <- devtools::session_info()
 timetag = make.names(format(Sys.time(),"t%d_%b_%y_%H%M%S%Z"))
-save.image(file.path(sprintf("R/RData/hf-create-manifest_%s.RData", timetag)))
+save.image(file.path(sprintf("R/RData/jdg-create-manifest_%s.RData", timetag)))
+
+
+
+
+
+
+
+
 
