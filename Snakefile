@@ -145,6 +145,7 @@ include: "snakemake/align.smk"
 include: "snakemake/mutect2.smk"
 include: "snakemake/vep.smk"
 include: "snakemake/lumpy.smk"
+include: "snakemake/cnv-gatk.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
@@ -169,7 +170,7 @@ rule download_only:
 rule snv:
     input: expand("results/vep/{pair_id}.filtered2.anno.maf", pair_id=PAIRS_DICT.keys())
 
- ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SV preprocessing rule
 ## Run snakemake with target 'svprepare'
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -178,5 +179,13 @@ rule svprepare:
     input:
     	expand("results/lumpy/{aliquot_id}.realn.mdup.bqsr.splitters.sorted.bam", aliquot_id=ALIQUOT_TO_BAM_PATH.keys()),
     	expand("results/lumpy/{aliquot_id}.realn.mdup.bqsr.discordant.sorted.bam", aliquot_id=ALIQUOT_TO_BAM_PATH.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## CNV calling pipeline
+## Run snakemake with target 'svprepare'
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule cnv:
+    input: expand("results/callsegments/{pair_id}.called.seg", pair_id=PAIRS_DICT.keys())
 
 ## END ##

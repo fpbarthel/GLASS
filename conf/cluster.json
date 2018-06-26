@@ -178,5 +178,56 @@
         "name" : "{rule}.{wildcards.pair_id}",
         "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
         "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
+    "collectreadcounts" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
+    },
+    "createcnvpon" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00",
+        "name" : "{rule}{wildcards.batch}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.err"
+    },
+    "denoisereadcounts" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
+    },
+    "plotcr" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
+    },
+    "collectalleliccounts" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
+    },
+    "modelsegments" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00",
+        "name" : "{rule}.{wildcards.pair_id}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
+    "callsegments" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00",
+        "name" : "{rule}.{wildcards.pair_id}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
     }
 }
