@@ -124,8 +124,8 @@ rule plotcr:
             --denoised-copy-ratios {input.denoised} \
             --sequence-dictionary {config[reference_dict]} \
             --minimum-contig-length 46709983 \
-            --standardized-copy-ratios {output.standardized} \
-            --denoised-copy-ratios {output.denoised} \
+            --output {params.outputdir} \
+            --output-prefix {params.outputprefix} \
             > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -259,7 +259,7 @@ rule plotmodeledsegments:
         "gatk --java-options -Xmx{params.mem}g PlotModeledSegments \
             --denoised-copy-ratios {input.tumor_denoised} \
             --allelic-counts {input.tumor_counts} \
-            --segments {input.tumor_segments}} \
+            --segments {input.tumor_segments} \
             --sequence-dictionary {config[reference_dict]} \
             --minimum-contig-length 46709983 \
             --output {params.outputdir} \
