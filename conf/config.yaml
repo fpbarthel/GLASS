@@ -31,7 +31,7 @@ tempdir:          "/fastscratch/verhaak-lab/GLASS-WG/tmp"
 wgs_scatterdir:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50"
 
 ## CNV intervals
-cnv_intervals:    "/fastscratch/verhaak-lab/GLASS-WG/data/ref/human_g1k_v37_decoy_CNV.interval_list"
+cnv_intervals:    "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.interval_list"
 
 ## Reference genome
 reference_fasta:  "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/human_g1k_v37_decoy.fasta"
