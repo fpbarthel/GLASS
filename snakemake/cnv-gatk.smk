@@ -7,15 +7,15 @@ rule collectreadcounts:
     input:
         "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
-        "results/collectreadcounts/{batch}/{aliquot_id}.counts.hdf5"
+        "results/cnv/readcounts/{batch}/{aliquot_id}.counts.hdf5"
     params:
         mem = CLUSTER_META["collectreadcounts"]["mem"]
     threads:
         CLUSTER_META["collectreadcounts"]["ppn"]
     log:
-        "logs/collectreadcounts/{batch}/{aliquot_id}.log"
+        "logs/cnv/readcounts/{batch}/{aliquot_id}.log"
     benchmark:
-        "benchmarks/collectreadcounts/{batch}/{aliquot_id}.txt"
+        "benchmarks/cnv/readcounts/{batch}/{aliquot_id}.txt"
     message:
         "Collecting read counts\n"
         "Batch: {wildcards.batch}\n"
@@ -35,17 +35,17 @@ rule collectreadcounts:
 
 rule createcnvpon:
     input:
-        lambda wildcards: expand("results/collectreadcounts/{batch}/{aliquot_id}.counts.hdf5", batch=wildcards.batch, aliquot_id=BATCH_TO_NORMAL[wildcards.batch]) 
+        lambda wildcards: expand("results/cnv/readcounts/{batch}/{aliquot_id}.counts.hdf5", batch=wildcards.batch, aliquot_id=BATCH_TO_NORMAL[wildcards.batch]) 
     output:
-        "results/createcnvpon/{batch}.pon.hdf5"
+        "results/cnv/createcnvpon/{batch}.pon.hdf5"
     params:
         mem = CLUSTER_META["createcnvpon"]["mem"]
     threads:
         CLUSTER_META["createcnvpon"]["ppn"]
     log:
-        "logs/createcnvpon/{batch}.log"
+        "logs/cnv/createcnvpon/{batch}.log"
     benchmark:
-        "benchmarks/createcnvpon/{batch}.txt"
+        "benchmarks/cnv/createcnvpon/{batch}.txt"
     message:
         "Creating CNV panel of normals\n"
         "Batch: {wildcards.batch}"
@@ -64,19 +64,19 @@ rule createcnvpon:
 
 rule denoisereadcounts:
     input:
-        sample = lambda wildcards: "results/collectreadcounts/{batch}/{aliquot_id}.counts.hdf5".format(batch = CASES_DICT[SAMPLES_DICT[ALIQUOTS_DICT[wildcards.aliquot_id]["sample_id"]]["case_id"]]["project_id"], aliquot_id=wildcards.aliquot_id),
-        pon =  lambda wildcards: "results/createcnvpon/{batch}.pon.hdf5".format(batch = CASES_DICT[SAMPLES_DICT[ALIQUOTS_DICT[wildcards.aliquot_id]["sample_id"]]["case_id"]]["project_id"])
+        sample = lambda wildcards: "results/cnv/readcounts/{batch}/{aliquot_id}.counts.hdf5".format(batch = CASES_DICT[SAMPLES_DICT[ALIQUOTS_DICT[wildcards.aliquot_id]["sample_id"]]["case_id"]]["project_id"], aliquot_id=wildcards.aliquot_id),
+        pon =  lambda wildcards: "results/cnv/createcnvpon/{batch}.pon.hdf5".format(batch = CASES_DICT[SAMPLES_DICT[ALIQUOTS_DICT[wildcards.aliquot_id]["sample_id"]]["case_id"]]["project_id"])
     output:
-        standardized = "results/denoisereadcounts/{aliquot_id}.standardizedCR.tsv",
-        denoised = "results/denoisereadcounts/{aliquot_id}.denoisedCR.tsv"
+        standardized = "results/cnv/denoisereadcounts/{aliquot_id}.standardizedCR.tsv",
+        denoised = "results/cnv/denoisereadcounts/{aliquot_id}.denoisedCR.tsv"
     params:
         mem = CLUSTER_META["denoisereadcounts"]["mem"]
     threads:
         CLUSTER_META["denoisereadcounts"]["ppn"]
     log:
-        "logs/denoisereadcounts/{aliquot_id}.log"
+        "logs/cnv/denoisereadcounts/{aliquot_id}.log"
     benchmark:
-        "benchmarks/denoisereadcounts/{aliquot_id}.txt"
+        "benchmarks/cnv/denoisereadcounts/{aliquot_id}.txt"
     message:
         "Denoising and standardizing read counts\n"
         "Aliquot: {wildcards.aliquot_id}"
@@ -96,25 +96,25 @@ rule denoisereadcounts:
 
 rule plotcr:
     input:
-        standardized = "results/denoisereadcounts/{aliquot_id}.standardizedCR.tsv",
-        denoised = "results/denoisereadcounts/{aliquot_id}.denoisedCR.tsv"
+        standardized = "results/cnv/denoisereadcounts/{aliquot_id}.standardizedCR.tsv",
+        denoised = "results/cnv/denoisereadcounts/{aliquot_id}.denoisedCR.tsv"
     output:
-        "results/plotcr/{aliquot_id}/{aliquot_id}.denoised.png",
-        "results/plotcr/{aliquot_id}/{aliquot_id}.denoisedLimit4.png",
-        "results/plotcr/{aliquot_id}/{aliquot_id}.standardizedMAD.txt",
-        "results/plotcr/{aliquot_id}/{aliquot_id}.denoisedMAD.txt",
-        "results/plotcr/{aliquot_id}/{aliquot_id}.deltaMAD.txt",
-        "results/plotcr/{aliquot_id}/{aliquot_id}.scaledDeltaMAD.txt"
+        "results/cnv/plotcr/{aliquot_id}/{aliquot_id}.denoised.png",
+        "results/cnv/plotcr/{aliquot_id}/{aliquot_id}.denoisedLimit4.png",
+        "results/cnv/plotcr/{aliquot_id}/{aliquot_id}.standardizedMAD.txt",
+        "results/cnv/plotcr/{aliquot_id}/{aliquot_id}.denoisedMAD.txt",
+        "results/cnv/plotcr/{aliquot_id}/{aliquot_id}.deltaMAD.txt",
+        "results/cnv/plotcr/{aliquot_id}/{aliquot_id}.scaledDeltaMAD.txt"
     params:
         mem = CLUSTER_META["plotcr"]["mem"],
-        outputdir = "results/plotcr/{aliquot_id}",
+        outputdir = "results/cnv/plotcr/{aliquot_id}",
         outputprefix = "{aliquot_id}"
     threads:
         CLUSTER_META["plotcr"]["ppn"]
     log:
-        "logs/plotcr/{aliquot_id}.log"
+        "logs/cnv/plotcr/{aliquot_id}.log"
     benchmark:
-        "benchmarks/plotcr/{aliquot_id}.txt"
+        "benchmarks/cnv/plotcr/{aliquot_id}.txt"
     message:
         "Plot denoised and standardized read counts\n"
         "Aliquot: {wildcards.aliquot_id}"
@@ -138,15 +138,15 @@ rule collectalleliccounts:
     input:
         "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
-        "results/collectalleliccounts/{aliquot_id}.allelicCounts.tsv"
+        "results/cnv/alleliccounts/{aliquot_id}.allelicCounts.tsv"
     params:
         mem = CLUSTER_META["collectalleliccounts"]["mem"]
     threads:
         CLUSTER_META["collectalleliccounts"]["ppn"]
     log:
-        "logs/collectalleliccounts/{aliquot_id}.log"
+        "logs/cnv/alleliccounts/{aliquot_id}.log"
     benchmark:
-        "benchmarks/collectalleliccounts/{aliquot_id}.txt"
+        "benchmarks/cnv/alleliccounts/{aliquot_id}.txt"
     message:
         "Collect allelic counts\n"
         "Aliquot: {wildcards.aliquot_id}"
@@ -166,29 +166,29 @@ rule collectalleliccounts:
 
 rule modelsegments:
     input:
-        tumor_denoised = lambda wildcards: "results/denoisereadcounts/{aliquot_id}.denoisedCR.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        tumor_counts = lambda wildcards: "results/collectalleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        normal_counts = lambda wildcards: "results/collectalleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"])
+        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_id}.denoisedCR.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
+        tumor_counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
+        normal_counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"])
     output:
-        "results/modelsegments/{pair_id}/{pair_id}.modelBegin.seg",
-        "results/modelsegments/{pair_id}/{pair_id}.modelFinal.seg",
-        "results/modelsegments/{pair_id}/{pair_id}.cr.seg",
-        "results/modelsegments/{pair_id}/{pair_id}.modelBegin.af.param",
-        "results/modelsegments/{pair_id}/{pair_id}.modelBegin.cr.param",
-        "results/modelsegments/{pair_id}/{pair_id}.modelFinal.af.param",
-        "results/modelsegments/{pair_id}/{pair_id}.modelFinal.cr.param",
-        "results/modelsegments/{pair_id}/{pair_id}.hets.normal.tsv",
-        "results/modelsegments/{pair_id}/{pair_id}.hets.tsv"
+        "results/cnv/modelsegments/{pair_id}/{pair_id}.modelBegin.seg",
+        "results/cnv/modelsegments/{pair_id}/{pair_id}.modelFinal.seg",
+        "results/cnv/modelsegments/{pair_id}/{pair_id}.cr.seg",
+        "results/cnv/modelsegments/{pair_id}/{pair_id}.modelBegin.af.param",
+        "results/cnv/modelsegments/{pair_id}/{pair_id}.modelBegin.cr.param",
+        "results/cnv/modelsegments/{pair_id}/{pair_id}.modelFinal.af.param",
+        "results/cnv/modelsegments/{pair_id}/{pair_id}.modelFinal.cr.param",
+        "results/cnv/modelsegments/{pair_id}/{pair_id}.hets.normal.tsv",
+        "results/cnv/modelsegments/{pair_id}/{pair_id}.hets.tsv"
     params:
         mem = CLUSTER_META["modelsegments"]["mem"],
-        outputdir = "results/modelsegments/{pair_id}",
+        outputdir = "results/cnv/modelsegments/{pair_id}",
         outputprefix = "{pair_id}"
     threads:
         CLUSTER_META["modelsegments"]["ppn"]
     log:
-        "logs/modelsegments/{pair_id}.log"
+        "logs/cnv/modelsegments/{pair_id}.log"
     benchmark:
-        "benchmarks/modelsegments/{pair_id}.txt"
+        "benchmarks/cnv/modelsegments/{pair_id}.txt"
     message:
         "Model segments\n"
         "Pair ID: {wildcards.pair_id}"
@@ -209,17 +209,17 @@ rule modelsegments:
 
 rule callsegments:
     input:
-        "results/modelsegments/{pair_id}/{pair_id}.cr.seg"
+        "results/cnv/modelsegments/{pair_id}/{pair_id}.cr.seg"
     output:
-        "results/callsegments/{pair_id}.called.seg"
+        "results/cnv/callsegments/{pair_id}.called.seg"
     params:
         mem = CLUSTER_META["callsegments"]["mem"]
     threads:
         CLUSTER_META["callsegments"]["ppn"]
     log:
-        "logs/callsegments/{pair_id}.log"
+        "logs/cnv/callsegments/{pair_id}.log"
     benchmark:
-        "benchmarks/callsegments/{pair_id}.txt"
+        "benchmarks/cnv/callsegments/{pair_id}.txt"
     message:
         "Call segments\n"
         "Pair ID: {wildcards.pair_id}"
@@ -237,21 +237,21 @@ rule callsegments:
 
 rule plotmodeledsegments:
     input:
-        tumor_denoised = lambda wildcards: "results/denoisereadcounts/{aliquot_id}.denoisedCR.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        tumor_counts = "results/modelsegments/{pair_id}/{pair_id}.hets.tsv",
-        tumor_segments = "results/modelsegments/{pair_id}/{pair_id}.modelFinal.seg"
+        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_id}.denoisedCR.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
+        tumor_counts = "results/cnv/modelsegments/{pair_id}/{pair_id}.hets.tsv",
+        tumor_segments = "results/cnv/modelsegments/{pair_id}/{pair_id}.modelFinal.seg"
     output:
-        "results/plotmodeledsegments/{pair_id}/{pair_id}.modeled.png"
+        "results/cnv/plotmodeledsegments/{pair_id}/{pair_id}.modeled.png"
     params:
         mem = CLUSTER_META["plotmodeledsegments"]["mem"],
-        outputdir = "results/plotmodeledsegments/{pair_id}",
+        outputdir = "results/cnv/plotmodeledsegments/{pair_id}",
         outputprefix = "{pair_id}"
     threads:
         CLUSTER_META["plotmodeledsegments"]["ppn"]
     log:
-        "logs/plotmodeledsegments/{pair_id}.log"
+        "logs/cnv/plotmodeledsegments/{pair_id}.log"
     benchmark:
-        "benchmarks/plotmodeledsegments/{pair_id}.txt"
+        "benchmarks/cnv/plotmodeledsegments/{pair_id}.txt"
     message:
         "Plot modelled segments\n"
         "Pair ID: {wildcards.pair_id}"

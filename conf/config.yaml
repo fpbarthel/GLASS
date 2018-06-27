@@ -33,6 +33,9 @@ wgs_scatterdir:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/sca
 ## CNV intervals
 cnv_intervals:    "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.interval_list"
 
+## CNV common SNPs
+cnv_common_snp:   "/projects/verhaak-lab/verhaak_ref/gatk-cnv/af-only-gnomad.raw.sites.b37.selected.vcf.gz"
+
 ## Reference genome
 reference_fasta:  "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/human_g1k_v37_decoy.fasta"
 

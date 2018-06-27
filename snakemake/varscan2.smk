@@ -44,10 +44,8 @@ rule varscan:
         normal = lambda wildcards: "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
         intervalbed = lambda wildcards: "{dir}/{interval}/scattered.bed".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
     output:
-        temp("results/varscan2/{pair_id}.{interval}.snp.Somatic.hc"),
-        temp("results/varscan2/{pair_id}.{interval}.snp.Somatic.lc"),
-        temp("results/varscan2/{pair_id}.{interval}.snp.Germline"),
-        temp("results/varscan2/{pair_id}.{interval}.snp.LOH")
+        temp("results/varscan2/vs2-scatter/{pair_id}.{interval}.snp.vcf"),
+        temp("results/varscan2/vs2-scatter/{pair_id}.{interval}.indel.vcf")
     params:
         mem = CLUSTER_META["varscan"]["mem"],
         outputprefix = "results/varscan2/{pair_id}.{interval}"
@@ -88,26 +86,32 @@ rule varscan:
 
 rule mergevarscan:
     input:
-        lambda wildcards: expand("results/varscan2/{pair_id}.{interval}.{set}.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST, set=wildcards.set)
+        snp = lambda wildcards: expand("results/varscan2/vs2-scatter/{pair_id}.{interval}.snp.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST),
+        indel = lambda wildcards: expand("results/varscan2/vs2-scatter/{pair_id}.{interval}.indel.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST)
     output:
-        protected("results/varscan2/{pair_id}.{set}.vcf")
+        snp = protected("results/varscan2/vcf/{pair_id}.snp.vcf"),
+        indel = protected("results/varscan2/vcf/{pair_id}.indel.vcf")
     params:
         mem = CLUSTER_META["mergevarscan"]["mem"]
     threads:
         CLUSTER_META["mergevarscan"]["ppn"]
     log:
-        "logs/mergevarscan/{pair_id}.{set}.log"
+        "logs/mergevarscan/{pair_id}.log"
     benchmark:
-        "benchmarks/mergevarscan/{pair_id}.{set}.txt"
+        "benchmarks/mergevarscan/{pair_id}.txt"
     message:
         "Merging VCF files (M2)\n"
-        "Pair: {wildcards.pair_id}\n"
-        "Set: {wildcards.set}"
+        "Pair: {wildcards.pair_id}"
     run:
-        input_cat = " ".join(["-I " + s for s in input])
+        input_snps = " ".join(["-I " + s for s in input['snp']])
+        input_indels = " ".join(["-I " + s for s in input['indel']])
         shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
-            {input_cat} \
-            -O {output} \
+            {input_snps} \
+            -O {output.snp} \
+            > {log} 2>&1")
+        shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
+            {input_indels} \
+            -O {output.indel} \
             > {log} 2>&1")
 
 ## END ##

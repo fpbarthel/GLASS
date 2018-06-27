@@ -183,7 +183,9 @@ rule m2:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule v2:
-    input: expand("results/varscan2/{pair_id}.snp.Somatic.hc", pair_id=PAIRS_DICT.keys())
+    input:
+        expand("results/varscan2/vcf/{pair_id}.snp.vcf", pair_id=PAIRS_DICT.keys()),
+        expand("results/varscan2/vcf/{pair_id}.indel.vcf", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SV preprocessing rule
