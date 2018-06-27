@@ -23,7 +23,7 @@ rule pileup:
     shell:
         "samtools mpileup \
             -q 1 \
-            -f {config[reference_fasta]} \
+            -f /fastscratch/verhaak-lab/GLASS-WG/human_g1k_v37_decoy.fasta \
             -o {output} \
             {input} \
             > {log} 2>&1"
