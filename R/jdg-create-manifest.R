@@ -127,12 +127,12 @@ pairs = rbind(p1,p2) %>% filter(complete.cases(tumor_aliquot_id, normal_aliquot_
 ### Readgroups ####
 # Necessary information: file_uuid, aliquot_id, RGID, RGPL, RGPU, RGLB, RGPI, RGDT, RGSM, RGCN.
 # *** Note: had to generate a new time stamp because it was not found in the RG header for the bams. ****
+# Revised: Can't rename RGID, but pipeline is looking for old RGID.
 readgroup_df = jdf_map_df %>% 
   mutate(RGPU = paste(sub(".*[0-9]{4}_ *(.*?) *_s.*", "\\1", jdf_map_df$file_name), 
                       sub(".*s_ *(.*?) *_[A-Za-z]{2}.*", "\\1", jdf_map_df$file_name), sep="."),
          RGPI = 0,
-         RGDT = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%dT%H:%M:%S%z"),
-         RGID = paste0(substring(RGPU, 1, 4), substring(RGPU, nchar(RGPU)-1, nchar(RGPU)), ""))
+         RGDT = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%dT%H:%M:%S%z"))
 
 # Finalize readgroup information in predefined order.
 readgroups = readgroup_df %>% select(file_uuid, aliquot_id, RGID, RGPL, RGPU, RGLB, RGPI, RGDT, RGSM, RGCN) %>% distinct()
