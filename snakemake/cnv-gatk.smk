@@ -153,7 +153,7 @@ rule collectalleliccounts:
     shell:
         "gatk --java-options -Xmx{params.mem}g CollectAllelicCounts \
             -I {input} \
-            -L {config[tiny_vcf]} \
+            -L {config[cnv_common_snp]} \
             -R {config[reference_fasta]} \
             -O {output} \
             > {log} 2>&1"

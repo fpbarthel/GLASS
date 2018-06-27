@@ -119,8 +119,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.intervallist}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.intervallist.err"
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.err"
     },
     "mergesnv" :
     {
@@ -263,8 +263,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.intervalbed}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.intervalbed}.err"
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.err"
     },
     "mergevarscan" :
     {
