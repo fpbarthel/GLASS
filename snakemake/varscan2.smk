@@ -22,6 +22,7 @@ rule pileup:
         "Aliquot ID: {wildcards.aliquot_id}"
     shell:
         "samtools mpileup \
+            -q 1 \
             -f {config[reference_fasta]} \
             -o {output} \
             {input} \
@@ -54,19 +55,19 @@ rule varscan:
         "Calling SNVs (VarScan2)\n"
         "Pair: {wildcards.pair_id}"
     shell:
-        "gatk --java-options -Xmx{params.mem}g Mutect2 \
-            -R {config[reference_fasta]} \
-            -I {input.tumor} \
-            -I {input.normal} \
-            -L {input.intervallist} \
-            --tumor-sample $TEST_NAM \
-            --normal-sample $CTRL_NAM \
-            --panel-of-normals {input.pon} \
-            --germline-resource {config[gnomad_vcf]} \
-            --af-of-alleles-not-in-resource {config[af_of_alleles_not_in_resource]} \
-            --dont-use-soft-clipped-bases true \
-            --standard-min-confidence-threshold-for-calling 20 \
-            -O {output.vcf} \
-            -bamout {output.bam} \
-            --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
+        "java -Xmx{params.mem}g -jar jar/VarScan.v2.4.3.jar somatic \
+            {input.normal} \
+            {input.tumor} \
+            {params.outputprefix} \
+            --min-coverage 8 \
+            --min-coverage-normal 6 \
+            --min-coverage-tumor 8 \
+            --min-var-freq 0.10 \
+            --min-freq-for-hom 0.75 \
+            --tumor-purity 1.0 \
+            --strand-filter 1 \
+            --somatic-p-value 0.05 \
+            --output-vcf 1 \
             > {log} 2>&1"
+
+## END ##

@@ -152,6 +152,7 @@ include: "snakemake/mutect2.smk"
 include: "snakemake/vep.smk"
 include: "snakemake/lumpy.smk"
 include: "snakemake/cnv-gatk.smk"
+include: "snakemake/varscan2.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
@@ -177,14 +178,22 @@ rule snv:
     input: expand("results/vep/{pair_id}.filtered2.anno.maf", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## SNV rule (VarScan2)
+## Run snakemake with target 'snv'
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule v2:
+    input: expand("results/varscan2/{pair_id}.snp.Somatic.hc", pair_id=PAIRS_DICT.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SV preprocessing rule
 ## Run snakemake with target 'svprepare'
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule svprepare:
     input:
-    	expand("results/lumpy/{aliquot_id}.realn.mdup.bqsr.splitters.sorted.bam", aliquot_id=ALIQUOT_TO_BAM_PATH.keys()),
-    	expand("results/lumpy/{aliquot_id}.realn.mdup.bqsr.discordant.sorted.bam", aliquot_id=ALIQUOT_TO_BAM_PATH.keys())
+    	expand("results/lumpy/{aliquot_id}.realn.mdup.bqsr.splitters.sorted.bam", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
+    	expand("results/lumpy/{aliquot_id}.realn.mdup.bqsr.discordant.sorted.bam", aliquot_id=ALIQUOT_TO_READGROUP.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## CNV calling pipeline
@@ -195,6 +204,6 @@ rule cnv:
     input:
         expand("results/callsegments/{pair_id}.called.seg", pair_id=PAIRS_DICT.keys()),
         expand("results/plotmodeledsegments/{pair_id}/{pair_id}.modeled.png", pair_id=PAIRS_DICT.keys()),
-        expand("results/plotcr/{aliquot_id}/{aliquot_id}.denoised.png", aliquot_id=ALIQUOT_TO_BAM_PATH.keys())
+        expand("results/plotcr/{aliquot_id}/{aliquot_id}.denoised.png", aliquot_id=ALIQUOT_TO_READGROUP.keys())
 
 ## END ##
