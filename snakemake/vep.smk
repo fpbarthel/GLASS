@@ -6,9 +6,9 @@ rule vep:
     input:
         tumor = lambda wildcards: "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
         normal = lambda wildcards: "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
-        vcf = "results/m2filter/{pair_id}.filtered2.vcf"
+        vcf = "results/mutect2/m2filter/{pair_id}.filtered2.vcf"
     output:
-        "results/vep/{pair_id}.filtered2.anno.maf"
+        "results/mutect2/vep/{pair_id}.filtered2.anno.maf"
     params:
         mem = CLUSTER_META["vep"]["mem"]
     threads:
