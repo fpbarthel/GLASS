@@ -69,6 +69,6 @@ samtofastq_java_opt: "'-Dsamjdk.buffer_size=131072 -Dsamjdk.compression_level=1 
 mergebamalignment_java_opt: "'-Dsamjdk.buffer_size=131072 -Dsamjdk.use_async_io=true -Dsamjdk.compression_level=1 -XX:+UseStringCache -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Xmx5000m'"
 
 #### ACTUAL RUN
-revertsam_extra_args : ""
+revertsam_extra_args : "--MAX_DISCARD_FRACTION=0.02 "
 
 ## END ##
