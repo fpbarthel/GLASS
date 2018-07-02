@@ -57,6 +57,17 @@ HongKong_sample_map = HK_df %>%
 # MD Anderson:
 glimpse(MDA_df)
 
+# Generate a sample type column.
+MDA_df$Sample_Type <- "NA"
+MDA_df$Sample_Type[MDA_df$`Order.of.Sx-1`=="first"] <- "first_surgery"
+MDA_df$Sample_Type[MDA_df$`Order.of.Sx-2`=="second"] <- "second_surgery"
+MDA_df$Sample_Type[MDA_df$`Order.of.Sx-3`=="third"] <- "third_surgery"
+MDA_df$Sample_Type[MDA_df$`Order.of.Sx-4`=="fourth"] <- "fourth_surgery"
+
+
+
+
+
 # Simplify the SAMPLE identifier to 8-digits.
 MDA_df$New_Sample_ID = gsub("S", "", (gsub("-", "", MDA_df$mdacc_sx_acc)))
 # Extract the 4-digit SUBJECT identifier.
