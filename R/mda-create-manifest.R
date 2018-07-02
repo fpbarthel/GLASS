@@ -12,7 +12,6 @@ setwd(mybasedir)
 MDA_batch1_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch1_n14_20180405.tsv"
 MDA_batch2_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch2_n94_20180603.tsv"
 mda_master_path = "data/clinical-data/MDACC/MDA-Clinical-Dataset/Master Log for WGS_sampletype.20180630.xlsx"
-life_history_barcodes = "data/sequencing-information/master_life_history_uniform_naming_incomplete.txt"
 
 # Create extensions for samples.
 json_ext = "json"
@@ -44,7 +43,7 @@ library(stringr)
 #### NEED TO GENERATE NEW CODES FOR MDACC NVGN SAMPLES ####
 
 ### Aliquot ####
-barcode_sheet = read.delim("data/sequencing-information/master_life_history_uniform_naming_incomplete.txt", as.is=T)
+# barcode_sheet = read.delim("data/sequencing-information/master_life_history_uniform_naming_incomplete.txt", as.is=T)
 # aliquot_sheet = master_sheet %>% select(aliquot_uuid = uuid, sample_id = Barcode) %>%
 #  mutate(aliquot_id = sprintf("%s-%s", sample_id, aliquot_uuid),
 #         analyte_type = "DNA",
@@ -98,9 +97,6 @@ mda_normal_blood_map <- normal_blood_samples %>%
 # Kristin Alfaro-Munoz kindly pointed me to the sequencing identifier link to these samples. 
 mda_master = readWorkbook(mda_master_path, sheet = 2, startRow = 1, colNames = TRUE)
 
-# Simplify the SAMPLE identifier to 8-digits.
-mda_master$New_Sample_ID = gsub("S", "", (gsub("-", "", mda_master$mdacc_sx_acc)))
-
 # Extract the 4-digit SUBJECT identifier.
 mda_master$SubjectID = sapply(strsplit(mda_master$Jax.Lib.Prep.Customer.Sample.Name, "-"), "[", 3)
 
@@ -125,7 +121,7 @@ mda_life_history_barcodes <- mda_all_samples_df %>%
   select(uuid, Original_ID, Barcode, ProjectID, TissueSourceSite, SubjectID, TissueType) 
 
 # Check to make sure there is no overlap with previous barcodes.
-sum(barcode_sheet$uuid%in%mda_life_history_barcodes) # No matches. I was concerned because I already generated the uuid
+# sum(barcode_sheet$uuid%in%mda_life_history_barcodes) # No matches. I was concerned because I already generated the uuid
 # for the previous datasets that Floris used in his pipeline.
 # Write file to be uploaded to GLASS-WG github page. ***Batch1 and Batch2 only. Missing samples. ***
 write.table(mda_life_history_barcodes, file='data/sequencing-information/mda_life_history_uniform_naming.txt', quote=FALSE, sep='\t', row.names = F)
@@ -142,13 +138,16 @@ aliquot_sheet = mda_barcode_sheet %>% select(aliquot_uuid = uuid, sample_id = Ba
 # Aliquot file to be written.
 aliquots = aliquot_sheet %>% select(sample_id, aliquot_uuid, aliquot_id, portion, analyte_type, analysis_type) %>% distinct()
 
+write(jsonlite::toJSON(aliquots, pretty = T), file = sprintf("%s.%s", aliquots_file, json_ext))
+write.table(aliquots, file = sprintf("%s.%s", aliquots_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+
 
 ### Files ####
 # Generate *file* tsv containing: aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
 # From above ^: mda_df = bind_rows(mda_batch1_df, mda_batch2_df)
 
 # Retrieve the library, flowcell, and lane id from the filename.
-mda_df_meta = mda_df %>% 
+mda_df_meta  = mda_df %>% 
   mutate(library_id = sub(".*_ *(.*?) *_H.*", "\\1", filename), 
          flowcell_id = substr(filename, nchar(filename)-19, nchar(filename)-12),
          lane_id = substr(filename, nchar(filename)-8, nchar(filename)-8))
@@ -335,5 +334,15 @@ hk_map_df = hk_map_df %>% mutate(file_size = "NA",
 
 # Order needs to be: # aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
 files = hk_map_df %>% select(aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format) %>% distinct()
+
+
+
+
+### Cases ####
+hk_map_df = hk_map_df %>% 
+  mutate(case_id = substring(Barcode, 1, 12), 
+         project_id = "GLSS-HK")
+# Select only those relevant fields.
+cases = hk_map_df %>% select(case_id, project_id)
 
 
