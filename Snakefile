@@ -163,6 +163,7 @@ include: "snakemake/vep.smk"
 include: "snakemake/lumpy.smk"
 include: "snakemake/cnv-gatk.smk"
 include: "snakemake/varscan2.smk"
+include: "snakemake/fingerprinting.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
