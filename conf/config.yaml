@@ -57,6 +57,9 @@ veppath:          "/projects/barthf/opt/ensembl-vep"
 ## VEP cache directory
 vepdata:          "/projects/barthf/opt/.vep"
 
+## Haplotype map (for fingerprinting)
+haplotype_map:    "/projects/barthf/GLASS-WG/data/ref/haplotype.filtered.map"
+
 ## Based on GATK best practices RNAseq 04/05/18
 ## https://software.broadinstitute.org/gatk/documentation/article.php?id=3891
 ## Calculate af-of-alleles: 1/(2*123136) = 0.00000406055 (6 sign. digits)

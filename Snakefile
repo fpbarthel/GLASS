@@ -97,6 +97,16 @@ for file in FILES:
         ALIQUOT_TO_BAM_PATH[ file["aliquot_id"] ] = file["file_path"]
 
 
+## Case to aliquots
+CASE_TO_ALIQUOTS = {}
+for aliquot in ALIQUOTS:
+    aliquot["case_id"] = SAMPLES_DICT[ aliquot["sample_id"] ]["case_id"]
+    if aliquot["case_id"] not in CASE_TO_ALIQUOTS:
+        CASE_TO_ALIQUOTS[ aliquot["case_id"] ] = [ aliquot["aliquot_id"] ]
+    elif aliquot["aliquot_id"] not in CASE_TO_ALIQUOTS[ aliquot["case_id"] ]:
+        CASE_TO_ALIQUOTS[ aliquot["case_id"] ].append(aliquot["aliquot_id"])
+
+
 ## Aliquots and RGIDs map 1:many
 
 ALIQUOT_TO_RGID = {}        
@@ -207,5 +217,15 @@ rule cnv:
         expand("results/cnv/callsegments/{pair_id}.called.seg", pair_id=PAIRS_DICT.keys()),
         expand("results/cnv/plotmodeledsegments/{pair_id}/{pair_id}.modeled.png", pair_id=PAIRS_DICT.keys()),
         expand("results/cnv/plotcr/{aliquot_id}/{aliquot_id}.denoised.png", aliquot_id=ALIQUOT_TO_READGROUP.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Fingerprinting pipeline
+## Check sample and case fingerprints
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule fingerprint:
+    input:
+        expand("results/fingerprinting/sample/{aliquot_id}.crosscheck_metrics", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
+        expand("results/fingerprinting/case/{case_id}.crosscheck_metrics", case_id=CASES_DICT.keys())
 
 ## END ##
