@@ -2,7 +2,7 @@
 ## @Author Floris Barthel
 
 ## Full path to cluster settings
-cluster_json:     "/fastscratch/verhaak-lab/GLASS-WG/conf/cluster.json"
+cluster_json:     "/projects/barthf/GLASS-WG/conf/cluster.json"
 
 ## Working directory
 workdir:          "/fastscratch/verhaak-lab/GLASS-WG"

@@ -49,12 +49,12 @@ rule fingerprintcase:
     threads:
         CLUSTER_META["fingerprintcase"]["ppn"]
     log:
-        "logs/fingerprinting/{aliquot_id}.fingerprintcase.log"
+        "logs/fingerprinting/{case_id}.fingerprintcase.log"
     benchmark:
-        "benchmarks/fingerprinting/{aliquot_id}.fingerprintcase.txt"
+        "benchmarks/fingerprinting/{case_id}.fingerprintcase.txt"
     message:
         "Running Picard CrosscheckFingerprints across multiple samples from the sample individual to check for mismatches\n"
-        "Aliquot: {wildcards.aliquot_id}"
+        "Case: {wildcards.case_id}"
     run:
         input_samples = " ".join(["--INPUT " + s for s in input])
         shell("gatk --java-options -Xmx{params.mem}g CrosscheckFingerprints \
