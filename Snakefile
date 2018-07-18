@@ -173,6 +173,13 @@ rule all:
     input: "results/qc/multiqc/multiqc_report.html"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Alignment rule
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule align:
+    input: expand("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id=ALIQUOTS_DICT.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download only rule
 ## Run snakemake with 'snakemake download_only' to activate
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
