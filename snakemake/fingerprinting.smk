@@ -42,7 +42,7 @@ rule fingerprintsample:
 
 rule fingerprintcase:
     input:
-        lambda wildcards: expand("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = CASE_TO_ALIQUOTS[wildcards.case_id])
+        lambda wildcards: expand("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = CASE_TO_ALIQUOT[wildcards.case_id])
     output:
         "results/fingerprinting/case/{case_id}.crosscheck_metrics"
     params:
@@ -60,6 +60,76 @@ rule fingerprintcase:
         input_samples = " ".join(["--INPUT " + s for s in input])
         shell("gatk --java-options -Xmx{params.mem}g CrosscheckFingerprints \
             --HAPLOTYPE_MAP {config[haplotype_map]} \
+            {input_samples} \
+            --OUTPUT {output} \
+            > {log} 2>&1 \
+            || true")
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## FingerprintBatch
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Running Picard CrosscheckFingerprints across all samples from a single batch
+## to check for mismatches
+## See: 
+## https://software.broadinstitute.org/gatk/documentation/tooldocs/4.0.5.0/picard_fingerprint_CrosscheckFingerprints.php
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule fingerprintbatch:
+    input:
+        lambda wildcards: expand("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = BATCH_TO_ALIQUOT[wildcards.batch])
+    output:
+        "results/fingerprinting/batch/{batch}.crosscheck_metrics"
+    params:
+        mem = CLUSTER_META["fingerprintbatch"]["mem"]
+    threads:
+        CLUSTER_META["fingerprintbatch"]["ppn"]
+    log:
+        "logs/fingerprinting/{batch}.fingerprintbatch.log"
+    benchmark:
+        "benchmarks/fingerprinting/{batch}.fingerprintbatch.txt"
+    message:
+        "Running Picard CrosscheckFingerprints across all samples from a single batch to check for mismatches\n"
+        "Batch: {wildcards.batch}"
+    run:
+        input_samples = " ".join(["--INPUT " + s for s in input])
+        shell("gatk --java-options -Xmx{params.mem}g CrosscheckFingerprints \
+            --HAPLOTYPE_MAP {config[haplotype_map]} \
+            --LOD_THRESHOLD -5 \
+            --CROSSCHECK_BY SAMPLE \
+            {input_samples} \
+            --OUTPUT {output} \
+            > {log} 2>&1 \
+            || true")
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## FingerprintCohort
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Running Picard CrosscheckFingerprints across all samples in the cohort
+## See: 
+## https://software.broadinstitute.org/gatk/documentation/tooldocs/4.0.5.0/picard_fingerprint_CrosscheckFingerprints.php
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule fingerprintcohort:
+    input:
+        lambda wildcards: expand("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = ALIQUOT_TO_READGROUP.keys())
+    output:
+        "results/fingerprinting/GLASS-WG.crosscheck_metrics"
+    params:
+        mem = CLUSTER_META["fingerprintcohort"]["mem"]
+    threads:
+        CLUSTER_META["fingerprintcohort"]["ppn"]
+    log:
+        "logs/fingerprinting/GLASS-WG.fingerprintcohort.log"
+    benchmark:
+        "benchmarks/fingerprinting/GLASS-WG.fingerprintcohort.txt"
+    message:
+        "Running Picard CrosscheckFingerprints across entire cohort"
+    run:
+        input_samples = " ".join(["--INPUT " + s for s in input])
+        shell("gatk --java-options -Xmx{params.mem}g CrosscheckFingerprints \
+            --HAPLOTYPE_MAP {config[haplotype_map]} \
+            --LOD_THRESHOLD -5 \
+            --CROSSCHECK_BY SAMPLE \
             {input_samples} \
             --OUTPUT {output} \
             > {log} 2>&1 \

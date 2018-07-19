@@ -97,14 +97,25 @@ for file in FILES:
         ALIQUOT_TO_BAM_PATH[ file["aliquot_id"] ] = file["file_path"]
 
 
-## Case to aliquots
-CASE_TO_ALIQUOTS = {}
+## Dict of aliquots per case
+## Dict of aliquots per batch
+
+BATCH_TO_ALIQUOT = {}
+CASE_TO_ALIQUOT = {}
 for aliquot in ALIQUOTS:
     aliquot["case_id"] = SAMPLES_DICT[ aliquot["sample_id"] ]["case_id"]
-    if aliquot["case_id"] not in CASE_TO_ALIQUOTS:
-        CASE_TO_ALIQUOTS[ aliquot["case_id"] ] = [ aliquot["aliquot_id"] ]
-    elif aliquot["aliquot_id"] not in CASE_TO_ALIQUOTS[ aliquot["case_id"] ]:
-        CASE_TO_ALIQUOTS[ aliquot["case_id"] ].append(aliquot["aliquot_id"])
+    aliquot["project_id"] = CASES_DICT[ aliquot["case_id"] ]["project_id"]
+    
+    if aliquot["case_id"] not in CASE_TO_ALIQUOT:
+        CASE_TO_ALIQUOT[ aliquot["case_id"] ] = [ aliquot["aliquot_id"] ]
+    elif aliquot["aliquot_id"] not in CASE_TO_ALIQUOT[ aliquot["case_id"] ]:
+        CASE_TO_ALIQUOT[ aliquot["case_id"] ].append(aliquot["aliquot_id"])
+    
+    if aliquot["project_id"] not in BATCH_TO_ALIQUOT:
+        BATCH_TO_ALIQUOT[ aliquot["project_id"] ] = [ aliquot["aliquot_id"] ]
+    elif aliquot["aliquot_id"] not in BATCH_TO_ALIQUOT:
+        BATCH_TO_ALIQUOT[ aliquot["project_id"] ].append(aliquot["aliquot_id"])
+
 
 
 ## Aliquots and RGIDs map 1:many
@@ -234,6 +245,8 @@ rule cnv:
 rule fingerprint:
     input:
         expand("results/fingerprinting/sample/{aliquot_id}.crosscheck_metrics", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
-        expand("results/fingerprinting/case/{case_id}.crosscheck_metrics", case_id=CASES_DICT.keys())
+        expand("results/fingerprinting/case/{case_id}.crosscheck_metrics", case_id=CASES_DICT.keys()),
+        expand("results/fingerprinting/batch/{batch}.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
+        "results/fingerprinting/GLASS-WG.crosscheck_metrics"
 
 ## END ##
