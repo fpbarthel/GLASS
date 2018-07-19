@@ -414,6 +414,10 @@ rule wgsmetrics:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Final check to ensure no errors in final analysis-ready BAM file
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Jun 28: Added "|| true" to for exit code zero. Snakemake deletes output if exit code
+## != zero, and ValidateSamFile returns exit code 2 (errors) or 3 (warnings) if notable
+## events are found
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule validatebam:
     input:
@@ -436,7 +440,8 @@ rule validatebam:
             -I {input} \
             -O {output} \
             -M SUMMARY \
-            > {log} 2>&1"
+            > {log} 2>&1 \
+            || true"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## MultiQC

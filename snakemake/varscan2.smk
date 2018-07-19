@@ -48,7 +48,7 @@ rule varscan:
         temp("results/varscan2/vs2-scatter/{pair_id}.{interval}.indel.vcf")
     params:
         mem = CLUSTER_META["varscan"]["mem"],
-        outputprefix = "results/varscan2/{pair_id}.{interval}"
+        outputprefix = "results/varscan2/vs2-scatter/{pair_id}.{interval}"
     threads:
         CLUSTER_META["varscan"]["ppn"]
     log:

@@ -14,15 +14,15 @@ rule callpon:
         bam = "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam",
         intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
     output:
-        temp("results/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf")
+        temp("results/mutect2/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf")
     params:
         mem = CLUSTER_META["callpon"]["mem"]
     threads:
         CLUSTER_META["callpon"]["ppn"]
     log:
-        "logs/callpon/{batch}.{aliquot_id}.{interval}.log"
+        "logs/mutect2/callpon/{batch}.{aliquot_id}.{interval}.log"
     benchmark:
-        "benchmarks/callpon/{batch}.{aliquot_id}.{interval}.txt"
+        "benchmarks/mutect2/callpon/{batch}.{aliquot_id}.{interval}.txt"
     message:
         "Calling Mutect2 in tumor-only mode to build a panel of normals\n"
         "Batch: {wildcards.batch}\n"
@@ -53,17 +53,17 @@ rule callpon:
 
 rule mergepon:
     input:
-        lambda wildcards: expand("results/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf", batch=wildcards.batch, aliquot_id=wildcards.aliquot_id, interval=WGS_SCATTERLIST)
+        lambda wildcards: expand("results/mutect2/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf", batch=wildcards.batch, aliquot_id=wildcards.aliquot_id, interval=WGS_SCATTERLIST)
     output:
-        temp("results/mergepon/{batch}/{aliquot_id}.pon.vcf")
+        temp("results/mutect2/mergepon/{batch}/{aliquot_id}.pon.vcf")
     params:
         mem = CLUSTER_META["mergepon"]["mem"]
     threads:
         CLUSTER_META["mergepon"]["ppn"]
     log:
-        "logs/mergepon/{aliquot_id}.log"
+        "logs/mutect2/mergepon/{aliquot_id}.log"
     benchmark:
-        "benchmarks/mergepon/{aliquot_id}.txt"
+        "benchmarks/mutect2/mergepon/{aliquot_id}.txt"
     message:
         "Merging VCF files (PON)\n"
         "Sample: {wildcards.aliquot_id}"
@@ -86,18 +86,17 @@ rule mergepon:
 
 rule createpon:
     input:
-        lambda wildcards: expand("results/mergepon/{batch}/{aliquot_id}.pon.vcf", batch=wildcards.batch, aliquot_id=BATCH_TO_NORMAL[wildcards.batch])
+        lambda wildcards: expand("results/mutect2/mergepon/{batch}/{aliquot_id}.pon.vcf", batch=wildcards.batch, aliquot_id=BATCH_TO_NORMAL[wildcards.batch])
     output:
-        protected("results/pon/{batch}.pon.vcf")
+        protected("results/mutect2/pon/{batch}.pon.vcf")
     params:
-        dir = "results/qc/multiqc",
         mem = CLUSTER_META["createpon"]["mem"]
     threads:
         CLUSTER_META["createpon"]["ppn"]
     log:
-        "logs/createpon/{batch}.createpon.log"
+        "logs/mutect2/createpon/{batch}.createpon.log"
     benchmark:
-        "benchmarks/createpon/{batch}.createpon.txt"
+        "benchmarks/mutect2/createpon/{batch}.createpon.txt"
     message:
         "Creating panel of normals from multiple Mutect2 VCFs\n"
         "Batch: {wildcards.batch}"
@@ -128,19 +127,19 @@ rule callsnv:
     input:
         tumor = lambda wildcards: "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
         normal = lambda wildcards: "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
-        pon = lambda wildcards: "results/pon/{batch}.pon.vcf".format(batch=PAIRS_DICT[wildcards.pair_id]["project_id"]),
+        pon = lambda wildcards: "results/mutect2/pon/{batch}.pon.vcf".format(batch=PAIRS_DICT[wildcards.pair_id]["project_id"]),
         intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
     output:
-        vcf = temp("results/m2vcf-scatter/{pair_id}.{interval}.vcf"),
-        bam = "results/m2bam/{pair_id}.{interval}.bam"
+        vcf = temp("results/mutect2/m2vcf-scatter/{pair_id}.{interval}.vcf"),
+        bam = "results/mutect2/m2bam/{pair_id}.{interval}.bam"
     params:
         mem = CLUSTER_META["callsnv"]["mem"]
     threads:
         CLUSTER_META["callsnv"]["ppn"]
     log:
-        "logs/callsnv/{pair_id}.log"
+        "logs/mutect2/callsnv/{pair_id}.log"
     benchmark:
-        "benchmarks/callsnv/{pair_id}.txt"
+        "benchmarks/mutect2/callsnv/{pair_id}.txt"
     message:
         "Calling SNVs (Mutect2)\n"
         "Pair: {wildcards.pair_id}\n"
@@ -179,17 +178,17 @@ rule callsnv:
 
 rule mergesnv:
     input:
-        lambda wildcards: expand("results/m2vcf-scatter/{pair_id}.{interval}.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST)
+        lambda wildcards: expand("results/mutect2/m2vcf-scatter/{pair_id}.{interval}.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST)
     output:
-        protected("results/m2vcf/{pair_id}.vcf")
+        protected("results/mutect2/m2vcf/{pair_id}.vcf")
     params:
         mem = CLUSTER_META["mergesnv"]["mem"]
     threads:
         CLUSTER_META["mergesnv"]["ppn"]
     log:
-        "logs/mergesnv/{pair_id}.log"
+        "logs/mutect2/mergesnv/{pair_id}.log"
     benchmark:
-        "benchmarks/mergesnv/{pair_id}.txt"
+        "benchmarks/mutect2/mergesnv/{pair_id}.txt"
     message:
         "Merging VCF files (M2)\n"
         "Pair: {wildcards.pair_id}"
@@ -211,15 +210,15 @@ rule pileupsummaries:
     input:
         "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
-        "results/pileupsummaries/{aliquot_id}.pileupsummaries.txt"
+        "results/mutect2/pileupsummaries/{aliquot_id}.pileupsummaries.txt"
     params:
         mem = CLUSTER_META["pileupsummaries"]["mem"]
     threads:
         CLUSTER_META["pileupsummaries"]["ppn"]
     log:
-        "logs/pileupsummaries/{aliquot_id}.log"
+        "logs/mutect2/pileupsummaries/{aliquot_id}.log"
     benchmark:
-        "benchmarks/pileupsummaries/{aliquot_id}.txt"
+        "benchmarks/mutect2/pileupsummaries/{aliquot_id}.txt"
     message:
         "Generating pileupsummaries\n"
         "Sample: {wildcards.aliquot_id}"
@@ -243,18 +242,18 @@ rule pileupsummaries:
 
 rule calculatecontamination:
     input:
-        tumortable = lambda wildcards: "results/pileupsummaries/{aliquot_id}.pileupsummaries.txt".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        normaltable = lambda wildcards: "results/pileupsummaries/{aliquot_id}.pileupsummaries.txt".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
+        tumortable = lambda wildcards: "results/mutect2/pileupsummaries/{aliquot_id}.pileupsummaries.txt".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
+        normaltable = lambda wildcards: "results/mutect2/pileupsummaries/{aliquot_id}.pileupsummaries.txt".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
     output:
-        "results/contamination/{pair_id}.contamination.txt"
+        "results/mutect2/contamination/{pair_id}.contamination.txt"
     params:
         mem = CLUSTER_META["calculatecontamination"]["mem"]
     threads:
         CLUSTER_META["calculatecontamination"]["ppn"]
     log:
-        "logs/calculatecontamination/{pair_id}.log"
+        "logs/mutect2/calculatecontamination/{pair_id}.log"
     benchmark:
-        "benchmarks/calculatecontamination/{pair_id}.txt"
+        "benchmarks/mutect2/calculatecontamination/{pair_id}.txt"
     message:
         "Computing contamination\n"
         "Pair: {wildcards.pair_id}"
@@ -271,18 +270,18 @@ rule calculatecontamination:
 
 rule filtermutect:
     input:
-        vcf = "results/m2vcf/{pair_id}.vcf",
-        tab = "results/contamination/{pair_id}.contamination.txt"
+        vcf = "results/mutect2/m2vcf/{pair_id}.vcf",
+        tab = "results/mutect2/contamination/{pair_id}.contamination.txt"
     output:
-        temp("results/m2filter/{pair_id}.filtered.vcf")
+        temp("results/mutect2/m2filter/{pair_id}.filtered.vcf")
     params:
         mem = CLUSTER_META["filtermutect"]["mem"]
     threads:
         CLUSTER_META["filtermutect"]["ppn"]
     log:
-        "logs/filtermutect/{pair_id}.log"
+        "logs/mutect2/filtermutect/{pair_id}.log"
     benchmark:
-        "benchmarks/filtermutect/{pair_id}.txt"
+        "benchmarks/mutect2/filtermutect/{pair_id}.txt"
     message:
         "Filtering Mutect2 calls\n"
         "Pair: {wildcards.pair_id}"
@@ -302,16 +301,16 @@ rule collectartifacts:
     input:
         "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
-        "results/artifacts/{aliquot_id}.pre_adapter_detail_metrics.txt"
+        "results/mutect2/artifacts/{aliquot_id}.pre_adapter_detail_metrics.txt"
     params:
         prefix = "results/artifacts/{aliquot_id}",
         mem = CLUSTER_META["collectartifacts"]["mem"]
     threads:
         CLUSTER_META["collectartifacts"]["ppn"]
     log:
-        "logs/collectartifacts/{aliquot_id}.log"
+        "logs/mutect2/collectartifacts/{aliquot_id}.log"
     benchmark:
-        "benchmarks/collectartifacts/{aliquot_id}.txt"
+        "benchmarks/mutect2/collectartifacts/{aliquot_id}.txt"
     message:
         "Collecting sequencing artifact metrics\n"
         "Sample: {wildcards.aliquot_id}"
@@ -329,18 +328,18 @@ rule collectartifacts:
 
 rule filterorientation:
     input:
-        art = lambda wildcards: "results/artifacts/{aliquot_id}.pre_adapter_detail_metrics.txt".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        vcf = "results/m2filter/{pair_id}.filtered.vcf"
+        art = lambda wildcards: "results/mutect2/artifacts/{aliquot_id}.pre_adapter_detail_metrics.txt".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
+        vcf = "results/mutect2/m2filter/{pair_id}.filtered.vcf"
     output:
-        "results/m2filter/{pair_id}.filtered2.vcf"
+        "results/mutect2/m2filter/{pair_id}.filtered2.vcf"
     params:
         mem = CLUSTER_META["filterorientation"]["mem"]
     threads:
         CLUSTER_META["filterorientation"]["ppn"]
     log:
-        "logs/filterorientation/{pair_id}.log"
+        "logs/mutect2/filterorientation/{pair_id}.log"
     benchmark:
-        "benchmarks/filterorientation/{pair_id}.txt"
+        "benchmarks/mutect2/filterorientation/{pair_id}.txt"
     message:
         "Filtering Mutect2 calls by orientation bias\n"
         "Pair: {wildcards.pair_id}"
@@ -362,9 +361,9 @@ rule filterorientation:
 
 # rule hardfilter:
 #     input:
-#         "results/m2filter/{pair_id}.filtered2.vcf"
+#         "results/mutect2/m2filter/{pair_id}.filtered2.vcf"
 #     output:
-#         "results/m2filter/{pair_id}.filtered3.vcf"
+#         "results/mutect2/m2filter/{pair_id}.filtered3.vcf"
 #     params:
 #         mem = CLUSTER_META["hardfilter"]["mem"]
 #     threads:
