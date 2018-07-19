@@ -1,6 +1,7 @@
 benchmarks/**
 data/fastq/**
 data/download/**
+data/clinical-data/MDACC/**
 results/**
 logs/**
 sandbox/**

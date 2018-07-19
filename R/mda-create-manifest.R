@@ -1,6 +1,6 @@
 #######################################################
 # Create manifest for MD Anderson samples (GLASS)
-# Date: 2018.06.30
+# Date: 2018.07.13
 # Author: Kevin J.
 #######################################################
 
@@ -12,6 +12,7 @@ setwd(mybasedir)
 MDA_batch1_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch1_n14_20180405.tsv"
 MDA_batch2_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch2_n94_20180603.tsv"
 mda_master_path = "data/clinical-data/MDACC/MDA-Clinical-Dataset/Master Log for WGS_sampletype.20180630.xlsx"
+novogene_sample_path = "data/sequencing-information/MDACC/Novogene_SIF_14.xlsx"
 
 # Create extensions for samples.
 json_ext = "json"
@@ -97,6 +98,11 @@ mda_normal_blood_map <- normal_blood_samples %>%
 # Kristin Alfaro-Munoz kindly pointed me to the sequencing identifier link to these samples. 
 mda_master = readWorkbook(mda_master_path, sheet = 2, startRow = 1, colNames = TRUE)
 
+novogene_linker = readWorkbook(novogene_sample_path, sheet = 1, startRow = 18, colNames = TRUE)
+novogene_linker_unique <- novogene_linker[1:121, ]
+
+sum(novogene_linker_unique$'*SampleName'%in%mda_master$Jax.Lib.Prep.Customer.Sample.Name)
+
 # Extract the 4-digit SUBJECT identifier.
 mda_master$SubjectID = sapply(strsplit(mda_master$Jax.Lib.Prep.Customer.Sample.Name, "-"), "[", 3)
 
@@ -124,7 +130,7 @@ mda_life_history_barcodes <- mda_all_samples_df %>%
 # sum(barcode_sheet$uuid%in%mda_life_history_barcodes) # No matches. I was concerned because I already generated the uuid
 # for the previous datasets that Floris used in his pipeline.
 # Write file to be uploaded to GLASS-WG github page. ***Batch1 and Batch2 only. Missing samples. ***
-write.table(mda_life_history_barcodes, file='data/sequencing-information/mda_life_history_uniform_naming.txt', quote=FALSE, sep='\t', row.names = F)
+# write.table(mda_life_history_barcodes, file='data/sequencing-information/mda_life_history_uniform_naming.txt', quote=FALSE, sep='\t', row.names = F)
 
 
 ### Aliquot ####
@@ -138,8 +144,8 @@ aliquot_sheet = mda_barcode_sheet %>% select(aliquot_uuid = uuid, sample_id = Ba
 # Aliquot file to be written.
 aliquots = aliquot_sheet %>% select(sample_id, aliquot_uuid, aliquot_id, portion, analyte_type, analysis_type) %>% distinct()
 
-write(jsonlite::toJSON(aliquots, pretty = T), file = sprintf("%s.%s", aliquots_file, json_ext))
-write.table(aliquots, file = sprintf("%s.%s", aliquots_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+# write(jsonlite::toJSON(aliquots, pretty = T), file = sprintf("%s.%s", aliquots_file, json_ext))
+# write.table(aliquots, file = sprintf("%s.%s", aliquots_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
 
 
 ### Files ####
@@ -158,7 +164,7 @@ mda_df_meta$read_group = paste(mda_df_meta$library_id, mda_df_meta$flowcell_id, 
 # Comma separated file_paths and file_names.
 merged_mda_files = mda_df_meta %>% 
   group_by(read_group) %>% 
-  mutate(file_path = paste(file_path, collapse=","),
+  mutate(file_path = paste(file_path, collapse=","), 
          file_name = paste(filename, collapse=",")) %>% 
   select(-filename) %>% 
   distinct()
@@ -168,9 +174,15 @@ merged_mda_files = mda_df_meta %>%
 # 1. Fixing "GLASS_01_00" >> "G01_".
 merged_mda_files$revised_id <- gsub("G01_", "GLASS_01_00", merged_mda_files$old_sample_id)
 
+test_map_df = merged_mda_files %>% 
+  inner_join(novogene_linker_unique, by = c("library_id" = "Novogene.ID")) %>%  
+  ungroup()
+
+
+# Create a temporary file to determine overlap of IDs.
 tmp1 = unique(merged_mda_files$revised_id)
 
-# Seq batch ID:  GLASS_01_0003_99D_131077_S_11
+# Seq batch ID:  GLASS_01_0003_99D_131077_S_11 ***However, all samples don't follow the same pattern or edits
 # Master ID:     GLASS-01-0003-99D---131077__S-11-087625__495670
 mda_master$linker_id = gsub( "____", "__", mda_master$Jax.Lib.Prep.Customer.Sample.Name)
 mda_master$revised_id = gsub( "---", "-", mda_master$linker_id)
@@ -180,13 +192,21 @@ tmp = mda_master %>%
   separate(SAMPLE_ID, c("S_code", "N_code", "Acc_code"), sep = "-") %>% 
   mutate(SUBJECT_ID = gsub("-", "_", SUBJECT_ID)) %>% 
   mutate(TO_MERGE = paste(SUBJECT_ID, S_code, N_code, sep = "_"))
+
+# Create temporary file on which you would like to merge.
 tmp2 = tmp$TO_MERGE
 
-
-
+# Remove the blood samples from tmp1.
 tumor_no_blood = tmp1[-grep("(B|b)lood", tmp1)]
+blood_ids = tmp1[grep("(B|b)lood", tmp1)]
 sum(tumor_no_blood[15:75]%in%tmp2)
 
+# List of sample names as they appear in the fastq names.
+sequenced_samples <- c(tumor_no_blood, blood_ids)
+write.table(sequenced_samples, file='/Users/johnsk/Documents/Life-History/life-history-batch1-batch2-sequenced-sample-names.txt', quote=FALSE, sep='\t', row.names = F)
+write.table(blood_ids, file='/Users/johnsk/Documents/Life-History/life-history-batch1-batch2-sequenced-blood-names.txt', quote=FALSE, sep='\t', row.names = F)
+
+# Eventually, we want this data.frame.
 test_map_df = merged_mda_files %>% 
   inner_join(tmp, by = c("revised_id" = "TO_MERGE")) %>%  
   ungroup()
