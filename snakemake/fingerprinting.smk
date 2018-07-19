@@ -28,7 +28,8 @@ rule fingerprintsample:
             --HAPLOTYPE_MAP {config[haplotype_map]} \
             --INPUT {input} \
             --OUTPUT {output} \
-            > {log} 2>&1"
+            > {log} 2>&1 \
+            || true"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## FingerprintCase
@@ -61,6 +62,7 @@ rule fingerprintcase:
             --HAPLOTYPE_MAP {config[haplotype_map]} \
             {input_samples} \
             --OUTPUT {output} \
-            > {log} 2>&1")
+            > {log} 2>&1 \
+            || true")
 
 ## END ##
