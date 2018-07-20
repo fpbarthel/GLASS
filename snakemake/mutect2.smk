@@ -303,7 +303,7 @@ rule collectartifacts:
     output:
         "results/mutect2/artifacts/{aliquot_id}.pre_adapter_detail_metrics.txt"
     params:
-        prefix = "results/artifacts/{aliquot_id}",
+        prefix = "results/mutect2/artifacts/{aliquot_id}",
         mem = CLUSTER_META["collectartifacts"]["mem"]
     threads:
         CLUSTER_META["collectartifacts"]["ppn"]

@@ -476,3 +476,5 @@ rule multiqc:
         "multiqc -o {params.dir} {config[workdir]}/results \
             > {log} 2>&1; \
             cp -R {params.dir}/* {config[html_dir]}"
+
+## END ##

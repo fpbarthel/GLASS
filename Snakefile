@@ -97,6 +97,27 @@ for file in FILES:
         ALIQUOT_TO_BAM_PATH[ file["aliquot_id"] ] = file["file_path"]
 
 
+## Dict of aliquots per case
+## Dict of aliquots per batch
+
+BATCH_TO_ALIQUOT = {}
+CASE_TO_ALIQUOT = {}
+for aliquot in ALIQUOTS:
+    aliquot["case_id"] = SAMPLES_DICT[ aliquot["sample_id"] ]["case_id"]
+    aliquot["project_id"] = CASES_DICT[ aliquot["case_id"] ]["project_id"]
+    
+    if aliquot["case_id"] not in CASE_TO_ALIQUOT:
+        CASE_TO_ALIQUOT[ aliquot["case_id"] ] = [ aliquot["aliquot_id"] ]
+    elif aliquot["aliquot_id"] not in CASE_TO_ALIQUOT[ aliquot["case_id"] ]:
+        CASE_TO_ALIQUOT[ aliquot["case_id"] ].append(aliquot["aliquot_id"])
+    
+    if aliquot["project_id"] not in BATCH_TO_ALIQUOT:
+        BATCH_TO_ALIQUOT[ aliquot["project_id"] ] = [ aliquot["aliquot_id"] ]
+    elif aliquot["aliquot_id"] not in BATCH_TO_ALIQUOT:
+        BATCH_TO_ALIQUOT[ aliquot["project_id"] ].append(aliquot["aliquot_id"])
+
+
+
 ## Aliquots and RGIDs map 1:many
 
 ALIQUOT_TO_RGID = {}        
@@ -153,6 +174,7 @@ include: "snakemake/vep.smk"
 include: "snakemake/lumpy.smk"
 include: "snakemake/cnv-gatk.smk"
 include: "snakemake/varscan2.smk"
+include: "snakemake/fingerprinting.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
@@ -160,6 +182,13 @@ include: "snakemake/varscan2.smk"
 
 rule all:
     input: "results/qc/multiqc/multiqc_report.html"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Alignment rule
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule align:
+    input: expand("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id=ALIQUOTS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download only rule
@@ -207,5 +236,19 @@ rule cnv:
         expand("results/cnv/callsegments/{pair_id}.called.seg", pair_id=PAIRS_DICT.keys()),
         expand("results/cnv/plotmodeledsegments/{pair_id}/{pair_id}.modeled.png", pair_id=PAIRS_DICT.keys()),
         expand("results/cnv/plotcr/{aliquot_id}/{aliquot_id}.denoised.png", aliquot_id=ALIQUOT_TO_READGROUP.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Fingerprinting pipeline
+## Check sample and case fingerprints
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule fingerprint:
+    input:
+        expand("results/fingerprinting/sample/{aliquot_id}.crosscheck_metrics", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
+        expand("results/fingerprinting/case/{case_id}.crosscheck_metrics", case_id=CASES_DICT.keys()),
+        expand("results/fingerprinting/batch/{batch}.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
+        "results/fingerprinting/GLASS-WG.crosscheck_metrics",
+        expand("results/fingerprinting/batch/{batch}.clustered.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
+        "results/fingerprinting/GLASS-WG.clustered.crosscheck_metrics"
 
 ## END ##
