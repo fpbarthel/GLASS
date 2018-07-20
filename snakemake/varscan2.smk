@@ -79,6 +79,42 @@ rule varscan:
             > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Fix Varscan header
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Adds contig lines to VS2 header so VCF files can be merged
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule fixv2header:
+    input:
+        snp = "results/varscan2/vs2-scatter/{pair_id}.{interval}.snp.vcf",
+        indel = "results/varscan2/vs2-scatter/{pair_id}.{interval}.indel.vcf"
+    output:
+        snp = temp("results/varscan2/vs2-fixheader/{pair_id}.{interval}.snp.fixed.vcf"),
+        indel = temp("results/varscan2/vs2-fixheader/{pair_id}.{interval}.indel.fixed.vcf")
+    params:
+        mem = CLUSTER_META["mergevarscan"]["mem"]
+    threads:
+        CLUSTER_META["mergevarscan"]["ppn"]
+    log:
+        "logs/mergevarscan/{pair_id}.log"
+    benchmark:
+        "benchmarks/mergevarscan/{pair_id}.txt"
+    message:
+        "Merging VCF files (M2)\n"
+        "Pair: {wildcards.pair_id}"
+    run:
+        input_snps = " ".join(["-I " + s for s in input['snp']])
+        input_indels = " ".join(["-I " + s for s in input['indel']])
+        shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
+            {input_snps} \
+            -O {output.snp} \
+            > {log} 2>&1")
+        shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
+            {input_indels} \
+            -O {output.indel} \
+            > {log} 2>&1")            
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Merge Varscan
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Copied and edited from M2-merge SNV rule
@@ -86,8 +122,8 @@ rule varscan:
 
 rule mergevarscan:
     input:
-        snp = lambda wildcards: expand("results/varscan2/vs2-scatter/{pair_id}.{interval}.snp.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST),
-        indel = lambda wildcards: expand("results/varscan2/vs2-scatter/{pair_id}.{interval}.indel.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST)
+        snp = lambda wildcards: expand("results/varscan2/vs2-fixheader/{pair_id}.{interval}.snp.fixed.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST),
+        indel = lambda wildcards: expand("results/varscan2/vs2-fixheader/{pair_id}.{interval}.indel.fixed.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST)
     output:
         snp = protected("results/varscan2/vcf/{pair_id}.snp.vcf"),
         indel = protected("results/varscan2/vcf/{pair_id}.indel.vcf")
