@@ -247,6 +247,8 @@ rule fingerprint:
         expand("results/fingerprinting/sample/{aliquot_id}.crosscheck_metrics", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
         expand("results/fingerprinting/case/{case_id}.crosscheck_metrics", case_id=CASES_DICT.keys()),
         expand("results/fingerprinting/batch/{batch}.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
-        "results/fingerprinting/GLASS-WG.crosscheck_metrics"
+        "results/fingerprinting/GLASS-WG.crosscheck_metrics",
+        expand("results/fingerprinting/batch/{batch}.clustered.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
+        "results/fingerprinting/GLASS-WG.clustered.crosscheck_metrics"
 
 ## END ##

@@ -135,4 +135,65 @@ rule fingerprintcohort:
             > {log} 2>&1 \
             || true")
 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## ClusterFingerprintBatch
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Running Picard ClusterCrosscheckMetrics on samples from one batch
+## See: 
+## https://software.broadinstitute.org/gatk/documentation/tooldocs/4.0.5.0/picard_fingerprint_CrosscheckFingerprints.php
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule clusterfingerprintbatch:
+    input:
+        "results/fingerprinting/batch/{batch}.crosscheck_metrics"
+    output:
+        "results/fingerprinting/batch/{batch}.clustered.crosscheck_metrics"
+    params:
+        mem = CLUSTER_META["clusterfingerprintbatch"]["mem"]
+    threads:
+        CLUSTER_META["clusterfingerprintbatch"]["ppn"]
+    log:
+        "logs/fingerprinting/{batch}.clusterfingerprintbatch.log"
+    benchmark:
+        "benchmarks/fingerprinting/{batch}.clusterfingerprintbatch.txt"
+    message:
+        "Running Picard ClusterCrosscheckMetrics on batch\n"
+        "Batch: {wildcards.batch}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g ClusterCrosscheckMetrics \
+            --INPUT {input} \
+            --LOD_THRESHOLD 5 \
+            --OUTPUT {output} \
+            > {log} 2>&1"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## ClusterFingerprintCohort
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Running Picard ClusterCrosscheckMetrics on all samples
+## See: 
+## https://software.broadinstitute.org/gatk/documentation/tooldocs/4.0.5.0/picard_fingerprint_CrosscheckFingerprints.php
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule clusterfingerprintcohort:
+    input:
+        "results/fingerprinting/GLASS-WG.crosscheck_metrics"
+    output:
+        "results/fingerprinting/GLASS-WG.clustered.crosscheck_metrics"
+    params:
+        mem = CLUSTER_META["clusterfingerprintcohort"]["mem"]
+    threads:
+        CLUSTER_META["clusterfingerprintcohort"]["ppn"]
+    log:
+        "logs/fingerprinting/GLASS-WG.clusterfingerprintcohort.log"
+    benchmark:
+        "benchmarks/fingerprinting/GLASS-WG.clusterfingerprintcohort.txt"
+    message:
+        "Running Picard ClusterCrosscheckMetrics on entire GLASS-WG cohort"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g ClusterCrosscheckMetrics \
+            --INPUT {input} \
+            --LOD_THRESHOLD 5 \
+            --OUTPUT {output} \
+            > {log} 2>&1"
+
 ## END ##

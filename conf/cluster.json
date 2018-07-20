@@ -310,5 +310,23 @@
         "name" : "{rule}",
         "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.out",
         "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.err"
+    },
+    "clusterfingerprintbatch" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00",
+        "name" : "{rule}.{wildcards.batch}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.err"
+    },
+    "clusterfingerprintcohort" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00",
+        "name" : "{rule}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.err"
     }
 }
