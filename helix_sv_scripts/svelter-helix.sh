@@ -12,7 +12,7 @@ input_bam=$1
 output_directory=$2
 
 mkdir -p $output_directory
-svelter.py Setup --reference /home/lochol/projects/data/g1k_v37/human_g1k_v37_decoy.fasta --workdir $output_directory --support /home/lochol/projects/code/svelter/Support/hg19/
-svelter.py NullModel --sample $input_bam --workdir $output_directory
-svelter.py BPSearch --sample $input_bam --workdir $output_directory
-svelter.py BPIntegrate --sample $input_bam --workdir $output_directory
+python /home/lochol/projects/code/svelter/svelter_sv/svelter.py Setup --reference /home/lochol/projects/data/g1k_v37/human_g1k_v37_decoy.fasta --workdir $output_directory --support /home/lochol/projects/code/svelter/Support/hg19/
+python /home/lochol/projects/code/svelter/svelter_sv/svelter.py NullModel --sample $input_bam --workdir $output_directory
+python /home/lochol/projects/code/svelter/svelter_sv/svelter.py BPSearch --sample $input_bam --workdir $output_directory
+python /home/lochol/projects/code/svelter/svelter_sv/svelter.py BPIntegrate --sample $input_bam --workdir $output_directory
