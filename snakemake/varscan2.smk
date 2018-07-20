@@ -84,7 +84,7 @@ rule varscan:
 ## Adds contig lines to VS2 header so VCF files can be merged
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule fixv2header:
+rule fixvs2header:
     input:
         snp = "results/varscan2/vs2-scatter/{pair_id}.{interval}.snp.vcf",
         indel = "results/varscan2/vs2-scatter/{pair_id}.{interval}.indel.vcf"
@@ -92,27 +92,29 @@ rule fixv2header:
         snp = temp("results/varscan2/vs2-fixheader/{pair_id}.{interval}.snp.fixed.vcf"),
         indel = temp("results/varscan2/vs2-fixheader/{pair_id}.{interval}.indel.fixed.vcf")
     params:
-        mem = CLUSTER_META["mergevarscan"]["mem"]
+        mem = CLUSTER_META["fixvs2header"]["mem"]
     threads:
-        CLUSTER_META["mergevarscan"]["ppn"]
+        CLUSTER_META["fixvs2header"]["ppn"]
     log:
-        "logs/mergevarscan/{pair_id}.log"
+        "logs/fixvs2header/{pair_id}.log"
     benchmark:
-        "benchmarks/mergevarscan/{pair_id}.txt"
+        "benchmarks/fixvs2header/{pair_id}.txt"
     message:
-        "Merging VCF files (M2)\n"
+        "Fixing VCF header\n"
         "Pair: {wildcards.pair_id}"
     run:
-        input_snps = " ".join(["-I " + s for s in input['snp']])
-        input_indels = " ".join(["-I " + s for s in input['indel']])
-        shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
-            {input_snps} \
+    	"gatk --java-options -Xmx{params.mem}g UpdateVCFSequenceDictionary \
+            -V {input.snp} \
+            --source-dictionary {config[reference_dict]} \
+            --replace true \
             -O {output.snp} \
-            > {log} 2>&1")
-        shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
-            {input_indels} \
+            > {log} 2>&1; "
+        "gatk --java-options -Xmx{params.mem}g UpdateVCFSequenceDictionary \
+            -V {input.indel} \
+            --source-dictionary {config[reference_dict]} \
+            --replace true \
             -O {output.indel} \
-            > {log} 2>&1")            
+            > {log} 2>&1"         
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Merge Varscan
@@ -136,7 +138,7 @@ rule mergevarscan:
     benchmark:
         "benchmarks/mergevarscan/{pair_id}.txt"
     message:
-        "Merging VCF files (M2)\n"
+        "Merging VCF files (VS2)\n"
         "Pair: {wildcards.pair_id}"
     run:
         input_snps = " ".join(["-I " + s for s in input['snp']])
