@@ -270,6 +270,51 @@
     {
         "ppn" : 2,
         "mem" : 12,
+        "walltime" : "2:00:00",
+        "name" : "{rule}.{wildcards.pair_id}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
+    "fixvs2header" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "1:00:00",
+        "name" : "{rule}.{wildcards.pair_id}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.err"
+    },
+    "compressvarscan" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00",
+        "name" : "{rule}.{wildcards.pair_id}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
+    "processsomatic" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00",
+        "name" : "{rule}.{wildcards.pair_id}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
+    "somaticfilter" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00",
+        "name" : "{rule}.{wildcards.pair_id}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
+    "bamreadcount" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
         "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
