@@ -12,7 +12,7 @@
 ## timestamps change
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-VARSCAN_SET = [ "snp.Somatic.hc", "snp.Somatic.lc", "snp.Germline", "snp.LOH" ]
+#VARSCAN_SET = [ "snp.Somatic.hc", "snp.Somatic.lc", "snp.Germline", "snp.LOH" ]
 
 rule varscan:
     input:
@@ -112,8 +112,8 @@ rule mergevarscan:
         snp = lambda wildcards: expand("results/varscan2/vs2-fixheader/{pair_id}.{interval}.snp.fixed.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST),
         indel = lambda wildcards: expand("results/varscan2/vs2-fixheader/{pair_id}.{interval}.indel.fixed.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST)
     output:
-        snp = temp("results/varscan2/vcf/{pair_id}.snp.vcf.gz"),
-        indel = temp("results/varscan2/vcf/{pair_id}.indel.vcf.gz")
+        snp = protected("results/varscan2/vcf/{pair_id}.snp.vcf.gz"),
+        indel = protected("results/varscan2/vcf/{pair_id}.indel.vcf.gz")
     params:
         mem = CLUSTER_META["mergevarscan"]["mem"]
     threads:
@@ -138,36 +138,6 @@ rule mergevarscan:
             -O {output.indel} \
             --CREATE_INDEX false \
             > {log} 2>&1")
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Compress Varscan
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Compress and index VCF files
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-# rule compressvarscan:
-#     input:
-#         snp = "results/varscan2/vcf/{pair_id}.snp.vcf",
-#         indel = "results/varscan2/vcf/{pair_id}.indel.vcf"
-#     output:
-#         snp = protected("results/varscan2/vcfgz/{pair_id}.snp.vcf.gz"),
-#         indel = protected("results/varscan2/vcfgz/{pair_id}.indel.vcf.gz")
-#     params:
-#         mem = CLUSTER_META["compressvarscan"]["mem"]
-#     threads:
-#         CLUSTER_META["compressvarscan"]["ppn"]
-#     log:
-#         "logs/compressvarscan/{pair_id}.log"
-#     benchmark:
-#         "benchmarks/compressvarscan/{pair_id}.txt"
-#     message:
-#         "Compressing VCF files (VS2)\n"
-#         "Pair: {wildcards.pair_id}"
-#     shell:
-#         "bgzip -i {input.snp} > {log} 2>&1; "
-#         "#bcftools index -t {output.snp}; "
-#         "bgzip -i {input.indel} >> {log} 2>&1; "
-#         "#bcftools index -t {output.indel}; "
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Process Somatic (Varscan)
@@ -253,7 +223,7 @@ rule somaticfilter:
 
 rule bamreadcount:
     input:
-        vcf = "results/varscan2/vs2-processed/{pair_id}/{pair_id}.snp.Somatic.hc.vcf",
+        vcf = "results/varscan2/vs2-filter/{pair_id}.snp.Somatic.hc.filter.vcf",
         bam = lambda wildcards: ancient("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]))
     output:
     	temp("results/varscan2/bam-readcount/{pair_id}.variants.readcounts")
@@ -269,12 +239,46 @@ rule bamreadcount:
         "Obtain BAM readcounts for a given list of variants (Varscan2)\n"
         "Pair: {wildcards.pair_id}"
     shell:
-    	"bam-readcount \
+    	"awk '{{OFS=\"\\t\"; if (!/^#/){{print $1,$2,$2}}}}' {input.vcf} | \
+    		bam-readcount \
     		-q 1 \
     		-b 20 \
     		-f {config[reference_fasta]} \
-    		-l {input.vcf} \
-    		{input.bam} > {output} \
-            > {log} 2>&1"
+    		-l /dev/stdin \
+    		{input.bam} \
+    		2> {log} \
+    		1> {output}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## False positive filter (Varscan2)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Apply the false-positive filter (Varscan2)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule fpfilter:
+    input:
+        readcounts = "results/varscan2/bam-readcount/{pair_id}.variants.readcounts",
+        vcf = "results/varscan2/vs2-filter/{pair_id}.snp.Somatic.hc.filter.vcf"
+    output:
+    	protected("results/varscan2/fpfilter/{pair_id}.snp.Somatic.hc.final.vcf.gz")
+    params:
+    	vcfout = "results/varscan2/fpfilter/{pair_id}.snp.Somatic.hc.final.vcf",
+        mem = CLUSTER_META["fpfilter"]["mem"]
+    threads:
+        CLUSTER_META["fpfilter"]["ppn"]
+    log:
+        "logs/fpfilter/{pair_id}.log"
+    benchmark:
+        "benchmarks/fpfilter/{pair_id}.txt"
+    message:
+        "Apply the false-positive filter (Varscan2)\n"
+        "Pair: {wildcards.pair_id}"
+    shell:
+    	"java -Xmx{params.mem}g -Djava.io.tmpdir={config[tempdir]} \
+            -jar jar/VarScan.v2.4.3.jar fpfilter \
+            {input.vcf} {input.readcounts} \
+            --output-file {params.vcfout} \
+            > {log} 2>&1; "
+        "bgzip -i {params.vcfout} && bcftools index -t {output}"
 
 ## END ##

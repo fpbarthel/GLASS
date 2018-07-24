@@ -49,7 +49,7 @@ gnomad_vcf:       "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2
 tiny_vcf:         "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/GetPileupSummaries/small_exac_common_3_b37.vcf.gz"
 
 ## Vcf2MAF Perl Script location
-vcf2maf:          "/projects/barthf/opt/mskcc-vcf2maf-747a1bb/vcf2maf.pl"
+vcf2maf:          "/projects/verhaak-lab/mskcc-vcf2maf-747a1bb/vcf2maf.pl"
 
 ## VEP installation
 veppath:          "/projects/barthf/opt/ensembl-vep"
