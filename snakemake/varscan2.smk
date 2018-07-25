@@ -285,9 +285,9 @@ rule fpfilter:
             > {log} 2>&1; "
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## False positive filter (Varscan2)
+## Merge Varscan final SNP and indel calls (Varscan2)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Apply the false-positive filter (Varscan2)
+## Merging somatic SNP and indel VCF files (VS2) (Varscan2)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule mergevarscanfinal:
