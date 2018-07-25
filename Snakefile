@@ -213,12 +213,7 @@ rule mt2:
 
 rule vs2:
     input:
-        #expand("results/varscan2/vs2-processed/{pair_id}/{pair_id}.snp.Somatic.hc.vcf", pair_id=PAIRS_DICT.keys()),
-        #expand("results/varscan2/vs2-processed/{pair_id}/{pair_id}.indel.Somatic.hc.vcf", pair_id=PAIRS_DICT.keys()),
-        #expand("results/varscan2/vs2-filter/{pair_id}.snp.Somatic.hc.filter.vcf", pair_id=PAIRS_DICT.keys()),
-        #expand("results/varscan2/bam-readcount/{pair_id}.variants.readcounts", pair_id=PAIRS_DICT.keys())
-        expand("results/varscan2/fpfilter/{pair_id}.snp.Somatic.hc.final.vcf.gz", pair_id=PAIRS_DICT.keys()),
-        expand("results/varscan2/fpfilter/{pair_id}.indel.Somatic.hc.final.vcf.gz", pair_id=PAIRS_DICT.keys())
+        expand("results/varscan2/final/{pair_id}.somatic.hc.filtered.final.vcf.gz", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SV preprocessing rule
