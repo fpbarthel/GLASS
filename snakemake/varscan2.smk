@@ -279,11 +279,9 @@ rule fpfilter:
         snpvcf = "results/varscan2/vs2-filter/{pair_id}.snp.Somatic.hc.filter.vcf",
         indelvcf = "results/varscan2/vs2-filter/{pair_id}.indel.Somatic.hc.filter.vcf"
     output:
-    	snp = protected("results/varscan2/fpfilter/{pair_id}.snp.Somatic.hc.final.vcf.gz"),
-    	indel = protected("results/varscan2/fpfilter/{pair_id}.indel.Somatic.hc.final.vcf.gz")
+    	snp = temp("results/varscan2/fpfilter/{pair_id}.snp.Somatic.hc.final.vcf"),
+    	indel = temp("results/varscan2/fpfilter/{pair_id}.indel.Somatic.hc.final.vcf")
     params:
-    	snpvcfout = "results/varscan2/fpfilter/{pair_id}.snp.Somatic.hc.final.vcf",
-    	indelvcfout = "results/varscan2/fpfilter/{pair_id}.indel.Somatic.hc.final.vcf",
         mem = CLUSTER_META["fpfilter"]["mem"]
     threads:
         CLUSTER_META["fpfilter"]["ppn"]
@@ -298,15 +296,13 @@ rule fpfilter:
     	"java -Xmx{params.mem}g -Djava.io.tmpdir={config[tempdir]} \
             -jar jar/VarScan.v2.4.3.jar fpfilter \
             {input.snpvcf} {input.snprc} \
-            --output-file {params.snpvcfout} \
+            --output-file {output.snp} \
             > {log} 2>&1; "
-        "bgzip -i {params.snpvcfout} && bcftools index -t {output.snp}; "
         "java -Xmx{params.mem}g -Djava.io.tmpdir={config[tempdir]} \
             -jar jar/VarScan.v2.4.3.jar fpfilter \
             {input.indelvcf} {input.indelrc} \
-            --output-file {params.indelvcfout} \
+            --output-file {output.indel} \
             >> {log} 2>&1; "
-        "bgzip -i {params.indelvcfout} && bcftools index -t {output.indel}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## False positive filter (Varscan2)
@@ -316,7 +312,7 @@ rule fpfilter:
 
 rule mergevarscanfinal:
     input:
-        lambda wildcards: expand("results/varscan2/fpfilter/{pair_id}.{type}.Somatic.hc.final.vcf.gz", pair_id=wildcards.pair_id, type=SNV_TYPES)
+        lambda wildcards: expand("results/varscan2/fpfilter/{pair_id}.{type}.Somatic.hc.final.vcf", pair_id=wildcards.pair_id, type=SNV_TYPES)
     output:
         protected("results/varscan2/final/{pair_id}.somatic.hc.filtered.final.vcf.gz")
     params:
