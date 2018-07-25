@@ -3,6 +3,8 @@
 ## Authors: Floris Barthel
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+SNV_TYPES = ["snp","indel"]
+
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Run VarScan2 to call SNVs on a tumor/normal pair
 ## See: http://dkoboldt.github.io/varscan/somatic-calling.html
@@ -11,8 +13,6 @@
 ## Added ancient() flag to input because BAM input files are frequently copied and
 ## timestamps change
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-#VARSCAN_SET = [ "snp.Somatic.hc", "snp.Somatic.lc", "snp.Germline", "snp.LOH" ]
 
 rule varscan:
     input:
@@ -131,12 +131,12 @@ rule mergevarscan:
         shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
             {input_snps} \
             -O {output.snp} \
-            --CREATE_INDEX false \
+            --CREATE_INDEX true \
             > {log} 2>&1")
         shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
             {input_indels} \
             -O {output.indel} \
-            --CREATE_INDEX false \
+            --CREATE_INDEX true \
             > {log} 2>&1")
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -194,9 +194,11 @@ rule processsomatic:
 rule somaticfilter:
     input:
         snphc = "results/varscan2/vs2-processed/{pair_id}/{pair_id}.snp.Somatic.hc.vcf",
-        indel = "results/varscan2/vs2-processed/{pair_id}/{pair_id}.indel.vcf"
+        indelhc = "results/varscan2/vs2-processed/{pair_id}/{pair_id}.indel.Somatic.hc.vcf",
+        indelraw = "results/varscan2/vs2-processed/{pair_id}/{pair_id}.indel.vcf"
     output:
-    	"results/varscan2/vs2-filter/{pair_id}.snp.Somatic.hc.filter.vcf"
+    	snp = "results/varscan2/vs2-filter/{pair_id}.snp.Somatic.hc.filter.vcf",
+    	indel = "results/varscan2/vs2-filter/{pair_id}.indel.Somatic.hc.filter.vcf"
     params:
         mem = CLUSTER_META["somaticfilter"]["mem"]
     threads:
@@ -211,9 +213,13 @@ rule somaticfilter:
     shell:
     	"java -Xmx{params.mem}g -Djava.io.tmpdir={config[tempdir]} \
             -jar jar/VarScan.v2.4.3.jar somaticFilter {input.snphc} \
-            --indel-file {input.indel} \
-            --output-file {output} \
-            > {log} 2>&1"
+            --indel-file {input.indelraw} \
+            --output-file {output.snp} \
+            > {log} 2>&1; "
+        "java -Xmx{params.mem}g -Djava.io.tmpdir={config[tempdir]} \
+            -jar jar/VarScan.v2.4.3.jar somaticFilter {input.indelhc} \
+            --output-file {output.indel} \
+            >> {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## BAM readcount (Varscan2)
@@ -223,10 +229,12 @@ rule somaticfilter:
 
 rule bamreadcount:
     input:
-        vcf = "results/varscan2/vs2-filter/{pair_id}.snp.Somatic.hc.filter.vcf",
+        snp = "results/varscan2/vs2-filter/{pair_id}.snp.Somatic.hc.filter.vcf",
+        indel = "results/varscan2/vs2-filter/{pair_id}.indel.Somatic.hc.filter.vcf",
         bam = lambda wildcards: ancient("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]))
     output:
-    	temp("results/varscan2/bam-readcount/{pair_id}.variants.readcounts")
+    	snp = temp("results/varscan2/bam-readcount/{pair_id}.snp.readcounts"),
+    	indel = temp("results/varscan2/bam-readcount/{pair_id}.indel.readcounts")
     params:
         mem = CLUSTER_META["bamreadcount"]["mem"]
     threads:
@@ -239,7 +247,7 @@ rule bamreadcount:
         "Obtain BAM readcounts for a given list of variants (Varscan2)\n"
         "Pair: {wildcards.pair_id}"
     shell:
-    	"awk '{{OFS=\"\\t\"; if (!/^#/){{print $1,$2,$2}}}}' {input.vcf} | \
+    	"awk '{{OFS=\"\\t\"; if (!/^#/){{print $1,$2,$2}}}}' {input.snp} | \
     		bam-readcount \
     		-q 1 \
     		-b 20 \
@@ -247,7 +255,16 @@ rule bamreadcount:
     		-l /dev/stdin \
     		{input.bam} \
     		2> {log} \
-    		1> {output}"
+    		1> {output.snp}; "
+    	"awk '{{OFS=\"\\t\"; if (!/^#/){{print $1,$2-sqrt((length($4)-length($5))^2)-1,$2+sqrt((length($4)-length($5))^2)+1}}}}' {input.indel} | \
+    		bam-readcount \
+    		-q 1 \
+    		-b 20 \
+    		-f {config[reference_fasta]} \
+    		-l /dev/stdin \
+    		{input.bam} \
+    		2>> {log} \
+    		1> {output.indel}; "
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## False positive filter (Varscan2)
@@ -257,12 +274,16 @@ rule bamreadcount:
 
 rule fpfilter:
     input:
-        readcounts = "results/varscan2/bam-readcount/{pair_id}.variants.readcounts",
-        vcf = "results/varscan2/vs2-filter/{pair_id}.snp.Somatic.hc.filter.vcf"
+        snprc = "results/varscan2/bam-readcount/{pair_id}.snp.readcounts",
+        indelrc = "results/varscan2/bam-readcount/{pair_id}.indel.readcounts",
+        snpvcf = "results/varscan2/vs2-filter/{pair_id}.snp.Somatic.hc.filter.vcf",
+        indelvcf = "results/varscan2/vs2-filter/{pair_id}.indel.Somatic.hc.filter.vcf"
     output:
-    	protected("results/varscan2/fpfilter/{pair_id}.snp.Somatic.hc.final.vcf.gz")
+    	snp = protected("results/varscan2/fpfilter/{pair_id}.snp.Somatic.hc.final.vcf.gz"),
+    	indel = protected("results/varscan2/fpfilter/{pair_id}.indel.Somatic.hc.final.vcf.gz")
     params:
-    	vcfout = "results/varscan2/fpfilter/{pair_id}.snp.Somatic.hc.final.vcf",
+    	snpvcfout = "results/varscan2/fpfilter/{pair_id}.snp.Somatic.hc.final.vcf",
+    	indelvcfout = "results/varscan2/fpfilter/{pair_id}.indel.Somatic.hc.final.vcf",
         mem = CLUSTER_META["fpfilter"]["mem"]
     threads:
         CLUSTER_META["fpfilter"]["ppn"]
@@ -276,9 +297,45 @@ rule fpfilter:
     shell:
     	"java -Xmx{params.mem}g -Djava.io.tmpdir={config[tempdir]} \
             -jar jar/VarScan.v2.4.3.jar fpfilter \
-            {input.vcf} {input.readcounts} \
-            --output-file {params.vcfout} \
+            {input.snpvcf} {input.snprc} \
+            --output-file {params.snpvcfout} \
             > {log} 2>&1; "
-        "bgzip -i {params.vcfout} && bcftools index -t {output}"
+        "bgzip -i {params.snpvcfout} && bcftools index -t {output.snp}; "
+        "java -Xmx{params.mem}g -Djava.io.tmpdir={config[tempdir]} \
+            -jar jar/VarScan.v2.4.3.jar fpfilter \
+            {input.indelvcf} {input.indelrc} \
+            --output-file {params.indelvcfout} \
+            >> {log} 2>&1; "
+        "bgzip -i {params.indelvcfout} && bcftools index -t {output.indel}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## False positive filter (Varscan2)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Apply the false-positive filter (Varscan2)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule mergevarscanfinal:
+    input:
+        lambda wildcards: expand("results/varscan2/fpfilter/{pair_id}.{type}.Somatic.hc.final.vcf.gz", pair_id=wildcards.pair_id, type=SNV_TYPES)
+    output:
+        protected("results/varscan2/final/{pair_id}.somatic.hc.filtered.final.vcf.gz")
+    params:
+        mem = CLUSTER_META["mergevarscanfinal"]["mem"]
+    threads:
+        CLUSTER_META["mergevarscanfinal"]["ppn"]
+    log:
+        "logs/mergevarscanfinal/{pair_id}.log"
+    benchmark:
+        "benchmarks/mergevarscanfinal/{pair_id}.txt"
+    message:
+        "Merging somatic SNP and indel VCF files (VS2)\n"
+        "Pair: {wildcards.pair_id}"
+    run:
+        inputfiles = " ".join(["-I " + s for s in input])
+        shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
+            {inputfiles} \
+            -O {output} \
+            --CREATE_INDEX true \
+            > {log} 2>&1")
 
 ## END ##
