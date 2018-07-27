@@ -24,21 +24,21 @@
 ## Unlikely this will get fixed any time soon
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule revertsam: ## 5/8 this rule is causing trouble, comment for now
+rule revertsam:
     input:
         lambda wildcards: ALIQUOT_TO_BAM_PATH[wildcards.aliquot_id]
     output:
-        map = "results/ubam/{aliquot_id}/{aliquot_id}.output_map.txt",
-        bams = temp(expand("results/ubam/{{aliquot_id}}/{{aliquot_id}}.{rg}.unaligned.bam", rg=list(itertools.chain.from_iterable(ALIQUOT_TO_RGID.values()))))
+        map = "results/align/ubam/{aliquot_id}/{aliquot_id}.output_map.txt",
+        bams = temp(expand("results/align/ubam/{{aliquot_id}}/{{aliquot_id}}.{rg}.unaligned.bam", rg=list(itertools.chain.from_iterable(ALIQUOT_TO_RGID.values()))))
     params:
-        dir = "results/ubam/{aliquot_id}",
+        dir = "results/align/ubam/{aliquot_id}",
         mem = CLUSTER_META["revertsam"]["mem"]
     log: 
-        "logs/revertsam/{aliquot_id}.log"
+        "logs/align/revertsam/{aliquot_id}.log"
     threads:
         CLUSTER_META["revertsam"]["ppn"]
     benchmark:
-        "benchmarks/revertsam/{aliquot_id}.txt"
+        "benchmarks/align/revertsam/{aliquot_id}.txt"
     message:
         "Reverting sample back to unaligned BAM file, stripping any previous "
         "pre-processing and restoring original base quality scores. Output files are split "
@@ -49,7 +49,7 @@ rule revertsam: ## 5/8 this rule is causing trouble, comment for now
         rgmap = pd.DataFrame(
             {
                 "READ_GROUP_ID": ALIQUOT_TO_RGID[wildcards["aliquot_id"]],
-                "OUTPUT": ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.unaligned.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in ALIQUOT_TO_RGID[wildcards["aliquot_id"]]]
+                "OUTPUT": ["results/align/ubam/{aliquot_id}/{aliquot_id}.{rg}.unaligned.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in ALIQUOT_TO_RGID[wildcards["aliquot_id"]]]
             },
             columns = ["READ_GROUP_ID", "OUTPUT"]
         )
@@ -57,7 +57,7 @@ rule revertsam: ## 5/8 this rule is causing trouble, comment for now
 
         ## Create empty files ("touch") for readgroups not in this BAM file
         ## Workaround for issue documented here: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
-        other_rg_f = ["results/ubam/{aliquot_id}/{aliquot_id}.{rg}.unaligned.bam".format(aliquot_id=wildcards["aliquot_id"],rg=rg) for sample, rgs in ALIQUOT_TO_RGID.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
+        other_rg_f = ["results/align/ubam/{aliquot_id}/{aliquot_id}.{rg}.unaligned.bam".format(aliquot_id=wildcards["aliquot_id"],rg=rg) for sample, rgs in ALIQUOT_TO_RGID.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
         for f in other_rg_f:
             touch(f)
 
@@ -91,7 +91,7 @@ rule fq2ubam:
         R1 = lambda wildcards: "{file}".format(sample=wildcards.aliquot_id, file=ALIQUOT_TO_FQ_PATH[wildcards.aliquot_id][wildcards.readgroup][0]),
         R2 = lambda wildcards: "{file}".format(sample=wildcards.aliquot_id, file=ALIQUOT_TO_FQ_PATH[wildcards.aliquot_id][wildcards.readgroup][1])
     output:
-        temp("results/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam")
+        temp("results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam")
     params:
         RGID = lambda wildcards: wildcards.readgroup,
         RGPL = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPL"],
@@ -102,11 +102,11 @@ rule fq2ubam:
         RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGCN"],
         mem = CLUSTER_META["fq2ubam"]["mem"]
     log:
-        "logs/fq2ubam/{aliquot_id}.{readgroup}.log"
+        "logs/align/fq2ubam/{aliquot_id}.{readgroup}.log"
     threads:
         CLUSTER_META["fq2ubam"]["ppn"]
     benchmark:
-        "benchmarks/fq2ubam/{aliquot_id}.{readgroup}.txt"
+        "benchmarks/align/fq2ubam/{aliquot_id}.{readgroup}.txt"
     message:
         "Converting FASTQ file to uBAM format\n"
         "Sample: {wildcards.aliquot_id}\n"
@@ -141,18 +141,18 @@ rule fq2ubam:
 
 rule fastqc:
     input:
-        "results/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam"
+        "results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam"
     output:
-        "results/qc/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned_fastqc.html"
+        "results/align/qc/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned_fastqc.html"
     params:
         dir = "results/qc/{aliquot_id}",
         mem = CLUSTER_META["fastqc"]["mem"]
     threads:
         CLUSTER_META["fastqc"]["ppn"]
     log:
-        "logs/fastqc/{aliquot_id}.{readgroup}.log"
+        "logs/align/fastqc/{aliquot_id}.{readgroup}.log"
     benchmark:
-        "benchmarks/fastqc/{aliquot_id}.{readgroup}.txt"
+        "benchmarks/align/fastqc/{aliquot_id}.{readgroup}.txt"
     message:
         "Running FASTQC\n"
         "Sample: {wildcards.aliquot_id}\n"
@@ -174,10 +174,10 @@ rule fastqc:
 
 rule markadapters:
     input:
-        "results/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam"
+        "results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam"
     output:
-        bam = temp("results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.bam"),
-        metric = "results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
+        bam = temp("results/align/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.bam"),
+        metric = "results/align/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
     params:
         mem = CLUSTER_META["markadapters"]["mem"]
     threads:
@@ -185,9 +185,9 @@ rule markadapters:
     params:
         mem = CLUSTER_META["markadapters"]["mem"]
     log: 
-        dynamic("logs/markadapters/{aliquot_id}.{readgroup}.log")
+        dynamic("logs/align/markadapters/{aliquot_id}.{readgroup}.log")
     benchmark:
-        "benchmarks/markadapters/{aliquot_id}.{readgroup}.txt"
+        "benchmarks/align/markadapters/{aliquot_id}.{readgroup}.txt"
     message:
         "Adding XT tags. This marks Illumina Adapters and allows them to be removed in later steps\n"
         "Sample: {wildcards.aliquot_id}\n"
@@ -227,19 +227,19 @@ rule markadapters:
 
 rule samtofastq_bwa_mergebamalignment:
     input:
-        bam = "results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.bam",
-        metric = "results/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
+        bam = "results/align/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.bam",
+        metric = "results/align/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
     output:
-        bam = temp("results/bwa/{aliquot_id}/{aliquot_id}.{readgroup}.realn.bam"),
-        bai = temp("results/bwa/{aliquot_id}/{aliquot_id}.{readgroup}.realn.bai")
+        bam = temp("results/align/bwa/{aliquot_id}/{aliquot_id}.{readgroup}.realn.bam"),
+        bai = temp("results/align/bwa/{aliquot_id}/{aliquot_id}.{readgroup}.realn.bai")
     threads:
         CLUSTER_META["samtofastq_bwa_mergebamalignment"]["ppn"]
     params:
         mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
     log: 
-        "logs/samtofastq_bwa_mergebamalignment/{aliquot_id}.{readgroup}.log"
+        "logs/align/samtofastq_bwa_mergebamalignment/{aliquot_id}.{readgroup}.log"
     benchmark:
-        "benchmarks/revertsam/{aliquot_id}.{readgroup}.txt"
+        "benchmarks/align/revertsam/{aliquot_id}.{readgroup}.txt"
     message:
         "BAM to FASTQ --> BWA-MEM --> Merge BAM Alignment.\n"
         "The first step converts the reverted BAM to an interleaved FASTQ, removing Illumina "
@@ -281,19 +281,19 @@ rule samtofastq_bwa_mergebamalignment:
 
 rule markduplicates:
     input:
-        lambda wildcards: expand("results/bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.aliquot_id, rg=ALIQUOT_TO_RGID[wildcards.aliquot_id])
+        lambda wildcards: expand("results/align/bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.aliquot_id, rg=ALIQUOT_TO_RGID[wildcards.aliquot_id])
     output:
-        bam = temp("results/markduplicates/{aliquot_id}.realn.mdup.bam"),
-        bai = temp("results/markduplicates/{aliquot_id}.realn.mdup.bai"),
-        metrics = "results/markduplicates/{aliquot_id}.metrics.txt"
+        bam = temp("results/align/markduplicates/{aliquot_id}.realn.mdup.bam"),
+        bai = temp("results/align/markduplicates/{aliquot_id}.realn.mdup.bai"),
+        metrics = "results/align/markduplicates/{aliquot_id}.metrics.txt"
     params:
         mem = CLUSTER_META["markduplicates"]["mem"]
     threads:
         CLUSTER_META["markduplicates"]["ppn"]
     log:
-        "logs/markduplicates/{aliquot_id}.log"
+        "logs/align/markduplicates/{aliquot_id}.log"
     benchmark:
-        "benchmarks/markduplicates/{aliquot_id}.txt"
+        "benchmarks/align/markduplicates/{aliquot_id}.txt"
     message:
         "Readgroup-specific BAM files are combined into a single BAM. "
         "Potential PCR duplicates are marked.\n"
@@ -321,17 +321,17 @@ rule markduplicates:
 
 rule baserecalibrator:
     input:
-        "results/markduplicates/{aliquot_id}.realn.mdup.bam"
+        "results/align/markduplicates/{aliquot_id}.realn.mdup.bam"
     output:
-        "results/bqsr/{aliquot_id}.bqsr.txt"
+        "results/align/bqsr/{aliquot_id}.bqsr.txt"
     params:
         mem = CLUSTER_META["baserecalibrator"]["mem"]
     threads:
         CLUSTER_META["baserecalibrator"]["ppn"]
     log:
-        "logs/bqsr/{aliquot_id}.recal.log"
+        "logs/align/bqsr/{aliquot_id}.recal.log"
     benchmark:
-        "benchmarks/bqsr/{aliquot_id}.recal.txt"
+        "benchmarks/align/bqsr/{aliquot_id}.recal.txt"
     message:
         "Calculating base recalibration scores.\n"
         "Sample: {wildcards.aliquot_id}"
@@ -353,18 +353,18 @@ rule baserecalibrator:
 
 rule applybqsr:
     input:
-        bam = "results/markduplicates/{aliquot_id}.realn.mdup.bam",
-        bqsr = "results/bqsr/{aliquot_id}.bqsr.txt"
+        bam = "results/align/markduplicates/{aliquot_id}.realn.mdup.bam",
+        bqsr = "results/align/bqsr/{aliquot_id}.bqsr.txt"
     output:
-        protected("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam")
+        protected("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam")
     params:
         mem = CLUSTER_META["applybqsr"]["mem"]
     threads:
         CLUSTER_META["applybqsr"]["ppn"]
     log:
-        "logs/bqsr/{aliquot_id}.apply.log"
+        "logs/align/bqsr/{aliquot_id}.apply.log"
     benchmark:
-        "benchmarks/bqsr/{aliquot_id}.apply.txt"
+        "benchmarks/align/bqsr/{aliquot_id}.apply.txt"
     message:
         "Applying base recalibration scores and generating final BAM file\n"
         "Sample: {wildcards.aliquot_id}"
@@ -387,9 +387,9 @@ rule applybqsr:
 
 rule wgsmetrics:
     input:
-        "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
-        "results/qc/{aliquot_id}.WgsMetrics.txt"
+        "results/align/qc/{aliquot_id}.WgsMetrics.txt"
     params:
         mem = CLUSTER_META["wgsmetrics"]["mem"]
     threads:
@@ -421,9 +421,9 @@ rule wgsmetrics:
 
 rule validatebam:
     input:
-        "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
-        "results/qc/{aliquot_id}.ValidateSamFile.txt"
+        "results/align/qc/{aliquot_id}.ValidateSamFile.txt"
     params:
         mem = CLUSTER_META["validatebam"]["mem"]
     threads:
@@ -454,26 +454,26 @@ rule validatebam:
 
 rule multiqc:
     input:
-        expand("results/qc/{sample}.ValidateSamFile.txt", sample=ALIQUOT_TO_RGID.keys()),
-        expand("results/qc/{sample}.WgsMetrics.txt", sample=ALIQUOT_TO_RGID.keys()),
-        lambda wildcards: ["results/qc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample=sample, rg=readgroup)
+        expand("results/align/qc/{sample}.ValidateSamFile.txt", sample=ALIQUOT_TO_RGID.keys()),
+        expand("results/align/qc/{sample}.WgsMetrics.txt", sample=ALIQUOT_TO_RGID.keys()),
+        lambda wildcards: ["results/align/qc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample=sample, rg=readgroup)
           for sample, readgroups in ALIQUOT_TO_RGID.items()
           for readgroup in readgroups] 
     output:
-        "results/qc/multiqc/multiqc_report.html"
+        "results/align/qc/multiqc/multiqc_report.html"
     params:
-        dir = "results/qc/multiqc",
+        dir = "results/align/qc/multiqc",
         mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
     threads:
         CLUSTER_META["multiqc"]["ppn"]
     log:
-        "logs/multiqc/multiqc.log"
+        "logs/align/multiqc/multiqc.log"
     benchmark:
-        "benchmarks/multiqc/multiqc.txt"
+        "benchmarks/align/multiqc/multiqc.txt"
     message:
         "Running MultiQC"
     shell:
-        "multiqc -o {params.dir} {config[workdir]}/results \
+        "multiqc -o {params.dir} {config[workdir]}/results/align \
             > {log} 2>&1; \
             cp -R {params.dir}/* {config[html_dir]}"
 
