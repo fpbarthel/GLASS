@@ -17,7 +17,7 @@ set.seed(27072018)
 uuids = stringi::stri_rand_strings(5, 6, "[A-Z0-9]")
 ## "WQTP4O" "NYD1BJ" "PA9D9P" "SW2KKR" "LY5QYK"
 
-files = data.frame(aliquot_id = sprintf("GLSS-K2-0001-%s-%s", c("TP", "R1", "R2", "TM", "NB"), uuid = uuids),
+files = data.frame(aliquot_id = sprintf("GLSS-K2-0001-%s-%s", c("TP", "R1", "R2", "M1", "NB"), uuid = uuids),
                    file_path = paste(fqfiles[seq(1,9,2)], fqfiles[seq(2,10,2)], sep=","),
                    file_name = paste(basename(fqfiles)[seq(1,9,2)], basename(fqfiles)[seq(2,10,2)], sep=","),
                    file_uuid = sprintf("file-%s", uuids),
@@ -27,22 +27,22 @@ files = data.frame(aliquot_id = sprintf("GLSS-K2-0001-%s-%s", c("TP", "R1", "R2"
                    stringsAsFactors = F)
 
 readgroups = data.frame(file_uuid = sprintf("file-%s", uuids),
-                        aliquot_id = sprintf("GLSS-K2-0001-%s-%s", c("TP", "R1", "R2", "TM", "NB"), uuid = uuids),
+                        aliquot_id = sprintf("GLSS-K2-0001-%s-%s", c("TP", "R1", "R2", "M1", "NB"), uuid = uuids),
                         RGID = sprintf("%s.%s", substr(rginfo$Flowcell.ID[seq(1,9,2)],1,4), rginfo$Flowcell.Lane[seq(1,9,2)]),
                         RGPL = "ILLUMINA",
                         RGPU = sprintf("%s.%s", rginfo$Flowcell.ID[seq(1,9,2)], rginfo$Flowcell.Lane[seq(1,9,2)]),
                         RGLB = uuids,
                         RGPI = 0,
                         RGDT = NA,
-                        RGSM = sprintf("GLSS-K2-0001-%s", c("TP", "R1", "R2", "TM", "NB")),
+                        RGSM = sprintf("GLSS-K2-0001-%s", c("TP", "R1", "R2", "M1", "NB")),
                         RGCN = "GENEWIZ",
                         stringsAsFactors = F)
 
 
 ### aliquots
-aliquots = data.frame(sample_id = sprintf("GLSS-K2-0001-%s", c("TP", "R1", "R2", "TM", "NB")),
+aliquots = data.frame(sample_id = sprintf("GLSS-K2-0001-%s", c("TP", "R1", "R2", "M1", "NB")),
                       aliquot_uuid = uuids,
-                      aliquot_id = sprintf("GLSS-K2-0001-%s-%s", c("TP", "R1", "R2", "TM", "NB"), uuid = uuids),
+                      aliquot_id = sprintf("GLSS-K2-0001-%s-%s", c("TP", "R1", "R2", "M1", "NB"), uuid = uuids),
                       portion = 1,
                       analyte_type = "DNA",
                       analysis_type = "WGS",
@@ -50,9 +50,9 @@ aliquots = data.frame(sample_id = sprintf("GLSS-K2-0001-%s", c("TP", "R1", "R2",
 
 ## Samples
 samples = data.frame(case_id = "GLSS-K2-0001",
-                     sample_id = sprintf("GLSS-K2-0001-%s", c("TP", "R1", "R2", "TM", "NB")),
+                     sample_id = sprintf("GLSS-K2-0001-%s", c("TP", "R1", "R2", "M1", "NB")),
                      legacy_sample_id = gsub(".fq.gz", "", basename(fqfiles)[seq(1,9,2)]),
-                     sample_type = c("TP", "R1", "R2", "TM", "NB"),
+                     sample_type = c("TP", "R1", "R2", "M1", "NB"),
                      stringsAsFactors = F)
 
 ### Cases
@@ -67,3 +67,16 @@ pairs = data.frame(case_id = "GLSS-K2-0001",
                    normal_aliquot_id = "GLSS-K2-0001-NB-LY5QYK")
 
 ## Make manifest
+write(jsonlite::toJSON(files, pretty = T), file = sprintf("%s.%s", files_file, json_ext))
+write(jsonlite::toJSON(cases, pretty = T), file = sprintf("%s.%s", cases_file, json_ext))
+write(jsonlite::toJSON(samples, pretty = T), file = sprintf("%s.%s", samples_file, json_ext))
+write(jsonlite::toJSON(aliquots, pretty = T), file = sprintf("%s.%s", aliquots_file, json_ext))
+write(jsonlite::toJSON(readgroups, pretty = T), file = sprintf("%s.%s", readgroups_file, json_ext))
+write(jsonlite::toJSON(pairs, pretty = T), file = sprintf("%s.%s", pairs_file, json_ext))
+
+write.table(files, file = sprintf("%s.%s", files_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(cases, file = sprintf("%s.%s", cases_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(samples, file = sprintf("%s.%s", samples_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(aliquots, file = sprintf("%s.%s", aliquots_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(readgroups, file = sprintf("%s.%s", readgroups_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
+write.table(pairs, file = sprintf("%s.%s", pairs_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
