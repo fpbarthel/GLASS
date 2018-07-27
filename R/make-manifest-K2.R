@@ -21,8 +21,8 @@ files = data.frame(aliquot_id = sprintf("GLSS-K2-0001-%s-%s", c("TP", "R1", "R2"
                    file_path = paste(fqfiles[seq(1,9,2)], fqfiles[seq(2,10,2)], sep=","),
                    file_name = paste(basename(fqfiles)[seq(1,9,2)], basename(fqfiles)[seq(2,10,2)], sep=","),
                    file_uuid = sprintf("file-%s", uuids),
-                   file_size = NA,
-                   file_md5sum = NA,
+                   file_size = "NA",
+                   file_md5sum = "NA",
                    file_format = "FQ",
                    stringsAsFactors = F)
 
@@ -33,7 +33,7 @@ readgroups = data.frame(file_uuid = sprintf("file-%s", uuids),
                         RGPU = sprintf("%s.%s", rginfo$Flowcell.ID[seq(1,9,2)], rginfo$Flowcell.Lane[seq(1,9,2)]),
                         RGLB = uuids,
                         RGPI = 0,
-                        RGDT = NA,
+                        RGDT = "NA",
                         RGSM = sprintf("GLSS-K2-0001-%s", c("TP", "R1", "R2", "M1", "NB")),
                         RGCN = "GENEWIZ",
                         stringsAsFactors = F)
