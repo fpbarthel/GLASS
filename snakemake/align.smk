@@ -33,8 +33,6 @@ rule revertsam:
     params:
         dir = "results/align/ubam/{aliquot_id}",
         mem = CLUSTER_META["revertsam"]["mem"]
-    conda:
-        "envs/align.yaml"
     log: 
         "logs/align/revertsam/{aliquot_id}.log"
     threads:
@@ -103,8 +101,6 @@ rule fq2ubam:
         RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGSM"],
         RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGCN"],
         mem = CLUSTER_META["fq2ubam"]["mem"]
-    conda:
-        "envs/align.yaml"
     log:
         "logs/align/fq2ubam/{aliquot_id}.{readgroup}.log"
     threads:
@@ -300,8 +296,6 @@ rule markduplicates:
         mem = CLUSTER_META["markduplicates"]["mem"]
     threads:
         CLUSTER_META["markduplicates"]["ppn"]
-    conda:
-        "envs/align.yaml"
     log:
         "logs/align/markduplicates/{aliquot_id}.log"
     benchmark:
