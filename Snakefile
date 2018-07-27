@@ -246,6 +246,14 @@ rule delly:
         expand("results/delly/call/{pair_id}.vcf.gz", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Call SV using lumpy
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule lumpy:
+    input:
+        expand("results/lumpy/call/{pair_id}.vcf.gz", pair_id=PAIRS_DICT.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Fingerprinting pipeline
 ## Check sample and case fingerprints
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 

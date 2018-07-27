@@ -398,7 +398,16 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.err"
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
+    "lumpy_call" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00",
+        "name" : "{rule}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
     }
 }
