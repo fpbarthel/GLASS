@@ -61,11 +61,12 @@ rule mergepon:
     threads:
         CLUSTER_META["mergepon"]["ppn"]
     log:
-        "logs/mutect2/mergepon/{aliquot_id}.log"
+        "logs/mutect2/mergepon/{batch}.{aliquot_id}.log"
     benchmark:
-        "benchmarks/mutect2/mergepon/{aliquot_id}.txt"
+        "benchmarks/mutect2/mergepon/{batch}.{aliquot_id}.txt"
     message:
         "Merging VCF files (PON)\n"
+        "Batch: {batch}\n"
         "Sample: {wildcards.aliquot_id}"
     run:
         input_cat = " ".join(["-I " + s for s in input])
@@ -137,9 +138,9 @@ rule callsnv:
     threads:
         CLUSTER_META["callsnv"]["ppn"]
     log:
-        "logs/mutect2/callsnv/{pair_id}.log"
+        "logs/mutect2/callsnv/{pair_id}.{interval}.log"
     benchmark:
-        "benchmarks/mutect2/callsnv/{pair_id}.txt"
+        "benchmarks/mutect2/callsnv/{pair_id}.{interval}.txt"
     message:
         "Calling SNVs (Mutect2)\n"
         "Pair: {wildcards.pair_id}\n"

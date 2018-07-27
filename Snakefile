@@ -175,6 +175,7 @@ include: "snakemake/lumpy.smk"
 include: "snakemake/cnv-gatk.smk"
 include: "snakemake/varscan2.smk"
 include: "snakemake/fingerprinting.smk"
+include: "snakemake/delly.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
@@ -235,6 +236,14 @@ rule cnv:
         expand("results/cnv/callsegments/{pair_id}.called.seg", pair_id=PAIRS_DICT.keys()),
         expand("results/cnv/plotmodeledsegments/{pair_id}/{pair_id}.modeled.png", pair_id=PAIRS_DICT.keys()),
         expand("results/cnv/plotcr/{aliquot_id}/{aliquot_id}.denoised.png", aliquot_id=ALIQUOT_TO_READGROUP.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Call SV using delly
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule delly:
+    input:
+        expand("results/delly/call/{pair_id}.vcf.gz", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Fingerprinting pipeline

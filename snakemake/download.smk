@@ -13,9 +13,9 @@ rule download:
         "UUID {wildcards.uuid}\n"
         "File {wildcards.filename}"
     log:
-        "logs/download/{uuid}.log"
+        "logs/download/{uuid}.{filename}.log"
     benchmark:
-        "benchmarks/download/{uuid}.txt"
+        "benchmarks/download/{uuid}.{filename}.txt"
     shell:
         "gdc-client download \
             -d download \
