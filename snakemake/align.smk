@@ -33,6 +33,8 @@ rule revertsam:
     params:
         dir = "results/align/ubam/{aliquot_id}",
         mem = CLUSTER_META["revertsam"]["mem"]
+    conda:
+        "envs/align.yaml"
     log: 
         "logs/align/revertsam/{aliquot_id}.log"
     threads:
@@ -101,6 +103,8 @@ rule fq2ubam:
         RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGSM"],
         RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGCN"],
         mem = CLUSTER_META["fq2ubam"]["mem"]
+    conda:
+        "envs/align.yaml"
     log:
         "logs/align/fq2ubam/{aliquot_id}.{readgroup}.log"
     threads:
@@ -147,6 +151,8 @@ rule fastqc:
     params:
         dir = "results/qc/{aliquot_id}",
         mem = CLUSTER_META["fastqc"]["mem"]
+    conda:
+        "envs/align.yaml"
     threads:
         CLUSTER_META["fastqc"]["ppn"]
     log:
@@ -180,6 +186,8 @@ rule markadapters:
         metric = "results/align/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
     params:
         mem = CLUSTER_META["markadapters"]["mem"]
+    conda:
+        "envs/align.yaml"
     threads:
         CLUSTER_META["markadapters"]["ppn"]
     params:
@@ -234,6 +242,8 @@ rule samtofastq_bwa_mergebamalignment:
         bai = temp("results/align/bwa/{aliquot_id}/{aliquot_id}.{readgroup}.realn.bai")
     threads:
         CLUSTER_META["samtofastq_bwa_mergebamalignment"]["ppn"]
+    conda:
+        "envs/align.yaml"
     params:
         mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
     log: 
@@ -290,6 +300,8 @@ rule markduplicates:
         mem = CLUSTER_META["markduplicates"]["mem"]
     threads:
         CLUSTER_META["markduplicates"]["ppn"]
+    conda:
+        "envs/align.yaml"
     log:
         "logs/align/markduplicates/{aliquot_id}.log"
     benchmark:
@@ -328,6 +340,8 @@ rule baserecalibrator:
         mem = CLUSTER_META["baserecalibrator"]["mem"]
     threads:
         CLUSTER_META["baserecalibrator"]["ppn"]
+    conda:
+        "envs/align.yaml"
     log:
         "logs/align/bqsr/{aliquot_id}.recal.log"
     benchmark:
@@ -361,6 +375,8 @@ rule applybqsr:
         mem = CLUSTER_META["applybqsr"]["mem"]
     threads:
         CLUSTER_META["applybqsr"]["ppn"]
+    conda:
+        "envs/align.yaml"
     log:
         "logs/align/bqsr/{aliquot_id}.apply.log"
     benchmark:
@@ -394,6 +410,8 @@ rule wgsmetrics:
         mem = CLUSTER_META["wgsmetrics"]["mem"]
     threads:
         CLUSTER_META["wgsmetrics"]["ppn"]
+    conda:
+        "envs/align.yaml"
     log:
         "logs/wgsmetrics/{aliquot_id}.WgsMetrics.log"
     benchmark:
@@ -428,6 +446,8 @@ rule validatebam:
         mem = CLUSTER_META["validatebam"]["mem"]
     threads:
         CLUSTER_META["validatebam"]["ppn"]
+    conda:
+        "envs/align.yaml"
     log:
         "logs/validatebam/{aliquot_id}.ValidateSamFile.log"
     benchmark:
@@ -466,6 +486,8 @@ rule multiqc:
         mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
     threads:
         CLUSTER_META["multiqc"]["ppn"]
+    conda:
+        "envs/align.yaml"
     log:
         "logs/align/multiqc/multiqc.log"
     benchmark:
