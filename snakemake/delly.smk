@@ -17,7 +17,7 @@ rule delly_call:
     conda:
         "envs/delly.yaml"
     log:
-        "logs/delly/cell/{pair_id}.log"
+        "logs/delly/call/{pair_id}.log"
     benchmark:
         "benchmarks/delly/call/{pair_id}.txt"
     message:
@@ -26,11 +26,11 @@ rule delly_call:
     shell:
         "delly call \
             -x {config[svmask]} \
-            -o {output} \
+            -o {output.bcf} \
             -g {config[reference_fasta]} \
             {input.tumor} \
             {input.normal} \
             > {log} 2>&1; "
         "bcftools view {output.bcf} > {params.vcftmp} && \
             bgzip -i {params.vcftmp} && \
-            bftools index -t {output.vcf}"
+            bcftools index -t {output.vcf}"

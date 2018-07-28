@@ -1,47 +1,41 @@
-name: delly
+name: delly2
 channels:
   - bioconda
   - r
   - defaults
   - conda-forge
 dependencies:
-  - boost=1.67.0=py36h3e44d54_0
-  - boost-cpp=1.67.0=h3a22d5f_0
   - bcftools=1.9=h4da6232_0
+  - delly=0.7.8=hd37b1a0_2
   - htslib=1.7=0
   - libdeflate=1.0=h470a237_0
-  - mkl_fft=1.0.4=py36_0
-  - mkl_random=1.0.1=py36_0
+  - boost=1.67.0=py36h3e44d54_0
+  - boost-cpp=1.67.0=h3a22d5f_0
+  - bzip2=1.0.6=h470a237_2
+  - curl=7.61.0=h93b3f91_1
+  - icu=58.2=hfc679d8_0
+  - krb5=1.14.6=0
+  - libffi=3.2.1=3
+  - libssh2=1.8.0=h5b517e9_2
+  - ncurses=6.1=hfc679d8_1
   - pip=18.0=py36_0
+  - python=3.6.6=h5001a0f_0
+  - readline=7.0=haf1bffa_1
   - setuptools=40.0.0=py36_0
+  - sqlite=3.24.0=h2f33b56_0
+  - tk=8.6.8=0
   - wheel=0.31.1=py36_0
-  - blas=1.0=mkl
-  - bzip2=1.0.6=h14c3975_5
+  - xz=5.2.4=h470a237_0
+  - zlib=1.2.11=h470a237_3
   - ca-certificates=2018.03.07=0
   - certifi=2018.4.16=py36_0
-  - curl=7.61.0=h84994c4_0
-  - icu=58.2=h9c2bf20_1
-  - intel-openmp=2018.0.0=8
-  - libboost=1.67.0=h46d08c1_4
-  - libcurl=7.61.0=h1ad7b7a_0
-  - libedit=3.1.20170329=h6b74fdf_2
-  - libffi=3.2.1=hd88cf55_4
   - libgcc=7.2.0=h69d50b8_2
   - libgcc-ng=7.2.0=hdf63c60_3
   - libgfortran-ng=7.2.0=hdf63c60_3
-  - libssh2=1.8.0=h9cfc8f7_4
+  - libopenblas=0.2.20=h9ac9557_7
   - libstdcxx-ng=7.2.0=hdf63c60_3
-  - mkl=2018.0.2=1
-  - ncurses=6.1=hf484d3e_0
   - numpy=1.14.3=py36h28100ab_2
-  - numpy-base=1.14.3=py36hdbf6ddf_2
+  - numpy-base=1.14.3=py36h0ea5e3f_1
   - openssl=1.0.2o=h20670df_0
-  - py-boost=1.67.0=py36h04863e7_4
-  - python=3.6.6=hc3d631a_0
-  - readline=7.0=ha6073c6_4
-  - sqlite=3.24.0=h84994c4_0
-  - tk=8.6.7=hc745277_3
-  - xz=5.2.4=h14c3975_4
-  - zlib=1.2.11=ha838bed_2
-  - delly=0.7.8=hd37b1a0_2
+prefix: /projects/barthf/opt/miniconda3/envs/delly2
 

@@ -251,7 +251,7 @@ rule delly:
 
 rule lumpy:
     input:
-        expand("results/lumpy/call/{pair_id}.vcf.gz", pair_id=PAIRS_DICT.keys())
+        expand("results/lumpy/call/{pair_id}.dict.sorted.vcf.gz", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Fingerprinting pipeline

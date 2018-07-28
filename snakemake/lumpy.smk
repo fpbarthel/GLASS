@@ -4,12 +4,12 @@
 
 rule extractsplitter:
     input:
-        "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
-        unsorted = temp("results/lumpy/{aliquot_id}.realn.mdup.bqsr.splitters.unsorted.bam"),
-        sorted = "results/lumpy/{aliquot_id}.realn.mdup.bqsr.splitters.sorted.bam"
+        unsorted = temp("results/lumpy/split/{aliquot_id}.realn.mdup.bqsr.splitters.unsorted.bam"),
+        sorted = "results/lumpy/split/{aliquot_id}.realn.mdup.bqsr.splitters.sorted.bam"
     params:
-        prefix = "results/lumpy/{aliquot_id}",
+        prefix = "results/lumpy/split/{aliquot_id}",
         mem = CLUSTER_META["extractsplitter"]["mem"]
     threads:
         CLUSTER_META["extractsplitter"]["ppn"]
@@ -41,12 +41,12 @@ rule extractsplitter:
 
 rule extractdiscordant:
     input:
-        "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
-        unsorted = temp("results/lumpy/{aliquot_id}.realn.mdup.bqsr.discordant.unsorted.bam"),
-        sorted = "results/lumpy/{aliquot_id}.realn.mdup.bqsr.discordant.sorted.bam"
+        unsorted = temp("results/lumpy/discordant/{aliquot_id}.realn.mdup.bqsr.discordant.unsorted.bam"),
+        sorted = "results/lumpy/discordant/{aliquot_id}.realn.mdup.bqsr.discordant.sorted.bam"
     params:
-        prefix = "results/lumpy/{aliquot_id}",
+        prefix = "results/lumpy/discordant/{aliquot_id}",
         mem = CLUSTER_META["extractdiscordant"]["mem"]
     threads:
         CLUSTER_META["extractdiscordant"]["ppn"]
@@ -72,20 +72,24 @@ rule extractdiscordant:
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## LUMPY
+## Added HEXDUMP defintion because it was undefined for some reason
+## Added gatk UpdateVCFSequenceDictionary because bcftools index requires it
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule lumpy_call:
     input:
         tumor = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
         normal = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
-        discordant_tumor = lambda wildcards: "results/lumpy/{aliquot_id}.realn.mdup.bqsr.discordant.sorted.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        discordant_normal = lambda wildcards: "results/lumpy/{aliquot_id}.realn.mdup.bqsr.discordant.sorted.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
-        split_tumor = lambda wildcards: "results/lumpy/{aliquot_id}.realn.mdup.bqsr.splitters.sorted.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        split_normal = lambda wildcards: "results/lumpy/{aliquot_id}.realn.mdup.bqsr.splitters.sorted.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"])
+        discordant_tumor = lambda wildcards: "results/lumpy/discordant/{aliquot_id}.realn.mdup.bqsr.discordant.sorted.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
+        discordant_normal = lambda wildcards: "results/lumpy/discordant/{aliquot_id}.realn.mdup.bqsr.discordant.sorted.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
+        split_tumor = lambda wildcards: "results/lumpy/split/{aliquot_id}.realn.mdup.bqsr.splitters.sorted.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
+        split_normal = lambda wildcards: "results/lumpy/split/{aliquot_id}.realn.mdup.bqsr.splitters.sorted.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"])
     output:
-        vcf = "results/lumpy/call/{pair_id}.vcf.gz"
+        vcf = temp("results/lumpy/call/{pair_id}.dict.vcf.gz"),
+        vcfsorted = protected("results/lumpy/call/{pair_id}.dict.sorted.vcf.gz")
     params:
         vcftmp = "results/lumpy/call/{pair_id}.vcf",
+        vcftmpdict = "results/lumpy/call/{pair_id}.dict.vcf",
         mem = CLUSTER_META["lumpy_call"]["mem"]
     threads:
         CLUSTER_META["lumpy_call"]["ppn"]
@@ -99,13 +103,23 @@ rule lumpy_call:
         "Calling LUMPY on tumor/normal pair\n"
         "Pair: {wildcards.pair_id}"
     shell:
+        "export HEXDUMP=`which hexdump || true`; "
         "lumpyexpress \
             -B {input.tumor},{input.normal} \
             -S {input.split_tumor},{input.split_normal} \
             -D {input.discordant_tumor},{input.discordant_normal} \
+            -T {config[tempdir]}/{wildcards.pair_id} \
             -o {params.vcftmp} \
             > {log} 2>&1; "
-        "bgzip -i {params.vcftmp} && \
-            bftools index -t {output.vcf}"
+        "gatk --java-options -Xmx{params.mem}g UpdateVCFSequenceDictionary \
+            -V {params.vcftmp} \
+            --source-dictionary {config[reference_dict]} \
+            --replace true \
+            -O {params.vcftmpdict} \
+            >> {log} 2>&1; "
+        "bgzip -i {params.vcftmpdict} && \
+            bcftools sort -O z -o {output.vcfsorted} {output.vcf} && \
+            bcftools index -t {output.vcfsorted} \
+            >> {log} 2>&1"
 
 ## END ##
