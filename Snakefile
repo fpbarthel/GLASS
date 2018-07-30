@@ -260,7 +260,7 @@ rule lumpy:
 
 rule manta:
     input:
-        expand("results/manta/{pair_id}/somaticSV.vcf.gz", pair_id=PAIRS_DICT.keys())
+        expand("results/manta/{pair_id}/results/variants/somaticSV.vcf.gz", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Fingerprinting pipeline

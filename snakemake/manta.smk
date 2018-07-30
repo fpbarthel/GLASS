@@ -36,10 +36,10 @@ rule manta_execute:
         tumor = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
         normal = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"])
     output:
-        "results/manta/{pair_id}/diploidSV.vcf.gz",
-        "results/manta/{pair_id}/somaticSV.vcf.gz",
-        "results/manta/{pair_id}/candidateSV.vcf.gz",
-        "results/manta/{pair_id}/candidateSmallIndels.vcf.gz"
+        "results/manta/{pair_id}/results/variants/diploidSV.vcf.gz",
+        "results/manta/{pair_id}/results/variants/somaticSV.vcf.gz",
+        "results/manta/{pair_id}/results/variants/candidateSV.vcf.gz",
+        "results/manta/{pair_id}/results/variants/candidateSmallIndels.vcf.gz"
     params:
         mem = CLUSTER_META["manta_execute"]["mem"]
     threads:
@@ -57,4 +57,5 @@ rule manta_execute:
         "{input.script} \
             -m local \
             -j {threads} \
+            -g {params.mem} \
             > {log} 2>&1; "
