@@ -1,0 +1,27 @@
+name: manta
+channels:
+  - https://conda.anaconda.org/NLeSC
+  - bioconda
+  - r
+  - defaults
+  - conda-forge
+dependencies:
+  - manta=1.4.0=py27_1
+  - ca-certificates=2018.03.07=0
+  - certifi=2018.4.16=py27_0
+  - libedit=3.1.20170329=h6b74fdf_2
+  - libffi=3.2.1=hd88cf55_4
+  - libgcc-ng=7.2.0=hdf63c60_3
+  - libstdcxx-ng=7.2.0=hdf63c60_3
+  - ncurses=6.1=hf484d3e_0
+  - openssl=1.0.2o=h20670df_0
+  - pip=10.0.1=py27_0
+  - python=2.7.15=h1571d57_0
+  - readline=7.0=ha6073c6_4
+  - setuptools=39.2.0=py27_0
+  - sqlite=3.24.0=h84994c4_0
+  - tk=8.6.7=hc745277_3
+  - wheel=0.31.1=py27_0
+  - zlib=1.2.11=ha838bed_2
+prefix: /projects/barthf/opt/miniconda3/envs/manta
+

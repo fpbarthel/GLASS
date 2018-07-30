@@ -176,6 +176,7 @@ include: "snakemake/cnv-gatk.smk"
 include: "snakemake/varscan2.smk"
 include: "snakemake/fingerprinting.smk"
 include: "snakemake/delly.smk"
+include: "snakemake/manta.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
@@ -238,7 +239,7 @@ rule cnv:
         expand("results/cnv/plotcr/{aliquot_id}/{aliquot_id}.denoised.png", aliquot_id=ALIQUOT_TO_READGROUP.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Call SV using delly
+## Call SV using Delly
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule delly:
@@ -246,12 +247,20 @@ rule delly:
         expand("results/delly/call/{pair_id}.vcf.gz", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Call SV using lumpy
+## Call SV using LUMPY-SV
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule lumpy:
     input:
         expand("results/lumpy/call/{pair_id}.dict.sorted.vcf.gz", pair_id=PAIRS_DICT.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Call SV using Manta
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule manta:
+    input:
+        expand("results/manta/{pair_id}/somaticSV.vcf.gz", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Fingerprinting pipeline
