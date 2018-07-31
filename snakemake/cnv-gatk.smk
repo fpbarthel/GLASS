@@ -5,7 +5,7 @@
 
 rule collectreadcounts:
     input:
-        "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
         "results/cnv/readcounts/{batch}/{aliquot_id}.counts.hdf5"
     params:
@@ -136,7 +136,7 @@ rule plotcr:
 
 rule collectalleliccounts:
     input:
-        "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
         "results/cnv/alleliccounts/{aliquot_id}.allelicCounts.tsv"
     params:

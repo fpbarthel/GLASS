@@ -11,7 +11,7 @@
 
 rule callpon:
     input:
-        bam = "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam",
+        bam = "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam",
         intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
     output:
         temp("results/mutect2/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf")
@@ -126,8 +126,8 @@ rule createpon:
 
 rule callsnv:
     input:
-        tumor = lambda wildcards: "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        normal = lambda wildcards: "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
+        tumor = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
+        normal = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
         pon = lambda wildcards: "results/mutect2/pon/{batch}.pon.vcf".format(batch=PAIRS_DICT[wildcards.pair_id]["project_id"]),
         intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
     output:
@@ -209,7 +209,7 @@ rule mergesnv:
 
 rule pileupsummaries:
     input:
-        "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
         "results/mutect2/pileupsummaries/{aliquot_id}.pileupsummaries.txt"
     params:
@@ -300,7 +300,7 @@ rule filtermutect:
 
 rule collectartifacts:
     input:
-        "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
         "results/mutect2/artifacts/{aliquot_id}.pre_adapter_detail_metrics.txt"
     params:

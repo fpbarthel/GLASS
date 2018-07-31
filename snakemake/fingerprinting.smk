@@ -9,7 +9,7 @@
 
 rule fingerprintsample:
     input:
-        "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
         "results/fingerprinting/sample/{aliquot_id}.crosscheck_metrics"
     params:
@@ -42,7 +42,7 @@ rule fingerprintsample:
 
 rule fingerprintcase:
     input:
-        lambda wildcards: expand("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = CASE_TO_ALIQUOT[wildcards.case_id])
+        lambda wildcards: expand("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = CASE_TO_ALIQUOT[wildcards.case_id])
     output:
         "results/fingerprinting/case/{case_id}.crosscheck_metrics"
     params:
@@ -76,7 +76,7 @@ rule fingerprintcase:
 
 rule fingerprintbatch:
     input:
-        lambda wildcards: expand("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = BATCH_TO_ALIQUOT[wildcards.batch])
+        lambda wildcards: expand("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = BATCH_TO_ALIQUOT[wildcards.batch])
     output:
         "results/fingerprinting/batch/{batch}.crosscheck_metrics"
     params:
@@ -111,7 +111,7 @@ rule fingerprintbatch:
 
 rule fingerprintcohort:
     input:
-        lambda wildcards: expand("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = ALIQUOT_TO_READGROUP.keys())
+        lambda wildcards: expand("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = ALIQUOT_TO_READGROUP.keys())
     output:
         "results/fingerprinting/GLASS-WG.crosscheck_metrics"
     params:

@@ -5,7 +5,7 @@
 
 rule cnvnator_tree:
     input:
-        "results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
         "results/cnvnator/tree/{aliquot_id}.root"
     params:

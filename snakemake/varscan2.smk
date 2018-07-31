@@ -16,8 +16,8 @@ SNV_TYPES = ["snp","indel"]
 
 rule varscan:
     input:
-        tumor = lambda wildcards: ancient("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"])),
-        normal = lambda wildcards: ancient("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"])),
+        tumor = lambda wildcards: ancient("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"])),
+        normal = lambda wildcards: ancient("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"])),
         intervalbed = lambda wildcards: "{dir}/{interval}/scattered.bed".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
     output:
         temp("results/varscan2/vs2-scatter/{pair_id}.{interval}.snp.vcf"),
@@ -220,7 +220,7 @@ rule somaticfilter:
 rule bamreadcount:
     input:
         vcf = "results/varscan2/vs2-filter/{pair_id}.{type}.Somatic.hc.filter.vcf",
-        bam = lambda wildcards: ancient("results/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]))
+        bam = lambda wildcards: ancient("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]))
     output:
         temp("results/varscan2/bam-readcount/{pair_id}.{type}.readcounts")
     params:

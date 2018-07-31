@@ -183,7 +183,7 @@ include: "snakemake/manta.smk"
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule all:
-    input: "results/qc/multiqc/multiqc_report.html"
+    input: "results/align/qc/multiqc/multiqc_report.html"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Alignment rule
@@ -206,7 +206,7 @@ rule download_only:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule mt2:
-    input: expand("results/mutect2/vep/{pair_id}.filtered2.anno.maf", pair_id=PAIRS_DICT.keys())
+    input: expand("results/mutect2/m2filter/{pair_id}.filtered2.vcf", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SNV rule (VarScan2)
