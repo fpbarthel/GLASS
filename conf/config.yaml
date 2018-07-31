@@ -34,7 +34,9 @@ wgs_scatterdir:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/sca
 cnv_intervals:    "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.interval_list"
 
 ## SV mask
-svmask:           "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svmask.json"
+svmask_lumpy:     "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svmask_lumpy.bed"
+svmask_delly:     "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svmask_delly.bed"
+svinclude_manta:  "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svinclude_manta.bed.gz"
 
 ## CNV common SNPs
 cnv_common_snp:   "/projects/verhaak-lab/verhaak_ref/gatk-cnv/af-only-gnomad.raw.sites.b37.selected.vcf.gz"

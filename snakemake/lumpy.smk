@@ -109,6 +109,7 @@ rule lumpy_call:
             -S {input.split_tumor},{input.split_normal} \
             -D {input.discordant_tumor},{input.discordant_normal} \
             -T {config[tempdir]}/{wildcards.pair_id} \
+            -x {config[svmask_lumpy]} \
             -o {params.vcftmp} \
             > {log} 2>&1; "
         "gatk --java-options -Xmx{params.mem}g UpdateVCFSequenceDictionary \

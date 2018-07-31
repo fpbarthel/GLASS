@@ -26,6 +26,7 @@ rule manta_config:
         "configManta.py \
             --normalBam {input.normal} \
             --tumorBam {input.tumor} \
+            --callRegions {config[svinclude_manta]} \
             --referenceFasta {config[reference_fasta]} \
             --runDir {params.rundir} \
             > {log} 2>&1; "
