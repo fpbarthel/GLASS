@@ -1,0 +1,14 @@
+name: telseq
+channels:
+  - bioconda
+  - r
+  - defaults
+  - conda-forge
+dependencies:
+  - bamtools=2.4.1=1
+  - telseq=0.0.1=hbed2392_1
+  - libgcc=7.2.0=h69d50b8_2
+  - libgcc-ng=7.2.0=hdf63c60_3
+  - libstdcxx-ng=7.2.0=hdf63c60_3
+  - zlib=1.2.11=ha838bed_2
+
