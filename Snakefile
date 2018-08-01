@@ -254,7 +254,8 @@ rule delly:
 
 rule lumpy:
     input:
-        expand("results/lumpy/call/{pair_id}.dict.sorted.vcf.gz", pair_id=PAIRS_DICT.keys())
+        expand("results/lumpy/call/{pair_id}.dict.sorted.vcf.gz", pair_id=PAIRS_DICT.keys()),
+        expand("results/lumpy/svtyper/{pair_id}.dict.sorted.svtyper.vcf.gz", pair_id=PAIRS_DICT.keys()),
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SV using Manta

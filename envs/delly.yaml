@@ -37,5 +37,4 @@ dependencies:
   - numpy=1.14.3=py36h28100ab_2
   - numpy-base=1.14.3=py36h0ea5e3f_1
   - openssl=1.0.2o=h20670df_0
-prefix: /projects/barthf/opt/miniconda3/envs/delly2
 

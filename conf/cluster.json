@@ -410,6 +410,15 @@
         "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
         "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
+    "svtyper_run" :
+    {
+        "ppn" : 8,
+        "mem" : 48,
+        "walltime" : "70:00:00",
+        "name" : "{rule}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
     "manta_config" :
     {
         "ppn" : 1,

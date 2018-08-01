@@ -123,4 +123,39 @@ rule lumpy_call:
             bcftools index -t {output.vcfsorted} \
             >> {log} 2>&1"
 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## SVTyper
+## Call genotypes using SVTyper
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule svtyper_run:
+    input:
+        bam = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
+        vcf = "results/lumpy/call/{pair_id}.dict.sorted.vcf.gz"
+    output:
+        vcf = "results/lumpy/svtyper/{pair_id}.dict.sorted.svtyper.vcf.gz",
+        stats = "results/lumpy/svtyper/{pair_id}.svtyper.json"
+    params:
+        mem = CLUSTER_META["svtyper_run"]["mem"]
+    threads:
+        CLUSTER_META["svtyper_run"]["ppn"]
+    conda:
+        "../envs/lumpy-sv.yaml"
+    log:
+        "logs/lumpy/svtyper/{pair_id}.log"
+    benchmark:
+        "benchmarks/lumpy/svtyper/{pair_id}.txt"
+    message:
+        "Calling genotypes using SVTyper\n"
+        "Pair: {wildcards.pair_id}"
+    shell:
+        "svtyper-sso \
+            --core {threads} \
+            --batch_size \
+            --max_reads \
+            -i {input.vcf} \
+            -B {input.bam} \
+            -l {output.stats} \
+            2> {log} 1> {output.vcf}"
+
 ## END ##

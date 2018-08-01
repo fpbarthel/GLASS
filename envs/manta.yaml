@@ -1,6 +1,5 @@
 name: manta
 channels:
-  - https://conda.anaconda.org/NLeSC
   - bioconda
   - r
   - defaults
@@ -23,5 +22,4 @@ dependencies:
   - tk=8.6.7=hc745277_3
   - wheel=0.31.1=py27_0
   - zlib=1.2.11=ha838bed_2
-prefix: /projects/barthf/opt/miniconda3/envs/manta
 
