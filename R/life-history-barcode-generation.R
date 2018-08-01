@@ -1,6 +1,6 @@
 #######################################################
 # To create sample barcodes for glioma life history
-# Date: 2018.05.30
+# Date: 2018.08.01
 # Author: Kevin J
 #######################################################
 
@@ -8,14 +8,34 @@
 ###   WARNING: Incomplete. Need MDACC Sample Type Info   ###
 ############################################################
 
-setwd("/Users/johnsk/Documents/Life-History/GLASS-WG/")
+# Local directory for github repo.
+mybasedir = "/Users/johnsk/Documents/Life-History/GLASS-WG"
+setwd(mybasedir)
 
-HongKong_path = "data/sequencing-information/HK/hong-kong-sample-maps.txt"
-MDA_master_path = "data/clinical-data/MDACC/MDA-Clinical-Dataset/Master Log for WGS_26Apr2018wData.xlsx"
-TCGA_path = "data/clinical-data/TCGA/LGG-GBM-samples.tsv"
-RV_JDG_path = "data/clinical-data/Roel-JDG/Roel_JDG-original_bam_map.txt"
-hGBM_path = "data/clinical-data/HF/HGBM-original_bam_map.txt"
-TSS_path = "data/sequencing-information/tissueSourceSite.txt"
+# Hong Kong samples sequenced by Novogene.
+hong_kong_path = "data/sequencing-information/HK/hong-kong-sample-maps.txt"
+# TCGA LGG and GBM datasets.
+tcga_path = "data/clinical-data/TCGA/LGG-GBM-samples.tsv"
+# Low-pass whole genome sequencing for MD Anderson samples.
+rv_jdg_path = "data/clinical-data/Roel-JDG/Roel_JDG-original_bam_map.txt"
+# One sample from the Henry Ford data set.
+hgbm_path = "data/clinical-data/HF/HGBM-original_bam_map.txt"
+# Different tissue source sites.
+tss_path = "data/sequencing-information/tissueSourceSite.txt"
+
+# MDA: Files with information about fastq information and barcodes.
+# Actual fastq files are stored: /fastscratch/johnsk/GLASS-WG/mdacc/
+mda_batch1_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch1_n14_20180405.tsv"
+mda_batch2_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch2_n94_20180603.tsv"
+mda_batch3_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch2_n13_20180716.tsv"
+
+# Clinical dataset priovided by Kristin Alfaro-Munoz at MD Anderson.
+# Modified to generate a sample_type (TP, R1, R2, R3) using the clinical information. See github issue #16.
+mda_master_path = "data/clinical-data/MDACC/MDA-Clinical-Dataset/Master Log for WGS_sampletype.20180630.xlsx"
+
+# 2018.07.06 Katie Shao (Novogene) provided the following sheet linking libraryID with submitted sample names in the email:
+# "Re:RE: Novogene Project Report - Confirm -C202SC18030593-Davis-MDACC-156-libseq-hWGS-WOBI-NVUS2018022505[J1-C202SC18030593-1000]"
+novogene_sample_path = "data/sequencing-information/MDACC/Novogene_SIF_14.xlsx"
 
 #######################################################
 
@@ -26,11 +46,10 @@ library(stringi)
 
 #######################################################
 # Inspect how each cohort currently barcodes each file. 
-HK_df = read.table(HongKong_path, header=T)
-MDA_df = readWorkbook(MDA_master_path, sheet = 2, startRow = 1, colNames = TRUE)
-TCGA_df = read_tsv(TCGA_path)
-RV_JDG_df = read_tsv(RV_JDG_path)
-hGBM_df = read_tsv(hGBM_path)
+HK_df = read.table(hong_kong_path, header=T)
+TCGA_df = read_tsv(tcga_path)
+RV_JDG_df = read_tsv(rv_jdg_path)
+hGBM_df = read_tsv(hgbm_path)
 
 # The sample-specific barcode should include the following:
 # Project (TCGA/GLSS), Tissue Source Site (##), Subject Code (4), Sample Code (8), Tissue Code (01/02/10)
@@ -54,37 +73,78 @@ HongKong_sample_map = HK_df %>%
   mutate(TissueCode = recode_factor(Sample_Type, "Blood" = "NB", "Primary" = "TP", "Recurrence" = "R1")) %>%
   unite(Barcode, SeqID:TissueCode, sep = "-", remove = FALSE)
 
-# MD Anderson:
-glimpse(MDA_df)
 
-# Generate a sample type column.
-MDA_df$Sample_Type <- "NA"
-MDA_df$Sample_Type[MDA_df$`Order.of.Sx-1`=="first"] <- "first_surgery"
-MDA_df$Sample_Type[MDA_df$`Order.of.Sx-2`=="second"] <- "second_surgery"
-MDA_df$Sample_Type[MDA_df$`Order.of.Sx-3`=="third"] <- "third_surgery"
-MDA_df$Sample_Type[MDA_df$`Order.of.Sx-4`=="fourth"] <- "fourth_surgery"
+### MDA (Novogene cohort) barcode generation ####
+# Novogene has processed 120 samples. In our master sheet normal blood samples were not provided. We need them for barcodes.
+# Inspect both batch1 and batch2 sequencing data for 
+mda_batch1_df <- read.table(mda_batch1_file_path, col.names="file_path", stringsAsFactors = F)
+mda_batch1_df$filename = sapply(strsplit(mda_batch1_df$file_path, "/"), "[[", 8)
+mda_batch2_df <- read.table(mda_batch2_file_path, col.names="file_path", stringsAsFactors = F)
+mda_batch2_df$filename = sapply(strsplit(mda_batch2_df$file_path, "/"), "[[", 3)
+mda_batch3_df <- read.table(mda_batch3_file_path, col.names="file_path", stringsAsFactors = F)
+mda_batch3_df$filename = sapply(strsplit(mda_batch3_df$file_path, "/"), "[[", 3)
 
+# Replace the placeholder for pwd "./" from unix cmd: "find -name ".fq.gz" in parent directory of fastqs. 
+mda_batch1_df$file_path <- gsub("\\./RAW/20180405/128.120.88.242/C202SC18030593/raw_data/", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch1_n14_20180405/", mda_batch1_df$file_path)
+mda_batch2_df$file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/", mda_batch2_df$file_path)
+mda_batch3_df$file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch2_n13_20180716", mda_batch3_df$file_path)
 
+# Create an old sample.id for these subjects to be linked. No longer necessary, but kept in case it's helpful.
+mda_batch1_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch1_df$filename)
+mda_batch2_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch2_df$filename)
+mda_batch3_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch3_df$filename)
 
+# Combine these three sequencing data sets. There should be 552 files.
+mda_df <- bind_rows(mda_batch1_df, mda_batch2_df, mda_batch3_df)
 
+# Katie Shao (Novogene provided).
+novogene_linker = readWorkbook(novogene_sample_path, sheet = 1, startRow = 18, colNames = TRUE)
+novogene_linker_unique <- novogene_linker[1:121, ]
 
-# Simplify the SAMPLE identifier to 8-digits.
-MDA_df$New_Sample_ID = gsub("S", "", (gsub("-", "", MDA_df$mdacc_sx_acc)))
-# Extract the 4-digit SUBJECT identifier.
-MDA_df$SubjectID = sapply(strsplit(MDA_df$Jax.Lib.Prep.Customer.Sample.Name, "-"), "[", 3)
-# We still don't have any information about which samples are primary, recurrent, or blood.
+# Retrieve only the blood samples ("10D"). Blood samples not contained in master sheet.
+normal_blood_samples = novogene_linker_unique[grep("[b|B]lood", novogene_linker_unique$`*SampleName`), ]
 
-# Create a new MD Anderson to map the old to new sample names.
-MDA_sample_map = MDA_df %>% 
+# Retrieve the subject ID in same format as tumor samples.
+normal_blood_samples$SubjectID = sapply(strsplit(normal_blood_samples$`*SampleName`, "-"), "[", 3)
+
+# Create a barcode for available blood samples (n=33).
+mda_normal_blood_map <- normal_blood_samples %>% 
   mutate(SeqID = "GLSS") %>% 
   mutate(TSS = "MD") %>% 
   rename(SubjectCode = SubjectID) %>% 
-  rename(SampleCode = New_Sample_ID) %>%
-  mutate(TissueCode = "??") %>%
-  unite(Barcode, c(SeqID, TSS, SubjectCode, TissueCode), sep = "-", remove = FALSE)
+  mutate(TissueCode = "NB") %>% 
+  mutate(Original_ID = `*SampleName`) %>%   
+  unite(Barcode, c(SeqID, TSS, SubjectCode, TissueCode), sep = "-", remove = FALSE) %>% 
+  select(Original_ID, Barcode, SeqID, TSS, SubjectCode, TissueCode) %>% 
+  distinct()
 
-# TCGA:
-glimpse(TCGA_df) # TCGA - 0# - [:alnum:]{4} -
+### Use master sheet containing tumor sample information, necessary to build barcodes.####
+# Kristin Alfaro-Munoz kindly pointed me to the sequencing identifier link to these samples. 
+mda_master = readWorkbook(mda_master_path, sheet = 2, startRow = 1, colNames = TRUE)
+
+# The master sheet from MDA only contains normal samples. Sum should equal 81 (tumor samples).
+sum(novogene_linker_unique$'*SampleName'%in%mda_master$Jax.Lib.Prep.Customer.Sample.Name)
+
+# Extract the 4-digit SUBJECT identifier.
+mda_master$SubjectID = sapply(strsplit(mda_master$Jax.Lib.Prep.Customer.Sample.Name, "-"), "[", 3)
+
+# Create a new MD Anderson to map the old to new sample names.
+mda_tumor_sample_map = mda_master[1:81,] %>% 
+  mutate(SeqID = "GLSS") %>% 
+  mutate(TSS = "MD") %>% 
+  rename(SubjectCode = SubjectID) %>% 
+  rename(TissueCode = sample_type) %>% 
+  mutate(Original_ID = Jax.Lib.Prep.Customer.Sample.Name) %>% 
+  unite(Barcode, c(SeqID, TSS, SubjectCode, TissueCode), sep = "-", remove = FALSE) %>% 
+  select(Original_ID, Barcode, SeqID, TSS, SubjectCode, TissueCode)
+
+# Combine all tumor and normal samples together.
+MDA_all_samples_map <- bind_rows(mda_normal_blood_map, mda_tumor_sample_map)
+
+
+
+##### TCGA ####
+glimpse(TCGA_df) 
 # TCGA tissue source sites.
 unique(sapply(strsplit(TCGA_df$aliquot_id, "-"), "[", 2))
 
@@ -96,7 +156,7 @@ TCGA_sample_map = TCGA_df %>%
   mutate(TissueCode = recode_factor(substring(aliquot_id, 14, 16), "01A" = "TP", "01B" = "TP", "02A" = "R1", "02B" = "R2", "10A" = "NB", "10B" = "NB", "10D" = "NB")) %>% 
 unite(Barcode, c(SeqID, TSS, SubjectCode, TissueCode), sep = "-", remove = FALSE)
   
-# RV-JDG:
+##### RV-JDG ####
 # This dataset contains more samples, including some unmatched recurrences. 
 glimpse(RV_JDG_df)   
 
@@ -119,7 +179,7 @@ RVJDG_sample_map = RV_JDG_df %>%
   unite(Barcode, c(SeqID, TSS, SubjectCode, TissueCode), sep = "-", remove = TRUE) %>% 
   ungroup()
 
-# HGBM:
+##### HGBM ####
 glimpse(hGBM_df)
 
 # Create a new RVJDG sample map to connect with the old sample names.
@@ -135,13 +195,14 @@ HGBM_sample_map = hGBM_df %>%
 # Combine 5 datasets into master table with each linker
 #############################################
 HongKong_merge = HongKong_sample_map %>% select(Verhaak_Sample_ID, Barcode) %>% rename(Original_ID = Verhaak_Sample_ID)
-MDA_merge = MDA_sample_map %>%  select(Jax.Lib.Prep.Customer.Sample.Name, Barcode)  %>% rename(Original_ID = Jax.Lib.Prep.Customer.Sample.Name)
+MDA_tumor_merge = MDA_all_samples_map %>% filter(TissueCode!="NB") %>% select(Original_ID, Barcode) %>% filter()
 TCGA_merge = TCGA_sample_map %>%  select(aliquot_id, Barcode)  %>% rename(Original_ID = aliquot_id)
 HGBM_merge = HGBM_sample_map %>%  select(samplename, Barcode)  %>% rename(Original_ID = samplename)
 RVJDG_merge = RVJDG_sample_map %>%  select(samplename, Barcode)  %>% rename(Original_ID = samplename)
+MDA_normal_merge = MDA_all_samples_map %>% filter(TissueCode=="NB") %>% select(Original_ID, Barcode) 
 
 # Combine all 5 cohorts into one master table. 
-LifeHistory_barcodes = bind_rows(HongKong_merge, MDA_merge, TCGA_merge, HGBM_merge, RVJDG_merge)
+LifeHistory_barcodes = bind_rows(HongKong_merge, MDA_tumor_merge, TCGA_merge, HGBM_merge, RVJDG_merge, MDA_normal_merge)
 
 ## Addition of random string to use as a shortened identifier.
 # Create a random string identifier for each SAMPLE in the Life History study.
@@ -160,12 +221,12 @@ Final_Life_History = Life_history_all_samples %>%
   separate(Barcode, c("ProjectID", "TissueSourceSite", "SubjectID", "TissueType"), remove = FALSE)
 
 # Write file to be uploaded to GLASS-WG github page.
-write.table(Final_Life_History, file='data/sequencing-information/master_life_history_uniform_naming_incomplete.txt', quote=FALSE, sep='\t', row.names = F)
+write.table(Final_Life_History, file='data/sequencing-information/master_life_history_uniform_naming_complete.txt', quote=FALSE, sep='\t', row.names = F)
 
 
 ### Create dictionaries for different tissue centers.
 # Subset list of TissueSourceSites from TCGA plus add new rows for other datasets.
-TSS_info = read_tsv(TSS_path)
+TSS_info = read_tsv(tss_path)
 
 # Retrieve list of TissueSourceSites for future use.
 TCGA_TSS = unique(TCGA_sample_map$TSS)
@@ -187,7 +248,7 @@ TissuSourceSite_dict = bind_rows(TSS_TCGA_filtered, TSS_GLASS)
 write.table(TissuSourceSite_dict, file='data/sequencing-information/life-history-tissue-source-sites.txt', quote=FALSE, sep='\t', row.names = F)
 
 # Create sample type dictionary. 
-SampleType_dict = data.frame(Code   = c("NB", "TP", "R1", "R2"),
-                       Definition  = c("Blood Derived Normal", "Primary Tumor", "First Recurrence Tumor", "Second Recurrence Tumor"))
+SampleType_dict = data.frame(Code   = c("NB", "TP", "R1", "R2", "R3"),
+                       Definition  = c("Blood Derived Normal", "Primary Tumor", "First Recurrence Tumor", "Second Recurrence Tumor", "Third Reccurence Tumor"))
 write.table(SampleType_dict, file='data/sequencing-information/life-history-sample-type-dict.txt', quote=FALSE, sep='\t', row.names = F)
 
