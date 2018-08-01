@@ -12,6 +12,8 @@ rule download:
         "Downloading from GDC\n"
         "UUID {wildcards.uuid}\n"
         "File {wildcards.filename}"
+    conda:
+        "../envs/gdc-client.yaml"
     log:
         "logs/download/{uuid}.{filename}.log"
     benchmark:

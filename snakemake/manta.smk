@@ -14,7 +14,7 @@ rule manta_config:
     threads:
         CLUSTER_META["manta_config"]["ppn"]
     conda:
-        "envs/manta.yaml"
+        "../envs/manta.yaml"
     log:
         "logs/manta/config/{pair_id}.log"
     benchmark:
@@ -46,7 +46,7 @@ rule manta_execute:
     threads:
         CLUSTER_META["manta_execute"]["ppn"]
     conda:
-        "envs/manta.yaml"
+        "../envs/manta.yaml"
     log:
         "logs/manta/execute/{pair_id}.log"
     benchmark:
@@ -60,3 +60,5 @@ rule manta_execute:
             -j {threads} \
             -g {params.mem} \
             > {log} 2>&1; "
+
+## END ##

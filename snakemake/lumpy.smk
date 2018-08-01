@@ -14,7 +14,7 @@ rule extractsplitter:
     threads:
         CLUSTER_META["extractsplitter"]["ppn"]
     conda:
-        "envs/lumpy-sv.yaml"
+        "../envs/lumpy-sv.yaml"
     log:
         "logs/extractsplitter/{aliquot_id}.log"
     benchmark:
@@ -51,7 +51,7 @@ rule extractdiscordant:
     threads:
         CLUSTER_META["extractdiscordant"]["ppn"]
     conda:
-        "envs/lumpy-sv.yaml"
+        "../envs/lumpy-sv.yaml"
     log:
         "logs/extractdiscordant/{aliquot_id}.log"
     benchmark:
@@ -94,7 +94,7 @@ rule lumpy_call:
     threads:
         CLUSTER_META["lumpy_call"]["ppn"]
     conda:
-        "envs/lumpy-sv.yaml"
+        "../envs/lumpy-sv.yaml"
     log:
         "logs/lumpy/call/{pair_id}.log"
     benchmark:

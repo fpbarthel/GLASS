@@ -177,6 +177,8 @@ include: "snakemake/varscan2.smk"
 include: "snakemake/fingerprinting.smk"
 include: "snakemake/delly.smk"
 include: "snakemake/manta.smk"
+include: "snakemake/cnvnator.smk"
+include: "snakemake/telseq.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Master rule
@@ -263,6 +265,14 @@ rule manta:
         expand("results/manta/{pair_id}/results/variants/somaticSV.vcf.gz", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Call CNV using Manta
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule cnvnator:
+    input:
+        expand("results/cnvnator/vcf/{aliquot_id}.call.vcf", aliquot_id=ALIQUOT_TO_READGROUP.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SVs using all callers
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
@@ -271,6 +281,14 @@ rule svdetect:
         expand("results/lumpy/call/{pair_id}.dict.sorted.vcf.gz", pair_id=PAIRS_DICT.keys()),
         expand("results/delly/call/{pair_id}.vcf.gz", pair_id=PAIRS_DICT.keys()),
         expand("results/manta/{pair_id}/results/variants/somaticSV.vcf.gz", pair_id=PAIRS_DICT.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Estimate TL using telseq
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule telseq:
+    input:
+        expand("results/telseq/{aliquot_id}.telseq.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Fingerprinting pipeline

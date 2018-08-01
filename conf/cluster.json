@@ -427,5 +427,47 @@
         "name" : "{rule}",
         "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
         "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
+    "cnvnator_tree" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
+    },
+    "cnvnator_his" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
+    },
+    "cnvnator_stat" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
+    },
+    "cnvnator_partition" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
+    },
+    "cnvnator_call" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
+    },
+    "cnvnator2vcf" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
+    },
+    "telseq_run" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
     }
 }

@@ -38,6 +38,14 @@ svmask_lumpy:     "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svmask
 svmask_delly:     "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svmask_delly.bed"
 svinclude_manta:  "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svinclude_manta.bed.gz"
 
+## CNVnator
+cnvnator_binsize: 1000
+cnvnator_chrom:   "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y"
+cnvnator_refdir:  "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/human_g1k_v37_decoy"
+
+## Telseq
+telseq_r:         120 
+
 ## CNV common SNPs
 cnv_common_snp:   "/projects/verhaak-lab/verhaak_ref/gatk-cnv/af-only-gnomad.raw.sites.b37.selected.vcf.gz"
 

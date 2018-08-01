@@ -15,7 +15,7 @@ rule delly_call:
     threads:
         CLUSTER_META["delly_call"]["ppn"]
     conda:
-        "envs/delly.yaml"
+        "../envs/delly.yaml"
     log:
         "logs/delly/call/{pair_id}.log"
     benchmark:
