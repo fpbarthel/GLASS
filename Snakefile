@@ -263,6 +263,16 @@ rule manta:
         expand("results/manta/{pair_id}/results/variants/somaticSV.vcf.gz", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Call SVs using all callers
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule svdetect:
+    input:
+        expand("results/lumpy/call/{pair_id}.dict.sorted.vcf.gz", pair_id=PAIRS_DICT.keys()),
+        expand("results/delly/call/{pair_id}.vcf.gz", pair_id=PAIRS_DICT.keys()),
+        expand("results/manta/{pair_id}/results/variants/somaticSV.vcf.gz", pair_id=PAIRS_DICT.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Fingerprinting pipeline
 ## Check sample and case fingerprints
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
