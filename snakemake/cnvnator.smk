@@ -56,10 +56,11 @@ rule cnvnator_his:
         "Generating a histogram\n"
         "Sample: {wildcards.aliquot_id}"
     shell:
-        "(cnvnator -root {input} \
+        "(rsync {input} {output} && \
+        	chmod 750 {output} && \
+        	cnvnator -root {output} \
             -his {config[cnvnator_binsize]} \
-            -d {config[cnvnator_refdir]} && \
-            rsync {input} {output}) \
+            -d {config[cnvnator_refdir]}) \
             > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -84,9 +85,9 @@ rule cnvnator_stat:
         "Calculating statistics\n"
         "Sample: {wildcards.aliquot_id}"
     shell:
-        "(cnvnator -root {input} \
-            -stat {config[cnvnator_binsize]} && \
-            rsync {input} {output}) \
+        "(rsync {input} {output} && \
+        	cnvnator -root {output} \
+            -stat {config[cnvnator_binsize]}) \
             > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -111,9 +112,9 @@ rule cnvnator_partition:
         "RD Signal Partitioning\n"
         "Sample: {wildcards.aliquot_id}"
     shell:
-        "(cnvnator -root {input} \
-            -partition {config[cnvnator_binsize]} && \
-            rsync {input} {output}) \
+        "(rsync {input} {output} && \
+        	cnvnator -root {output} \
+            -partition {config[cnvnator_binsize]}) \
             > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 

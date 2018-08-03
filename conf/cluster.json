@@ -401,6 +401,12 @@
         "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
         "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
+    "cnvnator_to_bedpe" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
+    },
     "lumpy_call" :
     {
         "ppn" : 2,

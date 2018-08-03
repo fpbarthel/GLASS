@@ -149,7 +149,10 @@ for pair in PAIRS:
 
 ALIQUOT_TO_READGROUP = {}
 ALIQUOT_TO_FQ_PATH = {}
+ALIQUOT_TO_SM = {}
 for readgroup in READGROUPS:
+    if readgroup["aliquot_id"] not in ALIQUOT_TO_SM:
+        ALIQUOT_TO_SM[ readgroup["aliquot_id"] ] = readgroup["RGSM"]
     if readgroup["aliquot_id"] not in ALIQUOT_TO_READGROUP:
         ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ] = { readgroup["RGID"] : readgroup }
     else:
@@ -254,8 +257,7 @@ rule delly:
 
 rule lumpy:
     input:
-        expand("results/lumpy/call/{pair_id}.dict.sorted.vcf.gz", pair_id=PAIRS_DICT.keys()),
-        expand("results/lumpy/svtyper/{pair_id}.dict.sorted.svtyper.vcf.gz", pair_id=PAIRS_DICT.keys()),
+        expand("results/lumpy/svtyper/{pair_id}.dict.svtyper.vcf", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SV using Manta
@@ -304,5 +306,14 @@ rule fingerprint:
         "results/fingerprinting/GLASS-WG.crosscheck_metrics",
         expand("results/fingerprinting/batch/{batch}.clustered.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
         "results/fingerprinting/GLASS-WG.clustered.crosscheck_metrics"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Check coverage and validate BAM
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule coverage_validate:
+    input:
+        expand("results/align/qc/{aliquot_id}.WgsMetrics.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
+        expand("results/align/qc/{aliquot_id}.ValidateSamFile.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys())
 
 ## END ##
