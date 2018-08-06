@@ -25,6 +25,8 @@ rule varscan:
     params:
         mem = CLUSTER_META["varscan"]["mem"],
         outputprefix = "results/varscan2/vs2-scatter/{pair_id}.{interval}"
+    conda:
+        "../envs/varscan2.yaml"
     threads:
         CLUSTER_META["varscan"]["ppn"]
     log:
@@ -75,6 +77,8 @@ rule fixvs2header:
         indel2 = temp("results/varscan2/vs2-fixheader/{pair_id}.{interval}.indel.fixed.vcf")
     params:
         mem = CLUSTER_META["fixvs2header"]["mem"]
+    conda:
+        "../envs/varscan2.yaml"
     threads:
         CLUSTER_META["fixvs2header"]["ppn"]
     log:
@@ -158,6 +162,8 @@ rule processsomatic:
         somatic = temp("results/varscan2/vs2-processed/{pair_id}/{pair_id}.{type}.Somatic.vcf")
     params:
         mem = CLUSTER_META["processsomatic"]["mem"]
+     conda:
+        "../envs/varscan2.yaml"
     threads:
         CLUSTER_META["processsomatic"]["ppn"]
     log:
@@ -269,6 +275,8 @@ rule fpfilter:
         mem = CLUSTER_META["fpfilter"]["mem"]
     threads:
         CLUSTER_META["fpfilter"]["ppn"]
+    conda:
+        "../envs/varscan2.yaml"
     log:
         "logs/fpfilter/{pair_id}.{type}.log"
     benchmark:

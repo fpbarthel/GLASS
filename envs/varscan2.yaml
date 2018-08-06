@@ -1,0 +1,35 @@
+name: varscan2
+channels:
+  - bioconda
+  - r
+  - defaults
+  - conda-forge
+dependencies:
+  - bam-readcount=0.8=py36pl5.22.0_3
+  - samtools=1.7=1
+  - varscan=2.4.3=1
+  - libedit=3.1.20170329=0
+  - perl=5.22.0.1=0
+  - bzip2=1.0.6=h14c3975_5
+  - ca-certificates=2018.03.07=0
+  - certifi=2018.4.16=py36_0
+  - curl=7.61.0=h84994c4_0
+  - libcurl=7.61.0=h1ad7b7a_0
+  - libffi=3.2.1=hd88cf55_4
+  - libgcc=7.2.0=h69d50b8_2
+  - libgcc-ng=7.2.0=hdf63c60_3
+  - libssh2=1.8.0=h9cfc8f7_4
+  - libstdcxx-ng=7.2.0=hdf63c60_3
+  - ncurses=5.9=10
+  - openjdk=8.0.121=1
+  - openssl=1.0.2o=h14c3975_1
+  - pip=10.0.1=py36_0
+  - python=3.6.3=h1284df2_4
+  - readline=7.0=hb321a52_4
+  - setuptools=39.2.0=py36_0
+  - sqlite=3.24.0=h84994c4_0
+  - tk=8.6.7=hc745277_3
+  - wheel=0.31.1=py36_0
+  - xz=5.2.4=h14c3975_4
+  - zlib=1.2.11=ha838bed_2
+
