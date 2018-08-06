@@ -11,15 +11,14 @@
         "walltime" : "12:00:00",
         "mem" : 6,
         "queu" : "batch",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.aliquot_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.aliquot_id}.err",
-        "d" : "/fastscratch/barthf/GLASS-WG"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_id}.err"
     },
     "download" :
     {
         "name" : "{rule}.{wildcards.uuid}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.uuid}.err",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.uuid}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.uuid}.err",
         "ppn" : 6,
         "mem" : 12,
         "walltime" : "70:00:00"
@@ -93,8 +92,8 @@
     "multiqc" :
     {
         "name" : "{rule}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.err",
+        "stdout" : "logs/drmaa/{rule}.out",
+        "stderr" : "logs/drmaa/{rule}.err",
         "ppn" : 2,
         "walltime" : "70:00:00",
         "mem" : 12
@@ -113,8 +112,8 @@
     "createpon" :
     {
         "name" : "{rule}{wildcards.batch}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.err",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.batch}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.batch}.err",
         "ppn" : 2,
         "walltime" : "70:00:00",
         "mem" : 12
@@ -125,8 +124,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.err"
     },
     "mergesnv" :
     {
@@ -134,8 +133,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "pileupsummaries" :
     {
@@ -149,8 +148,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "filtermutect" :
     {
@@ -158,8 +157,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "collectartifacts" :
     {
@@ -173,8 +172,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "vep" :
     {
@@ -182,8 +181,8 @@
         "mem" : 24,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "extractsplitter" :
     {
@@ -209,8 +208,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}{wildcards.batch}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.batch}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.batch}.err"
     },
     "denoisereadcounts" :
     {
@@ -236,8 +235,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "callsegments" :
     {
@@ -245,8 +244,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "plotmodeledsegments" :
     {
@@ -254,8 +253,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "pileup" :
     {
@@ -269,8 +268,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.err"
     },
     "mergevarscan" :
     {
@@ -278,8 +277,8 @@
         "mem" : 12,
         "walltime" : "2:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "fixvs2header" :
     {
@@ -287,8 +286,8 @@
         "mem" : 12,
         "walltime" : "1:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.{wildcards.interval}.err"
     },
     "compressvarscan" :
     {
@@ -296,8 +295,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "processsomatic" :
     {
@@ -305,8 +304,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "somaticfilter" :
     {
@@ -314,8 +313,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "bamreadcount" :
     {
@@ -323,8 +322,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "fpfilter" :
     {
@@ -332,8 +331,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "mergevarscanfinal" :
     {
@@ -341,8 +340,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.pair_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "fingerprintsample" :
     {
@@ -350,8 +349,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.aliquot_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.aliquot_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.aliquot_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_id}.err"
     },
     "fingerprintcase" :
     {
@@ -359,8 +358,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.case_id}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.case_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.case_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_id}.err"
     },
     "fingerprintbatch" :
     {
@@ -368,8 +367,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.batch}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.batch}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.batch}.err"
     },
     "fingerprintcohort" :
     {
@@ -377,8 +376,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.err"
+        "stdout" : "logs/drmaa/{rule}.out",
+        "stderr" : "logs/drmaa/{rule}.err"
     },
     "clusterfingerprintbatch" :
     {
@@ -386,8 +385,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}.{wildcards.batch}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.batch}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.batch}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.batch}.err"
     },
     "clusterfingerprintcohort" :
     {
@@ -395,8 +394,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.err"
+        "stdout" : "logs/drmaa/{rule}.out",
+        "stderr" : "logs/drmaa/{rule}.err"
     },
     "delly_call" :
     {
@@ -404,8 +403,8 @@
         "mem" : 12,
         "walltime" : "72:00:00",
         "name" : "{rule}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "cnvnator_to_bedpe" :
     {
@@ -419,8 +418,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "svtyper_run" :
     {
@@ -428,8 +427,8 @@
         "mem" : 48,
         "walltime" : "70:00:00",
         "name" : "{rule}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "lumpy_libstat" :
     {
@@ -437,8 +436,8 @@
         "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "manta_config" :
     {
@@ -446,8 +445,8 @@
         "mem" : 1,
         "walltime" : "1:00:00",
         "name" : "{rule}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "manta_execute" :
     {
@@ -455,8 +454,8 @@
         "mem" : 48,
         "walltime" : "70:00:00",
         "name" : "{rule}",
-        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
-        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
     "cnvnator_tree" :
     {
