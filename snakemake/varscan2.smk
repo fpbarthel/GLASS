@@ -162,7 +162,7 @@ rule processsomatic:
         somatic = temp("results/varscan2/vs2-processed/{pair_id}/{pair_id}.{type}.Somatic.vcf")
     params:
         mem = CLUSTER_META["processsomatic"]["mem"]
-     conda:
+    conda:
         "../envs/varscan2.yaml"
     threads:
         CLUSTER_META["processsomatic"]["ppn"]
