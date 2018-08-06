@@ -66,7 +66,7 @@ rule mergepon:
         "benchmarks/mutect2/mergepon/{batch}.{aliquot_id}.txt"
     message:
         "Merging VCF files (PON)\n"
-        "Batch: {batch}\n"
+        "Batch: {wildcards.batch}\n"
         "Sample: {wildcards.aliquot_id}"
     run:
         input_cat = " ".join(["-I " + s for s in input])
