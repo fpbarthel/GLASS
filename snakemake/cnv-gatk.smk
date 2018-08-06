@@ -14,6 +14,8 @@ rule collectreadcounts:
         CLUSTER_META["collectreadcounts"]["ppn"]
     log:
         "logs/cnv/readcounts/{batch}/{aliquot_id}.log"
+    conda:
+        "../envs/gatk4.yaml"
     benchmark:
         "benchmarks/cnv/readcounts/{batch}/{aliquot_id}.txt"
     message:
@@ -44,6 +46,8 @@ rule createcnvpon:
         CLUSTER_META["createcnvpon"]["ppn"]
     log:
         "logs/cnv/createcnvpon/{batch}.log"
+    conda:
+        "../envs/gatk4.yaml"
     benchmark:
         "benchmarks/cnv/createcnvpon/{batch}.txt"
     message:
@@ -73,6 +77,8 @@ rule denoisereadcounts:
         mem = CLUSTER_META["denoisereadcounts"]["mem"]
     threads:
         CLUSTER_META["denoisereadcounts"]["ppn"]
+    conda:
+        "../envs/gatk4.yaml"
     log:
         "logs/cnv/denoisereadcounts/{aliquot_id}.log"
     benchmark:
@@ -113,6 +119,8 @@ rule plotcr:
         CLUSTER_META["plotcr"]["ppn"]
     log:
         "logs/cnv/plotcr/{aliquot_id}.log"
+    conda:
+        "../envs/gatk4.yaml"
     benchmark:
         "benchmarks/cnv/plotcr/{aliquot_id}.txt"
     message:
@@ -145,6 +153,8 @@ rule collectalleliccounts:
         CLUSTER_META["collectalleliccounts"]["ppn"]
     log:
         "logs/cnv/alleliccounts/{aliquot_id}.log"
+    conda:
+        "../envs/gatk4.yaml"
     benchmark:
         "benchmarks/cnv/alleliccounts/{aliquot_id}.txt"
     message:
@@ -185,6 +195,8 @@ rule modelsegments:
         outputprefix = "{pair_id}"
     threads:
         CLUSTER_META["modelsegments"]["ppn"]
+    conda:
+        "../envs/gatk4.yaml"
     log:
         "logs/cnv/modelsegments/{pair_id}.log"
     benchmark:
@@ -216,6 +228,8 @@ rule callsegments:
         mem = CLUSTER_META["callsegments"]["mem"]
     threads:
         CLUSTER_META["callsegments"]["ppn"]
+    conda:
+        "../envs/gatk4.yaml"
     log:
         "logs/cnv/callsegments/{pair_id}.log"
     benchmark:
@@ -248,6 +262,8 @@ rule plotmodeledsegments:
         outputprefix = "{pair_id}"
     threads:
         CLUSTER_META["plotmodeledsegments"]["ppn"]
+    conda:
+        "../envs/gatk4.yaml"
     log:
         "logs/cnv/plotmodeledsegments/{pair_id}.log"
     benchmark:

@@ -184,13 +184,6 @@ include: "snakemake/cnvnator.smk"
 include: "snakemake/telseq.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Master rule
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule all:
-    input: "results/align/qc/multiqc/multiqc_report.html"
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Alignment rule
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
@@ -210,7 +203,11 @@ rule download_only:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule qc:
-    input: expand("results/align/fastqc/{aliquot_id}/{aliquot_id}.aligned_fastqc.html", aliquot_id=ALIQUOTS_DICT.keys())
+    input: 
+        "results/align/multiqc/multiqc_report.html",
+        expand("results/align/fastqc/{aliquot_id}/{aliquot_id}.aligned_fastqc.html", aliquot_id=ALIQUOTS_DICT.keys()),
+        expand("results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
+        expand("results/align/validatebam/{aliquot_id}.ValidateSamFile.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SNV rule
@@ -228,16 +225,6 @@ rule mt2:
 rule vs2:
     input:
         expand("results/varscan2/final/{pair_id}.somatic.hc.filtered.final.vcf.gz", pair_id=PAIRS_DICT.keys())
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## SV preprocessing rule
-## Run snakemake with target 'svprepare'
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule svprepare:
-    input:
-    	expand("results/lumpy/{aliquot_id}.realn.mdup.bqsr.splitters.sorted.bam", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
-    	expand("results/lumpy/{aliquot_id}.realn.mdup.bqsr.discordant.sorted.bam", aliquot_id=ALIQUOT_TO_READGROUP.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## CNV calling pipeline
@@ -315,14 +302,6 @@ rule fingerprint:
         "results/fingerprinting/GLASS-WG.crosscheck_metrics",
         expand("results/fingerprinting/batch/{batch}.clustered.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
         "results/fingerprinting/GLASS-WG.clustered.crosscheck_metrics"
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Check coverage and validate BAM
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule coverage_validate:
-    input:
-        expand("results/align/qc/{aliquot_id}.WgsMetrics.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
-        expand("results/align/qc/{aliquot_id}.ValidateSamFile.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys())
+       
 
 ## END ##

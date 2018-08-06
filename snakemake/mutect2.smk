@@ -18,7 +18,7 @@ rule callpon:
     params:
         mem = CLUSTER_META["callpon"]["mem"]
     conda:
-        "../envs/mutect2.yaml"
+        "../envs/gatk4.yaml"
     threads:
         CLUSTER_META["callpon"]["ppn"]
     log:
@@ -138,7 +138,7 @@ rule callsnv:
     params:
         mem = CLUSTER_META["callsnv"]["mem"]
     conda:
-        "../envs/mutect2.yaml"
+        "../envs/gatk4.yaml"
     threads:
         CLUSTER_META["callsnv"]["ppn"]
     log:
@@ -219,7 +219,7 @@ rule pileupsummaries:
     params:
         mem = CLUSTER_META["pileupsummaries"]["mem"]
     conda:
-        "../envs/mutect2.yaml"
+        "../envs/gatk4.yaml"
     threads:
         CLUSTER_META["pileupsummaries"]["ppn"]
     log:
@@ -258,7 +258,7 @@ rule calculatecontamination:
     threads:
         CLUSTER_META["calculatecontamination"]["ppn"]
     conda:
-        "../envs/mutect2.yaml"
+        "../envs/gatk4.yaml"
     log:
         "logs/mutect2/calculatecontamination/{pair_id}.log"
     benchmark:
@@ -288,7 +288,7 @@ rule filtermutect:
     threads:
         CLUSTER_META["filtermutect"]["ppn"]
     conda:
-        "../envs/mutect2.yaml"
+        "../envs/gatk4.yaml"
     log:
         "logs/mutect2/filtermutect/{pair_id}.log"
     benchmark:
@@ -319,7 +319,7 @@ rule collectartifacts:
     threads:
         CLUSTER_META["collectartifacts"]["ppn"]
     conda:
-        "../envs/mutect2.yaml"
+        "../envs/gatk4.yaml"
     log:
         "logs/mutect2/collectartifacts/{aliquot_id}.log"
     benchmark:
@@ -350,7 +350,7 @@ rule filterorientation:
     threads:
         CLUSTER_META["filterorientation"]["ppn"]
     conda:
-        "../envs/mutect2.yaml"
+        "../envs/gatk4.yaml"
     log:
         "logs/mutect2/filterorientation/{pair_id}.log"
     benchmark:

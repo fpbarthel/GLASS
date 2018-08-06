@@ -143,9 +143,9 @@ rule fastqc:
     input:
         "results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam"
     output:
-        "results/align/qc/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned_fastqc.html"
+        "results/align/fastqc/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned_fastqc.html"
     params:
-        dir = "results/qc/{aliquot_id}",
+        dir = "results/fastqc/{aliquot_id}",
         mem = CLUSTER_META["fastqc"]["mem"]
     conda:
         "../envs/align.yaml"
@@ -399,7 +399,7 @@ rule wgsmetrics:
     input:
         "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
-        "results/align/qc/{aliquot_id}.WgsMetrics.txt"
+        "results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt"
     params:
         mem = CLUSTER_META["wgsmetrics"]["mem"]
     threads:
@@ -435,7 +435,7 @@ rule validatebam:
     input:
         "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
     output:
-        "results/align/qc/{aliquot_id}.ValidateSamFile.txt"
+        "results/align/validatebam/{aliquot_id}.ValidateSamFile.txt"
     params:
         mem = CLUSTER_META["validatebam"]["mem"]
     threads:
@@ -468,15 +468,15 @@ rule validatebam:
 
 rule multiqc:
     input:
-        expand("results/align/qc/{sample}.ValidateSamFile.txt", sample=ALIQUOT_TO_RGID.keys()),
-        expand("results/align/qc/{sample}.WgsMetrics.txt", sample=ALIQUOT_TO_RGID.keys()),
-        lambda wildcards: ["results/align/qc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample=sample, rg=readgroup)
+        expand("results/align/validatebam/{sample}.ValidateSamFile.txt", sample=ALIQUOT_TO_RGID.keys()),
+        expand("results/align/wgsmetrics/{sample}.WgsMetrics.txt", sample=ALIQUOT_TO_RGID.keys()),
+        lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample=sample, rg=readgroup)
           for sample, readgroups in ALIQUOT_TO_RGID.items()
           for readgroup in readgroups] 
     output:
-        "results/align/qc/multiqc/multiqc_report.html"
+        "results/align/multiqc/multiqc_report.html"
     params:
-        dir = "results/align/qc/multiqc",
+        dir = "results/align/multiqc",
         mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
     threads:
         CLUSTER_META["multiqc"]["ppn"]
@@ -500,31 +500,31 @@ rule multiqc:
 ## URL: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule fastqc_bam:
-    input:
-        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
-    output:
-        "results/align/fastqc/{aliquot_id}/{aliquot_id}.aligned_fastqc.html"
-    params:
-        dir = "results/align/fastqc/{aliquot_id}",
-        mem = CLUSTER_META["fastqc_bam"]["mem"]
-    conda:
-        "../envs/align.yaml"
-    threads:
-        CLUSTER_META["fastqc_bam"]["ppn"]
-    log:
-        "logs/align/fastqc-bam/{aliquot_id}.log"
-    benchmark:
-        "benchmarks/align/fastqc-bam/{aliquot_id}.txt"
-    message:
-        "Running FASTQC\n"
-        "Sample: {wildcards.aliquot_id}"
-    shell:
-        "fastqc \
-            --extract \
-            -o {params.dir} \
-            -f bam \
-            {input} \
-            > {log} 2>&1"
+# rule fastqc_bam:
+#     input:
+#         "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+#     output:
+#         "results/align/fastqc/{aliquot_id}/{aliquot_id}.aligned_fastqc.html"
+#     params:
+#         dir = "results/align/fastqc/{aliquot_id}",
+#         mem = CLUSTER_META["fastqc_bam"]["mem"]
+#     conda:
+#         "../envs/align.yaml"
+#     threads:
+#         CLUSTER_META["fastqc_bam"]["ppn"]
+#     log:
+#         "logs/align/fastqc-bam/{aliquot_id}.log"
+#     benchmark:
+#         "benchmarks/align/fastqc-bam/{aliquot_id}.txt"
+#     message:
+#         "Running FASTQC\n"
+#         "Sample: {wildcards.aliquot_id}"
+#     shell:
+#         "fastqc \
+#             --extract \
+#             -o {params.dir} \
+#             -f bam \
+#             {input} \
+#             > {log} 2>&1"
 
 ## END ##
