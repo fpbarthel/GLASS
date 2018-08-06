@@ -6,6 +6,7 @@ channels:
   - conda-forge
 dependencies:
   - gatk4=4.0.7.0=0
+  - r-optparse=1.3.2=r3.3.2_0
   - samtools=1.7=1
   - bzip2=1.0.6=h14c3975_5
   - ca-certificates=2018.03.07=0
@@ -54,6 +55,7 @@ dependencies:
   - r-cluster=2.0.5=r3.3.2_0
   - r-codetools=0.2_15=r3.3.2_0
   - r-foreign=0.8_67=r3.3.2_0
+  - r-getopt=1.20.0=r3.3.2_0
   - r-kernsmooth=2.23_15=r3.3.2_0
   - r-lattice=0.20_34=r3.3.2_0
   - r-mass=7.3_45=r3.3.2_0
