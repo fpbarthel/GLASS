@@ -17,6 +17,8 @@ rule callpon:
         temp("results/mutect2/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf")
     params:
         mem = CLUSTER_META["callpon"]["mem"]
+    conda:
+        "../envs/mutect2.yaml"
     threads:
         CLUSTER_META["callpon"]["ppn"]
     log:
@@ -135,6 +137,8 @@ rule callsnv:
         bam = "results/mutect2/m2bam/{pair_id}.{interval}.bam"
     params:
         mem = CLUSTER_META["callsnv"]["mem"]
+    conda:
+        "../envs/mutect2.yaml"
     threads:
         CLUSTER_META["callsnv"]["ppn"]
     log:
@@ -214,6 +218,8 @@ rule pileupsummaries:
         "results/mutect2/pileupsummaries/{aliquot_id}.pileupsummaries.txt"
     params:
         mem = CLUSTER_META["pileupsummaries"]["mem"]
+    conda:
+        "../envs/mutect2.yaml"
     threads:
         CLUSTER_META["pileupsummaries"]["ppn"]
     log:
@@ -251,6 +257,8 @@ rule calculatecontamination:
         mem = CLUSTER_META["calculatecontamination"]["mem"]
     threads:
         CLUSTER_META["calculatecontamination"]["ppn"]
+    conda:
+        "../envs/mutect2.yaml"
     log:
         "logs/mutect2/calculatecontamination/{pair_id}.log"
     benchmark:
@@ -279,6 +287,8 @@ rule filtermutect:
         mem = CLUSTER_META["filtermutect"]["mem"]
     threads:
         CLUSTER_META["filtermutect"]["ppn"]
+    conda:
+        "../envs/mutect2.yaml"
     log:
         "logs/mutect2/filtermutect/{pair_id}.log"
     benchmark:
@@ -308,6 +318,8 @@ rule collectartifacts:
         mem = CLUSTER_META["collectartifacts"]["mem"]
     threads:
         CLUSTER_META["collectartifacts"]["ppn"]
+    conda:
+        "../envs/mutect2.yaml"
     log:
         "logs/mutect2/collectartifacts/{aliquot_id}.log"
     benchmark:
@@ -337,6 +349,8 @@ rule filterorientation:
         mem = CLUSTER_META["filterorientation"]["mem"]
     threads:
         CLUSTER_META["filterorientation"]["ppn"]
+    conda:
+        "../envs/mutect2.yaml"
     log:
         "logs/mutect2/filterorientation/{pair_id}.log"
     benchmark:

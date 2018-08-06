@@ -64,8 +64,10 @@ fi
 EXTRA_OPTS=$(printf " %s" "${POSITIONAL[@]}")
 EXTRA_OPTS=${EXTRA_OPTS:1}
 
+WORKDIR=`pwd`
+
 echo "Running snakemake with"
-echo "Directory: " `pwd`
+echo "Directory: ${WORKDIR}" 
 echo "TARGET: ${TARGET}"
 echo "DAG: ${DAG}"
 echo "RULEGRAPH: ${RULEGRAPH}"
@@ -90,7 +92,7 @@ elif [ ${DAG} == 1 ];
 then
 	snakemake --configfile "${CONFIGFILE}" --dag | dot -Tpng > dag.png
 else
-	snakemake ${OPTS} --jobs 400 -k --use-conda --latency-wait 120 --max-jobs-per-second 8 --configfile "${CONFIGFILE}" --cluster-config "${CLUSTRCONF}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -q {cluster.queu} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e {cluster.stderr} -o {cluster.stdout}" $EXTRA_OPTS $TARGET
+	snakemake ${OPTS} --jobs 400 -k --use-conda --latency-wait 120 --max-jobs-per-second 8 --configfile "${CONFIGFILE}" --cluster-config "${CLUSTRCONF}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -q {cluster.queu} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e ${WORKDIR}/{cluster.stderr} -o ${WORKDIR}/{cluster.stdout}" $EXTRA_OPTS $TARGET
 fi
 
 ## END ##
