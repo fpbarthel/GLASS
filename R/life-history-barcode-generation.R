@@ -4,10 +4,6 @@
 # Author: Kevin J
 #######################################################
 
-############################################################
-###   WARNING: Incomplete. Need MDACC Sample Type Info   ###
-############################################################
-
 # Local directory for github repo.
 mybasedir = "/Users/johnsk/Documents/Life-History/GLASS-WG"
 setwd(mybasedir)

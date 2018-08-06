@@ -1,6 +1,6 @@
 #######################################################
 # Create manifest for low pass MD Anderson samples (Roel-JDG)
-# Date: 2018.06.26
+# Date: 2018.08.06 
 # Author: Kevin J., Floris B.
 #######################################################
 
@@ -92,7 +92,7 @@ files = jdf_map_df %>% select(aliquot_id, file_path, file_name, file_uuid, file_
 ### Cases ####
 jdf_map_df = jdf_map_df %>% 
   mutate(case_id = substring(Barcode, 1, 12), 
-         project_id = "GLSS-MD")
+         project_id = "GLSS-MD-LP")
 # Select only those relevant fields.
 cases = jdf_map_df %>% select(case_id, project_id)
 
