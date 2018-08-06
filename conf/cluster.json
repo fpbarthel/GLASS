@@ -42,6 +42,12 @@
         "mem" : 12,
         "walltime" : "70:00:00"
     },
+    "fastqc_bam" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00"
+    },
     "markadapters" :
     {
         "ppn" : 2,
@@ -420,6 +426,15 @@
     {
         "ppn" : 8,
         "mem" : 48,
+        "walltime" : "70:00:00",
+        "name" : "{rule}",
+        "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
+    "lumpy_libstat" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
         "walltime" : "70:00:00",
         "name" : "{rule}",
         "stdout" : "/fastscratch/verhaak-lab/GLASS-WG/logs/drmaa/{rule}.{wildcards.pair_id}.out",

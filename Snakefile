@@ -206,6 +206,13 @@ rule download_only:
    input: expand("{file}", file=ALIQUOT_TO_BAM_PATH.values())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## QC rule
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule qc:
+    input: expand("results/align/fastqc/{aliquot_id}/{aliquot_id}.aligned_fastqc.html", aliquot_id=ALIQUOTS_DICT.keys())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SNV rule
 ## Run snakemake with target 'snv'
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -257,7 +264,8 @@ rule delly:
 
 rule lumpy:
     input:
-        expand("results/lumpy/svtyper/{pair_id}.dict.svtyper.vcf", pair_id=PAIRS_DICT.keys())
+        expand("results/lumpy/svtyper/{pair_id}.dict.svtyper.vcf", pair_id=PAIRS_DICT.keys()),
+        expand("results/lumpy/libstat/{pair_id}.libstat.pdf", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SV using Manta
@@ -281,7 +289,8 @@ rule cnvnator:
 
 rule svdetect:
     input:
-        expand("results/lumpy/call/{pair_id}.dict.sorted.vcf.gz", pair_id=PAIRS_DICT.keys()),
+        expand("results/lumpy/svtyper/{pair_id}.dict.svtyper.vcf", pair_id=PAIRS_DICT.keys()),
+        expand("results/lumpy/libstat/{pair_id}.libstat.pdf", pair_id=PAIRS_DICT.keys()),
         expand("results/delly/call/{pair_id}.vcf.gz", pair_id=PAIRS_DICT.keys()),
         expand("results/manta/{pair_id}/results/variants/somaticSV.vcf.gz", pair_id=PAIRS_DICT.keys())
 

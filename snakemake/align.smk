@@ -489,8 +489,42 @@ rule multiqc:
     message:
         "Running MultiQC"
     shell:
-        "multiqc -o {params.dir} {config[workdir]}/results/align \
+        "multiqc \
+            --interactive \
+            -o {params.dir} {config[workdir]}/results/align \
             > {log} 2>&1; \
             cp -R {params.dir}/* {config[html_dir]}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Run FASTQC on aligned BAM
+## URL: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule fastqc_bam:
+    input:
+        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+    output:
+        "results/align/fastqc/{aliquot_id}/{aliquot_id}.aligned_fastqc.html"
+    params:
+        dir = "results/align/fastqc/{aliquot_id}",
+        mem = CLUSTER_META["fastqc_bam"]["mem"]
+    conda:
+        "../envs/align.yaml"
+    threads:
+        CLUSTER_META["fastqc_bam"]["ppn"]
+    log:
+        "logs/align/fastqc-bam/{aliquot_id}.log"
+    benchmark:
+        "benchmarks/align/fastqc-bam/{aliquot_id}.txt"
+    message:
+        "Running FASTQC\n"
+        "Sample: {wildcards.aliquot_id}"
+    shell:
+        "fastqc \
+            --extract \
+            -o {params.dir} \
+            -f bam \
+            {input} \
+            > {log} 2>&1"
 
 ## END ##

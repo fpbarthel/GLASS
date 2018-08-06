@@ -202,6 +202,34 @@ rule svtyper_run:
             #--batch_size {config[svtyper_batch]} \
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Library stats
+## Plot insert size distribution
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule lumpy_libstat:
+    input:
+        "results/lumpy/svtyper/{pair_id}.svtyper.json"
+    output:
+        "results/lumpy/libstat/{pair_id}.libstat.pdf"
+    params:
+        mem = CLUSTER_META["lumpy_libstat"]["mem"]
+    threads:
+        CLUSTER_META["lumpy_libstat"]["ppn"]
+    conda:
+        "../envs/lumpy-sv.yaml"
+    log:
+        "logs/lumpy/libstat/{pair_id}.log"
+    benchmark:
+        "benchmarks/lumpy/libstat/{pair_id}.txt"
+    message:
+        "Plotting library statistics\n"
+        "Pair: {wildcards.pair_id}"
+    shell:
+        "module load R; "
+        "lib_stats.R {input} {output} \
+            > {log} 2>&1"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Filter LUMPY calls
 ## Using GATK
 ## Filters taken from:
