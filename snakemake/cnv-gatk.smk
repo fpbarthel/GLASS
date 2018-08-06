@@ -46,8 +46,6 @@ rule createcnvpon:
         CLUSTER_META["createcnvpon"]["ppn"]
     log:
         "logs/cnv/createcnvpon/{batch}.log"
-    conda:
-        "../envs/gatk4.yaml"
     benchmark:
         "benchmarks/cnv/createcnvpon/{batch}.txt"
     message:
