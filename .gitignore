@@ -1,7 +1,9 @@
 benchmarks/**
 data/fastq/**
 data/download/**
-data/clinical-data/MDACC/**
+data/clinical-data/**
+data/sequencing-information/**
+data/st-jude-data/**
 results/**
 logs/**
 sandbox/**
