@@ -1,6 +1,6 @@
 #######################################################
 # Create manifest for MD Anderson samples (n = 120, GLASS)
-# Date: 2018.08.01
+# Date: 2018.08.07
 # Author: Kevin J.
 #######################################################
 # Local directory for github repo.
@@ -178,6 +178,26 @@ mda_map_df$file_uuid = paste(stri_rand_strings(dim(mda_map_df)[1], 8, "[a-z0-9]"
 # Sanity check: make sure each is unique.
 n_distinct(mda_map_df$file_uuid)
 
+# Files to remove that are empty.
+empty_fastqs <- read.table("data/sequencing-information/MDACC/empty_fastqs_to_remove_from_json.txt", stringsAsFactors = F, skip = 1)
+empty_fastqs$fastqname <- sapply(strsplit(empty_fastqs$V1, "/"), "[[", 3)
+empty_fastqs$read_group <- substr(empty_fastqs$fastqname, nchar(empty_fastqs$fastqname)-32, nchar(empty_fastqs$fastqname)-8)
+
+# Stitched the files together as was done for the rest of the dataset.
+files_to_remove = empty_fastqs %>% 
+  group_by(read_group) %>% 
+  mutate(filename = paste(fastqname, collapse=","),
+         filename_flipped = paste(rev(fastqname), collapse=",")) %>% 
+  select(-V1, -fastqname) %>% 
+  distinct()
+
+# Since, the order of the paired fastqs was not ordered I needed to use either forward or reverse orientation.
+to_remove <- which(mda_map_df$file_name%in%files_to_remove$filename==TRUE | mda_map_df$file_name%in%files_to_remove$filename_flipped==TRUE)
+
+# Remove the empty files.
+mda_map_df <- mda_map_df[-to_remove, ]
+
+
 # Need to record the file_size and file_md5sum for these samples.
 mda_map_df = mda_map_df %>% mutate(file_size = "NA",
                                  file_md5sum = "NA",
@@ -186,6 +206,7 @@ mda_map_df = mda_map_df %>% mutate(file_size = "NA",
 
 # Order needs to be: # aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
 files = mda_map_df %>% select(aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format) %>% distinct()
+
 
 
 
