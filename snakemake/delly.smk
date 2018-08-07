@@ -25,6 +25,7 @@ rule delly_call:
         "Pair: {wildcards.pair_id}"
     shell:
         "delly call \
+            -n \
             -x {config[svmask_delly]} \
             -o {output.bcf} \
             -g {config[reference_fasta]} \
