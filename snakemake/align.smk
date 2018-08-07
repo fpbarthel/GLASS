@@ -145,7 +145,7 @@ rule fastqc:
     output:
         "results/align/fastqc/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned_fastqc.html"
     params:
-        dir = "results/fastqc/{aliquot_id}",
+        dir = "results/align/fastqc/{aliquot_id}",
         mem = CLUSTER_META["fastqc"]["mem"]
     conda:
         "../envs/align.yaml"
