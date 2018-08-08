@@ -238,38 +238,40 @@ rule lumpy_libstat:
 ## QUAL > 10
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-## gatk VariantFiltration -V GLSS-MD-LP05-TP-5AS5SI.dict.svtyper.vcf --filter-expression "SU <= 10" --filter-name "read_support" --filter-expression "QUAL < 10" --filter-name "qual" -O tmp.vcf
+# gatk VariantFiltration -V tmp.vcf --filter-expression "SU <= 10" --filter-name "read_support" --filter-expression "QUAL < 10" --filter-name "qual" --filter-expression '!vc.getGenotype("GLSS-K2-0001-NB").isHomRef() || vc.getGenotype("GLSS-K2-0001-NB").getAO() > 0 || vc.getGenotype("GLSS-K2-0001-TP").isHomRef()' --filter-name "non_somatic" -O tmp.filt.vcf
+# 
 
-# rule lumpy_filter:
-#     input:
-#         tumor = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-#         normal = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
-#         vcf = "results/lumpy/call/{pair_id}.dict.vcf"
-#     output:
-#         vcf = "results/lumpy/svtyper/{pair_id}.dict.svtyper.vcf",
-#         stats = "results/lumpy/svtyper/{pair_id}.svtyper.json"
-#     params:
-#         mem = CLUSTER_META["svtyper_run"]["mem"]
-#     threads:
-#         CLUSTER_META["svtyper_run"]["ppn"]
-#     conda:
-#         "../envs/lumpy-sv.yaml"
-#     log:
-#         "logs/lumpy/svtyper/{pair_id}.log"
-#     benchmark:
-#         "benchmarks/lumpy/svtyper/{pair_id}.txt"
-#     message:
-#         "Calling genotypes using SVTyper\n"
-#         "Pair: {wildcards.pair_id}"
-#     shell:
-#         "svtyper-sso \
-#             --core {threads} \
-#             --batch_size {config[svtyper_batch]} \
-#             --max_reads {config[svtyper_reads]} \
-#             -i {input.vcf} \
-#             -B {input.tumor} \
-#             -B {input.normal} \
-#             -l {output.stats} \
-#             2> {log} 1> {output.vcf}"
+rule lumpy_filter:
+    input:
+        "results/lumpy/svtyper/{pair_id}.dict.svtyper.vcf"
+    output:
+        "results/lumpy/filter/{pair_id}.dict.svtyper.filtered.vcf"
+    params:
+        mem = CLUSTER_META["lumpy_filter"]["mem"]
+    threads:
+        CLUSTER_META["lumpy_filter"]["ppn"]
+    conda:
+        "../envs/lumpy-sv.yaml"
+    log:
+        "logs/lumpy/filter/{pair_id}.log"
+    benchmark:
+        "benchmarks/lumpy/filter/{pair_id}.txt"
+    message:
+        "Filtering LUMPY sv calls\n"
+        "Pair: {wildcards.pair_id}"
+    shell:
+        "gatk VariantFiltration \
+            -V {input} \
+            --filter-expression 'SU <= 4' \
+            --filter-name 'read_support' \
+            --filter-expression 'QUAL < 10' \
+            --filter-name 'qual_score' \
+            --filter-expression \
+                '!vc.getGenotype(0).isHomRef() || \
+                vc.getGenotype(0).getAttributeAsInt(\"AO\",0) > 0 || \
+                vc.getGenotype(1).isHomRef()' \
+            --filter-name 'non_somatic' \
+            -O {output} \
+            > {log} 2&>1"
 
 ## END ##
