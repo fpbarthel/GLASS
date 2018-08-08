@@ -8,7 +8,7 @@ mybasedir = "/Users/johnsk/Documents/Life-History/GLASS-WG"
 setwd(mybasedir)
 
 # Files with information about fastq information and barcodes.
-# Actual fastq files are stored: /fastscratch/johnsk/GLASS-WG/mdacc/
+# Actual fastq files are stored: /fastscratch/johnsk/GLASS-WG/mdacc/ or on tier2 (long-term).
 MDA_batch1_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch1_n14_20180405.tsv"
 MDA_batch2_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch2_n94_20180603.tsv"
 MDA_batch3_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch2_n13_20180716.tsv"
@@ -50,9 +50,9 @@ library(stringr)
 # We need to generate the following fields required by the SNV snakemake pipeline:
 # aliquots, files, cases, samples, pairs, and readgroups.
 
-### MDA (Novogene cohort) barcode generation ####
+### MDA (Novogene cohort) barcode (re)generation ####
 # Novogene has processed 120 samples. In our master sheet normal blood samples were not provided. We need them for barcodes.
-# Inspect both batch1 and batch2 sequencing data for 
+# Inspect both batch1 and batch2 sequencing data for all blood/tumor data.
 mda_batch1_df <- read.table(MDA_batch1_file_path, col.names="file_path", stringsAsFactors = F)
 mda_batch1_df$filename = sapply(strsplit(mda_batch1_df$file_path, "/"), "[[", 8)
 mda_batch2_df <- read.table(MDA_batch2_file_path, col.names="file_path", stringsAsFactors = F)
@@ -60,12 +60,12 @@ mda_batch2_df$filename = sapply(strsplit(mda_batch2_df$file_path, "/"), "[[", 3)
 mda_batch3_df <- read.table(MDA_batch3_file_path, col.names="file_path", stringsAsFactors = F)
 mda_batch3_df$filename = sapply(strsplit(mda_batch3_df$file_path, "/"), "[[", 3)
 
-# Replace the placeholder for pwd "./" from unix cmd: "find -name ".fq.gz" in parent directory of fastqs. 
+# Replace the placeholder for pwd "./" from bash cmd: "find -name ".fq.gz" in parent directory of fastqs. 
 mda_batch1_df$file_path <- gsub("\\./RAW/20180405/128.120.88.242/C202SC18030593/raw_data/", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch1_n14_20180405/", mda_batch1_df$file_path)
 mda_batch2_df$file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/", mda_batch2_df$file_path)
 mda_batch3_df$file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch2_n13_20180716", mda_batch3_df$file_path)
 
-# Create an old sample.id for these subjects to be linked. No longer necessary, but kept in case it's helpful.
+# Create an old sample.id for these subjects to be linked. No longer *necessary*, but kept in case it's helpful.
 mda_batch1_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch1_df$filename)
 mda_batch2_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch2_df$filename)
 mda_batch3_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch3_df$filename)
@@ -75,15 +75,15 @@ mda_df <- bind_rows(mda_batch1_df, mda_batch2_df, mda_batch3_df)
 
 # Katie Shao (Novogene provided).
 novogene_linker = readWorkbook(novogene_sample_path, sheet = 1, startRow = 18, colNames = TRUE)
-novogene_linker_unique <- novogene_linker[1:121, ]
+novogene_linker_unique <- novogene_linker[1:121, ] # 121st sample represents non-GLASS sample.
 
-# Retrieve only the blood samples ("10D"). Blood samples not contained in master sheet.
+# Retrieve only the blood samples ("10D"). Blood samples not presented in master sheet.
 normal_blood_samples = novogene_linker_unique[grep("[b|B]lood", novogene_linker_unique$`*SampleName`), ]
 
 # Retrieve the subject ID in same format as tumor samples.
 normal_blood_samples$SubjectID = sapply(strsplit(normal_blood_samples$`*SampleName`, "-"), "[", 3)
 
-# Create a barcode for available blood samples (n=33).
+# Create a barcode for available blood samples (n=39).
 mda_normal_blood_map <- normal_blood_samples %>% 
   mutate(SeqID = "GLSS") %>% 
   mutate(TSS = "MD") %>% 
@@ -98,13 +98,13 @@ mda_normal_blood_map <- normal_blood_samples %>%
 # Kristin Alfaro-Munoz kindly pointed me to the sequencing identifier link to these samples. 
 mda_master = readWorkbook(mda_master_path, sheet = 2, startRow = 1, colNames = TRUE)
 
-# The master sheet from MDA only contains normal samples. Sum should equal 81 (tumor samples).
+# The master sheet from MDA only contains tumor samples. Sum should equal 81 (tumor samples).
 sum(novogene_linker_unique$'*SampleName'%in%mda_master$Jax.Lib.Prep.Customer.Sample.Name)
 
 # Extract the 4-digit SUBJECT identifier.
 mda_master$SubjectID = sapply(strsplit(mda_master$Jax.Lib.Prep.Customer.Sample.Name, "-"), "[", 3)
 
-# Create a new MD Anderson to map the old to new sample names.
+# Map the old to new sample name for the tumors.
 mda_tumor_sample_map = mda_master[1:81,] %>% 
   mutate(SeqID = "GLSS") %>% 
   mutate(TSS = "MD") %>% 
@@ -114,7 +114,7 @@ mda_tumor_sample_map = mda_master[1:81,] %>%
   unite(Barcode, c(SeqID, TSS, SubjectCode, TissueCode), sep = "-", remove = FALSE) %>% 
   select(Original_ID, Barcode, SeqID, TSS, SubjectCode, TissueCode)
 
-# Combine all tumor and normal samples together.
+# Combine all tumor and normal samples together. Should equal 120 for this GLASS dataset.
 mda_all_samples_df <- bind_rows(mda_normal_blood_map, mda_tumor_sample_map)
 
 
@@ -144,7 +144,7 @@ mda_df_meta  = mda_df %>%
 # Create a new identifier on which to group mate pairs onto the same line (i.e., R1 and R2).
 mda_df_meta$read_group = paste(mda_df_meta$library_id, mda_df_meta$flowcell_id, mda_df_meta$lane_id, sep = '-')
 
-# Comma separated file_paths and file_names.
+# Comma separated file_paths and file_names. "L#_1" and "L#_2" can be any order. Doesn't yet matter for Snakemake.
 merged_mda_files = mda_df_meta %>% 
   group_by(read_group) %>% 
   mutate(file_path = paste(file_path, collapse=","), 
@@ -152,11 +152,9 @@ merged_mda_files = mda_df_meta %>%
   select(-filename) %>% 
   distinct()
 
-# Combine with study center provided covariate sheet.
 # Not all of the samples are separated by the same characters. Revise for consistency.
-# 1. Fixing "GLASS_01_00" >> "G01_".
+# 1. Fixing  "G01_" >> GLASS_01_00".
 merged_mda_files$revised_id <- gsub("G01_", "GLASS_01_00", merged_mda_files$old_sample_id)
-
 
 # Combine with the new files with the sample name provided by Novogene.
 # This action will remove the Yung sample.
@@ -175,10 +173,10 @@ mda_map_df$file_uuid = paste(stri_rand_strings(dim(mda_map_df)[1], 8, "[a-z0-9]"
                             stri_rand_strings(dim(mda_map_df)[1], 12, "[a-z0-9]"),
                             sep = "-")
 
-# Sanity check: make sure each is unique.
+# Sanity check: make sure each is unique. Ought to be 274 at this point.
 n_distinct(mda_map_df$file_uuid)
 
-# Files to remove that are empty.
+# We noticed that several fastq files are empty causing errors in Snakemake.
 empty_fastqs <- read.table("data/sequencing-information/MDACC/empty_fastqs_to_remove_from_json.txt", stringsAsFactors = F, skip = 1)
 empty_fastqs$fastqname <- sapply(strsplit(empty_fastqs$V1, "/"), "[[", 3)
 empty_fastqs$read_group <- substr(empty_fastqs$fastqname, nchar(empty_fastqs$fastqname)-32, nchar(empty_fastqs$fastqname)-8)
@@ -192,10 +190,10 @@ files_to_remove = empty_fastqs %>%
   distinct()
 
 # Since, the order of the paired fastqs was not ordered I needed to use either forward or reverse orientation.
-to_remove <- which(mda_map_df$file_name%in%files_to_remove$filename==TRUE | mda_map_df$file_name%in%files_to_remove$filename_flipped==TRUE)
+rows_to_remove <- which(mda_map_df$file_name%in%files_to_remove$filename==TRUE | mda_map_df$file_name%in%files_to_remove$filename_flipped==TRUE)
 
-# Remove the empty files.
-mda_map_df <- mda_map_df[-to_remove, ]
+# Remove the empty files. Should be 270 at this point.
+mda_map_df <- mda_map_df[-rows_to_remove, ]
 
 
 # Need to record the file_size and file_md5sum for these samples.
@@ -215,7 +213,8 @@ mda_map_df = mda_map_df %>%
   mutate(case_id = substring(Barcode, 1, 12), 
          project_id = "GLSS-MD")
 # Select only those relevant fields.
-cases = mda_map_df %>% select(case_id, project_id)
+cases = mda_map_df %>% select(case_id, project_id) %>% 
+  distinct()
 
 
 
@@ -260,7 +259,7 @@ p4 = samples %>%
   mutate(pair_id = R3) %>%
   select(case_id, pair_id, tumor_aliquot_id = R3, normal_aliquot_id = NB)
 
-# Note: Hong Kong samples do not have second recurrences.
+# Note: May need to revise once we gather additional information from Kristin @ MD Anderson.
 pairs = rbind(p1, p2, p3, p4) %>% filter(complete.cases(tumor_aliquot_id, normal_aliquot_id))
 
 
@@ -274,7 +273,7 @@ readgroup_df = mda_map_df %>%
          RGPI = 0,
          RGDT = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%dT%H:%M:%S%z"), 
          RGSM = Barcode,
-         RGCN = "NVGN_HK",
+         RGCN = "NVGN_MD",
          RGID = paste0(substring(RGPU, 1, 4), substring(RGPU, nchar(RGPU)-1, nchar(RGPU)), ""))
 
 # Finalize readgroup information in predefined order.
