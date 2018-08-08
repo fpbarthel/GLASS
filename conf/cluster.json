@@ -440,6 +440,15 @@
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
+    "lumpy_filter" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "70:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
     "manta_config" :
     {
         "ppn" : 1,
