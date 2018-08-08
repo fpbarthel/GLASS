@@ -239,7 +239,7 @@ rule lumpy_libstat:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 # gatk VariantFiltration -V tmp.vcf --filter-expression "SU <= 10" --filter-name "read_support" --filter-expression "QUAL < 10" --filter-name "qual" --filter-expression '!vc.getGenotype("GLSS-K2-0001-NB").isHomRef() || vc.getGenotype("GLSS-K2-0001-NB").getAO() > 0 || vc.getGenotype("GLSS-K2-0001-TP").isHomRef()' --filter-name "non_somatic" -O tmp.filt.vcf
-# 
+# gatk VariantFiltration -V tmp.vcf --filter-expression "SU <= 10" --filter-name "read_support" --filter-expression "QUAL < 10" --filter-name "qual" --filter-expression '!vc.getGenotype(1).isHomRef() || vc.getGenotype(1).getAttributeAsInt("AO",0) > 0 || vc.getGenotype(0).isHomRef()' --filter-name "non_somatic" -O tmp.filt.vcf
 
 rule lumpy_filter:
     input:
@@ -272,6 +272,6 @@ rule lumpy_filter:
                 vc.getGenotype(1).isHomRef()' \
             --filter-name 'non_somatic' \
             -O {output} \
-            > {log} 2&>1"
+            > {log} 2>&1"
 
 ## END ##
