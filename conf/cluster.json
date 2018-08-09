@@ -401,8 +401,8 @@
     {
         "ppn" : 8,
         "mem" : 48,
-        "queu" : "long",
-        "walltime" : "144:00:00",
+        "queu" : "batch",
+        "walltime" : "72:00:00",
         "name" : "{rule}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
