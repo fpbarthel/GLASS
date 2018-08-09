@@ -51,6 +51,7 @@ rule delly_prefilter:
     input:
         "results/delly/call/{pair_id}.bcf"
     output:
+    	tsv = "results/delly/filter/{pair_id}.samples.tsv",
         bcf = "results/delly/filter/{pair_id}.prefilt.bcf"
     params:
         mem = CLUSTER_META["delly_prefilter"]["mem"],
