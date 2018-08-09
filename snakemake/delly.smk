@@ -70,7 +70,7 @@ rule delly_prefilter:
         "Pair: {wildcards.pair_id}"
     shell:
         "export OMP_NUM_THREADS=2; "
-        "printf '{params.tumor_sm}\ttumor\n{params.normal_sm}\tcontrol\n' > {output.tsv}; "
+        "printf '{params.tumor_sm}\\ttumor\\n{params.normal_sm}\\tcontrol\\n' > {output.tsv}; "
         "delly filter \
             -f somatic \
             -o {output.bcf} \
