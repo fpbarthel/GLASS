@@ -53,9 +53,9 @@ rule delly_prefilter:
     output:
         bcf = "results/delly/filter/{pair_id}.prefilt.bcf"
     params:
-        mem = CLUSTER_META["delly_filter"]["mem"]
+        mem = CLUSTER_META["delly_prefilter"]["mem"]
     threads:
-        CLUSTER_META["delly_filter"]["ppn"]
+        CLUSTER_META["delly_prefilter"]["ppn"]
     conda:
         "../envs/delly.yaml"
     log:
