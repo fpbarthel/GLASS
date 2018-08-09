@@ -243,7 +243,7 @@ rule cnv:
 
 rule delly:
     input:
-        expand("results/delly/call/{pair_id}.vcf.gz", pair_id=PAIRS_DICT.keys())
+        expand("results/delly/filter/{pair_id}.prefilt.bcf", pair_id=PAIRS_DICT.keys())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SV using LUMPY-SV
