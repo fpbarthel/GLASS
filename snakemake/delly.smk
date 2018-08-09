@@ -53,7 +53,9 @@ rule delly_prefilter:
     output:
         bcf = "results/delly/filter/{pair_id}.prefilt.bcf"
     params:
-        mem = CLUSTER_META["delly_prefilter"]["mem"]
+        mem = CLUSTER_META["delly_prefilter"]["mem"],
+        tumor_sm = lambda wildcards: ALIQUOT_TO_SM[PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]],
+        normal_sm = lambda wildcards: ALIQUOT_TO_SM[PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]]
     threads:
         CLUSTER_META["delly_prefilter"]["ppn"]
     conda:
@@ -67,7 +69,7 @@ rule delly_prefilter:
         "Pair: {wildcards.pair_id}"
     shell:
         "export OMP_NUM_THREADS=2; "
-        "printf '{params.tumor_id}\ttumor\n{params.normal_id}\tcontrol\n' > {output.tsv}; "
+        "printf '{params.tumor_sm}\ttumor\n{params.normal_sm}\tcontrol\n' > {output.tsv}; "
         "delly filter \
             -f somatic \
             -o {output.bcf} \
