@@ -407,6 +407,33 @@
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
     },
+    "delly_prefilter" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "12:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
+    "delly_genotype_controls" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "12:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
+    "delly_postfilter" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "12:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_id}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_id}.err"
+    },
     "cnvnator_to_bedpe" :
     {
         "ppn" : 2,
