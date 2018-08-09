@@ -35,7 +35,7 @@ cnv_intervals:    "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_deco
 
 ## SV mask
 svmask_lumpy:     "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svmask_lumpy.bed"
-svmask_delly:     "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svmask_delly.bed"
+svmask_delly:     "/projects/barthf/GLASS-WG/data/ref/human.hg19.excl.tsv"
 svinclude_manta:  "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svinclude_manta.bed.gz"
 
 ## CNVnator

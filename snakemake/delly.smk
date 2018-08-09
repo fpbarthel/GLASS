@@ -9,10 +9,10 @@ rule delly_call:
         tumor = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
         normal = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"])
     output:
-        bcf = "results/delly/call/{pair_id}.bcf",
-        vcf = "results/delly/call/{pair_id}.vcf.gz"
+        bcf = "results/delly/call/{pair_id}.bcf"
+#        vcf = "results/delly/call/{pair_id}.vcf.gz"
     params:
-        vcftmp = "results/delly/call/{pair_id}.vcf",
+#        vcftmp = "results/delly/call/{pair_id}.vcf",
         mem = CLUSTER_META["delly_call"]["mem"]
     threads:
         CLUSTER_META["delly_call"]["ppn"]
@@ -26,6 +26,7 @@ rule delly_call:
         "Calling DELLY on tumor/normal pair\n"
         "Pair: {wildcards.pair_id}"
     shell:
+        "export OMP_NUM_THREADS=2; "
         "delly call \
             -n \
             -x {config[svmask_delly]} \
@@ -34,9 +35,9 @@ rule delly_call:
             {input.tumor} \
             {input.normal} \
             > {log} 2>&1; "
-        "bcftools view {output.bcf} > {params.vcftmp} && \
-            bgzip -i {params.vcftmp} && \
-            bcftools index -t {output.vcf}"
+#        "bcftools view {output.bcf} > {params.vcftmp} && \
+#            bgzip -i {params.vcftmp} && \
+#            bcftools index -t {output.vcf}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Pre-filter delly results
@@ -65,6 +66,7 @@ rule delly_prefilter:
         "Pre-filtering somatic DELLY calls\n"
         "Pair: {wildcards.pair_id}"
     shell:
+        "export OMP_NUM_THREADS=2; "
         "printf '{params.tumor_id}\ttumor\n{params.normal_id}\tcontrol\n' > {output.tsv}; "
         "delly filter \
             -f somatic \
@@ -82,35 +84,35 @@ rule delly_prefilter:
 ## See: https://github.com/dellytools/delly
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule delly_genotype_controls:
-    input:
-        bcf = "results/delly/filter/{pair_id}.prefilt.bcf",
-        bam = "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
-    output:
-        bcf = "results/delly/gtcontrol/{pair_id}.prefilt.gtcontrol.bcf"
-    params:
-        mem = CLUSTER_META["delly_genotype_controls"]["mem"]
-    threads:
-        CLUSTER_META["delly_genotype_controls"]["ppn"]
-    conda:
-        "../envs/delly.yaml"
-    log:
-        "logs/delly/gtcontrol/{pair_id}.log"
-    benchmark:
-        "benchmarks/delly/gtcontrol/{pair_id}.txt"
-    message:
-        "Genotype found variants across a set of controls\n"
-        "Pair: {wildcards.pair_id}\n"
-        "Control sample: {wildcards.aliquot_id}"
-    shell:
-        "printf '{params.tumor_id}\ttumor\n{params.normal_id}\tcontrol\n' > {output.tsv}; "
-        "delly call \
-            -v {input.bcf} \
-            -g {config[reference_fasta]} \
-            -o {output.bcf} \
-            -s {output.tsv} \
-            {input} \
-            > {log} 2>&1; "
+# rule delly_genotype_controls:
+#     input:
+#         bcf = "results/delly/filter/{pair_id}.prefilt.bcf",
+#         bam = "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+#     output:
+#         bcf = "results/delly/gtcontrol/{pair_id}.prefilt.gtcontrol.bcf"
+#     params:
+#         mem = CLUSTER_META["delly_genotype_controls"]["mem"]
+#     threads:
+#         CLUSTER_META["delly_genotype_controls"]["ppn"]
+#     conda:
+#         "../envs/delly.yaml"
+#     log:
+#         "logs/delly/gtcontrol/{pair_id}.log"
+#     benchmark:
+#         "benchmarks/delly/gtcontrol/{pair_id}.txt"
+#     message:
+#         "Genotype found variants across a set of controls\n"
+#         "Pair: {wildcards.pair_id}\n"
+#         "Control sample: {wildcards.aliquot_id}"
+#     shell:
+#         "printf '{params.tumor_id}\ttumor\n{params.normal_id}\tcontrol\n' > {output.tsv}; "
+#         "delly call \
+#             -v {input.bcf} \
+#             -g {config[reference_fasta]} \
+#             -o {output.bcf} \
+#             -s {output.tsv} \
+#             {input} \
+#             > {log} 2>&1; "
 
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -118,33 +120,33 @@ rule delly_genotype_controls:
 ## See: https://github.com/dellytools/dellys
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule delly_merge_genotypes:
-    input:
-        bcf = "results/delly/filter/{pair_id}.prefilt.bcf",
-        bam = "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
-    output:
-        bcf = "results/delly/filter/{pair_id}.prefilt.bcf"
-    params:
-        mem = CLUSTER_META["delly_filter"]["mem"]
-    threads:
-        CLUSTER_META["delly_filter"]["ppn"]
-    conda:
-        "../envs/delly.yaml"
-    log:
-        "logs/delly/filter/{pair_id}.log"
-    benchmark:
-        "benchmarks/delly/filter/{pair_id}.txt"
-    message:
-        "Pre-filtering somatic DELLY calls\n"
-        "Pair: {wildcards.pair_id}"
-    shell:
-        "printf '{params.tumor_id}\ttumor\n{params.normal_id}\tcontrol\n' > {output.tsv}; "
-        "delly filter \
-            -f somatic \
-            -o {output.bcf} \
-            -s {output.tsv} \
-            {input} \
-            > {log} 2>&1; "
+# rule delly_merge_genotypes:
+#     input:
+#         bcf = "results/delly/filter/{pair_id}.prefilt.bcf",
+#         bam = "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+#     output:
+#         bcf = "results/delly/filter/{pair_id}.prefilt.bcf"
+#     params:
+#         mem = CLUSTER_META["delly_filter"]["mem"]
+#     threads:
+#         CLUSTER_META["delly_filter"]["ppn"]
+#     conda:
+#         "../envs/delly.yaml"
+#     log:
+#         "logs/delly/filter/{pair_id}.log"
+#     benchmark:
+#         "benchmarks/delly/filter/{pair_id}.txt"
+#     message:
+#         "Pre-filtering somatic DELLY calls\n"
+#         "Pair: {wildcards.pair_id}"
+#     shell:
+#         "printf '{params.tumor_id}\ttumor\n{params.normal_id}\tcontrol\n' > {output.tsv}; "
+#         "delly filter \
+#             -f somatic \
+#             -o {output.bcf} \
+#             -s {output.tsv} \
+#             {input} \
+#             > {log} 2>&1; "
 
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
