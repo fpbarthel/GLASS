@@ -205,7 +205,6 @@ rule download_only:
 rule qc:
     input: 
         "results/align/multiqc/multiqc_report.html",
-        expand("results/align/fastqc/{aliquot_id}/{aliquot_id}.aligned_fastqc.html", aliquot_id=ALIQUOTS_DICT.keys()),
         expand("results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
         expand("results/align/validatebam/{aliquot_id}.ValidateSamFile.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys())
 
