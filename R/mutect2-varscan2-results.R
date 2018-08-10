@@ -1,6 +1,6 @@
 #######################################################
 # Inspect Mutect2 and Varsca2 results, compare with prior results
-# Date: 2018.08.07
+# Date: 2018.08.10
 # Author: Kevin J.
 #######################################################
 # Local directory for github repo.
@@ -46,13 +46,33 @@ filenames <- list.files(pattern = "*_filters.txt")
 list_names <-substr(filenames, 1, 22)
 
 # Load in all of the files, and set list names. 
-mutect2_tbl <- list.files(pattern = "*_filters.txt") %>% 
-  map(~read_table(., col_names = "filters")) %>% 
-  set_names(list_names)
+# mutect2_tbl <- list.files(pattern = "*_filters.txt") %>% 
+#  map(~read_table(., col_names = "filters")) %>% 
+#  set_names(list_names)
 # save(mutect2_tbl, file="/Users/johnsk/Documents/mutect2_tbl_filters.RData")
+load("/Users/johnsk/Documents/Life-History/mutect2_tbl_filters.RData")
 
-# For each variant per subject, we separate out the different filters.
-mutect2_split_tmp <- mutect2_tbl %>% map(function(x) strsplit(x$filters, ";"))
+# Feedback from StackOverflow to create a large tibble.
+solo_filter_df <- tibble(sample_names = names(mutect2_tbl),  filters = mutect2_tbl) %>% 
+  unnest() %>% 
+  mutate(num_filter_applied = map(strsplit(filters, ";"), length), snv_id = row_number()) %>% 
+  unnest() %>% 
+  group_by(sample_names) %>% 
+  filter(num_filter_applied == 1) %>%  
+  count(solo_filters = filters) %>% 
+  spread(solo_filters, n)
+
+# Total filters applied to each sample.
+total_filters <- mutect2_tbl %>% map(function(x) strsplit(x$filters, ";")) %>% map(unlist) %>% map(table)
+# Create a df with each column being a filter and each row being a sample.
+total_filter_df <- as.data.frame(do.call(dplyr::bind_rows, total_filters), stringsAsFactors = FALSE) 
+total_filter_df_2 <- total_filter_df %>% mutate(sample_names = names(total_filters))
+
+# We can plot solo filters by cohort (boxplot).
+
+
+
+
 
 # Breaks down the per sample filter frequency. 
 mutect2_HF_split <- map(mutect2_split_tmp[1:2], unlist)

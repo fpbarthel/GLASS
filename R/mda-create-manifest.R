@@ -1,6 +1,6 @@
 #######################################################
 # Create manifest for MD Anderson samples (n = 120, GLASS)
-# Date: 2018.08.07
+# Date: 2018.08.10
 # Author: Kevin J.
 #######################################################
 # Local directory for github repo.
@@ -59,6 +59,9 @@ mda_batch2_df <- read.table(MDA_batch2_file_path, col.names="file_path", strings
 mda_batch2_df$filename = sapply(strsplit(mda_batch2_df$file_path, "/"), "[[", 3)
 mda_batch3_df <- read.table(MDA_batch3_file_path, col.names="file_path", stringsAsFactors = F)
 mda_batch3_df$filename = sapply(strsplit(mda_batch3_df$file_path, "/"), "[[", 3)
+mda_batch3_df$name <- sapply(strsplit(mda_batch3_df$file_path, "/"), "[[", 2)
+mda_batch3_df$novogene_id <- sapply(strsplit(mda_batch3_df$filename, "_"), "[[", 7)
+
 
 # Replace the placeholder for pwd "./" from bash cmd: "find -name ".fq.gz" in parent directory of fastqs. 
 mda_batch1_df$file_path <- gsub("\\./RAW/20180405/128.120.88.242/C202SC18030593/raw_data/", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch1_n14_20180405/", mda_batch1_df$file_path)
@@ -87,7 +90,7 @@ normal_blood_samples$SubjectID = sapply(strsplit(normal_blood_samples$`*SampleNa
 mda_normal_blood_map <- normal_blood_samples %>% 
   mutate(SeqID = "GLSS") %>% 
   mutate(TSS = "MD") %>% 
-  rename(SubjectCode = SubjectID) %>% 
+  dplyr::rename(SubjectCode = SubjectID) %>% 
   mutate(TissueCode = "NB") %>% 
   mutate(Original_ID = `*SampleName`) %>%   
   unite(Barcode, c(SeqID, TSS, SubjectCode, TissueCode), sep = "-", remove = FALSE) %>% 
