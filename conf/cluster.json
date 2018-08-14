@@ -56,7 +56,7 @@
     "samtofastq_bwa_mergebamalignment" :
     {
         "ppn" : 12,
-        "walltime" : "70:00:00",
+        "walltime" : "72:00:00",
         "mem" : "72"
     },
     "markduplicates" :

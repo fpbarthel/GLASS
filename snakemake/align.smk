@@ -311,6 +311,7 @@ rule markduplicates:
             --OUTPUT={output.bam} \
             --METRICS_FILE={output.metrics} \
             --CREATE_INDEX=true \
+            --TMP_DIR={config[tempdir]} \
             > {log} 2>&1")
 
 # @sbamin A few notes on IndelRealignment step at annotated link: https://hyp.is/8_20bK-aEeerk1MduBFv6w/gatkforums.broadinstitute.org/gatk/discussion/7847 

@@ -31,6 +31,7 @@ rule fusorsv_prepare:
             bcftools view {input.lumpy} > {output.lumpy} && \
             bcftools view {input.manta} > {output.manta}) \
             > {log} 2>&1"
+
 #        "bcftools view {output.bcf} > {params.vcftmp} && \
 #            bgzip -i {params.vcftmp} && \
 #            bcftools index -t {output.vcf}"

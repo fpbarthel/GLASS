@@ -221,6 +221,7 @@ rule somaticfilter:
 ## BAM readcount (Varscan2)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Obtain BAM readcounts for a given list of variants (Varscan2)
+## See: https://sourceforge.net/p/varscan/discussion/1073559/thread/37fc570c/
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule bamreadcount:
