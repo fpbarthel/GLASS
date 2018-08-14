@@ -293,7 +293,8 @@ rule markduplicates:
         bai = temp("results/align/markduplicates/{aliquot_id}.realn.mdup.bai"),
         metrics = "results/align/markduplicates/{aliquot_id}.metrics.txt"
     params:
-        mem = CLUSTER_META["markduplicates"]["mem"]
+        mem = CLUSTER_META["markduplicates"]["mem"],
+        max_records = 6000000
     threads:
         CLUSTER_META["markduplicates"]["ppn"]
     log:
@@ -312,6 +313,7 @@ rule markduplicates:
             --METRICS_FILE={output.metrics} \
             --CREATE_INDEX=true \
             --TMP_DIR={config[tempdir]} \
+            --MAX_RECORDS_IN_RAM={params.max_records} \
             > {log} 2>&1")
 
 # @sbamin A few notes on IndelRealignment step at annotated link: https://hyp.is/8_20bK-aEeerk1MduBFv6w/gatkforums.broadinstitute.org/gatk/discussion/7847 
