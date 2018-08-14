@@ -1,6 +1,6 @@
 #######################################################
 # Inspect Mutect2 and Varsca2 results, compare with prior results
-# Date: 2018.08.07
+# Date: 2018.08.13
 # Author: Kevin J.
 #######################################################
 # Local directory for github repo.
@@ -46,13 +46,81 @@ filenames <- list.files(pattern = "*_filters.txt")
 list_names <-substr(filenames, 1, 22)
 
 # Load in all of the files, and set list names. 
-mutect2_tbl <- list.files(pattern = "*_filters.txt") %>% 
-  map(~read_table(., col_names = "filters")) %>% 
-  set_names(list_names)
+# mutect2_tbl <- list.files(pattern = "*_filters.txt") %>% 
+#  map(~read_table(., col_names = "filters")) %>% 
+#  set_names(list_names)
 # save(mutect2_tbl, file="/Users/johnsk/Documents/mutect2_tbl_filters.RData")
+load("/Users/johnsk/Documents/Life-History/mutect2_tbl_filters.RData")
 
-# For each variant per subject, we separate out the different filters.
-mutect2_split_tmp <- mutect2_tbl %>% map(function(x) strsplit(x$filters, ";"))
+# Feedback from StackOverflow to create a large tibble.
+solo_filter_df <- tibble(sample_names = names(mutect2_tbl),  filters = mutect2_tbl) %>% 
+  unnest() %>% 
+  mutate(num_filter_applied = map(strsplit(filters, ";"), length), snv_id = row_number()) %>% 
+  unnest() %>% 
+  group_by(sample_names) %>% 
+  filter(num_filter_applied == 1) %>%  
+  count(solo_filters = filters) %>% 
+  spread(solo_filters, n)
+
+# Tidy
+solo_filter_tidy <- solo_filter_df %>% 
+  gather("solo_filter", "solo_count", artifact_in_normal:t_lod)
+solo_filter_tidy$sample_filter <- paste(solo_filter_tidy$sample_names, solo_filter_tidy$solo_filter, sep="-")
+
+# Total filters applied to each sample.
+total_filters <- mutect2_tbl %>% map(function(x) strsplit(x$filters, ";")) %>% map(unlist) %>% map(table)
+
+# Create a df with each column being a filter and each row being a sample.
+total_filter_df <- as.data.frame(do.call(dplyr::bind_rows, total_filters), stringsAsFactors = FALSE) 
+total_filter_tidy <- total_filter_df %>% 
+  mutate(sample_names = names(total_filters)) %>% 
+  gather("total_filter", "total_count", artifact_in_normal:orientation_bias)
+total_filter_tidy$sample_filter <- paste(total_filter_tidy$sample_names, total_filter_tidy$total_filter, sep="-")
+
+# We can plot solo filters by cohort (boxplot).
+all_filters_tidy <- inner_join(total_filter_tidy, solo_filter_tidy, by=c("sample_filter" = "sample_filter"))
+all_filters_tidy$cohort <- NA
+all_filters_tidy$cohort[grepl("HF", all_filters_tidy$sample_names.x)] <- "HF"
+all_filters_tidy$cohort[grepl("HK", all_filters_tidy$sample_names.x)] <- "HK"
+all_filters_tidy$cohort[grepl("GLSS-MD", all_filters_tidy$sample_names.x)] <- "MD-LP"
+all_filters_tidy$cohort[grepl("TCGA", all_filters_tidy$sample_names.x)] <- "TCGA"
+
+total_filters_table <- all_filters_tidy %>% 
+  group_by(cohort, total_filter) %>% 
+  summarize(Samples = n(),
+            AvgTotalFilter = mean(total_count),
+            TotalFilterStDev = sd(total_count),
+            TotalFilterMin = min(total_count), 
+            TotalFilterMax = max(total_count))
+
+solo_filters_table <- all_filters_tidy %>% 
+  group_by(cohort, solo_filter) %>% 
+  summarize(Samples = n(),
+            AvgTotalFilter = mean(solo_count),
+            TotalFilterStDev = sd(solo_count),
+            TotalFilterMin = min(solo_count), 
+            TotalFilterMax = max(solo_count))
+
+# Boxplots by cohort:
+ggplot(all_filters_tidy, aes(x=total_filter, y=total_count, color=cohort))  + facet_grid(~cohort) + 
+  geom_boxplot() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ylab("Total Filters Applied") +xlab("Filter Type") +
+  ggtitle("Total M2 Filters") 
+ggplot(all_filters_tidy, aes(x=total_filter, y=total_count, color=cohort))  + facet_grid(~cohort) + 
+  geom_boxplot() + theme(axis.text.x = element_text(angle = 45, hjust = 1))  + ylim(0,100000) +
+    ylab("Total Filters Applied") +xlab("Filter Type") + ggtitle("Total M2 Filters Zoomed")
+
+# Boxplots of solo filters applied:
+ggplot(all_filters_tidy, aes(x=solo_filter, y=solo_count, color=cohort))+ facet_grid(~cohort) + 
+  geom_boxplot() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ylab("Solo Filters Applied") +xlab("Filter Type") +
+  ggtitle("Solo M2 Filters")
+ggplot(all_filters_tidy, aes(x=solo_filter, y=solo_count, color=cohort))+ facet_grid(~cohort) + 
+  geom_boxplot(outlier.shape = NA) + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ylim(0,10000) + 
+  ylab("Solo Filters Applied") +xlab("Filter Type") + ggtitle("Solo M2 Filters Zoomed")
+
+
+
+
+
 
 # Breaks down the per sample filter frequency. 
 mutect2_HF_split <- map(mutect2_split_tmp[1:2], unlist)

@@ -1,6 +1,6 @@
 #######################################################
 # Create manifest for hong kong samples (GLASS)
-# Date: 2018.06.21
+# Date: 2018.08.13
 # Author: Kevin J., Floris B.
 #######################################################
 
@@ -9,8 +9,8 @@ mybasedir = "/Users/johnsk/Documents/Life-History/GLASS-WG"
 setwd(mybasedir)
 
 # Files with information about fastq information and barcodes.
-HK_file_path = "data/sequencing-information/HK/hongkong-path-list.20180621.txt"
-life_history_barcodes = "data/sequencing-information/master_life_history_uniform_naming_incomplete.txt"
+hk_file_path = "data/sequencing-information/HK/hong_kong_file_list_complete.20180813.tsv"
+life_history_barcodes = "data/sequencing-information/master_life_history_uniform_naming_complete.txt"
 
 # Create extensions for samples.
 json_ext = "json"
@@ -39,7 +39,7 @@ library(stringr)
 # aliquots, files, cases, samples, pairs, and readgroups.
 
 ### Aliquot ####
-master_sheet = read.delim("data/sequencing-information/master_life_history_uniform_naming_incomplete.txt", as.is=T)
+master_sheet = read.delim(life_history_barcodes, as.is=T)
 aliquot_sheet = master_sheet %>% select(aliquot_uuid = uuid, sample_id = Barcode) %>%
   mutate(aliquot_id = sprintf("%s-%s", sample_id, aliquot_uuid),
          analyte_type = "DNA",
@@ -54,12 +54,11 @@ aliquots = aliquot_sheet %>% select(sample_id, aliquot_uuid, aliquot_id, portion
 
 ### Files ####
 # Generate *file* tsv containing: aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
-# hk_df = read.table(HK_file_path, header=T, stringsAsFactors = F)
-hk_df = read.table(HK_file_path, col.names="filenames", stringsAsFactors = F)
+hk_df = read.table(hk_file_path, col.names="filenames", stringsAsFactors = F)
 
 # Retrieve the original sample name to map to study center provided covariate sheet.
 hk_df_meta = hk_df %>% 
-  mutate(verhaak_sample_id = sub(".*/WG_ *(.*?) *_USPD.*", "\\1", filenames),
+  mutate(verhaak_sample_id = sub(".*WG_ *(.*?) *_USPD.*", "\\1", filenames),
          library_id = sub(".*_ *(.*?) *_H.*", "\\1", filenames), 
          flowcell_id = substr(filenames, nchar(filenames)-19, nchar(filenames)-12),
          lane_id = substr(filenames, nchar(filenames)-8, nchar(filenames)-8))
@@ -67,15 +66,18 @@ hk_df_meta = hk_df %>%
 # Create a new identifier on which to group mate pairs onto the same line (i.e., R1 and R2).
 hk_df_meta$read_group = paste(hk_df_meta$library_id, hk_df_meta$flowcell_id, hk_df_meta$lane_id, sep = '-')
 
-# Retrieve the file_name from the file_path. 
-hk_df_meta$file_name_single = sapply(strsplit(hk_df_meta$filenames, "/"), "[[", 8)
+# Create a new identifier on which to group mate pairs onto the same line (i.e., R1 and R2).
+hk_df_meta$read_group = paste(hk_df_meta$library_id, hk_df_meta$flowcell_id, hk_df_meta$lane_id, sep = '-')
+
+# Provide path to files temporarily stored on /fastscratch/.
+hk_df_meta$fullpath_filenames <- paste("/fastscratch/johnsk/GLASS-WG/hongkong", hk_df_meta$filenames, sep="/")
 
 # Comma separated file_paths and file_names.
 merged_hk_files = hk_df_meta %>% 
   group_by(read_group) %>% 
-  mutate(file_path = paste(filenames, collapse=","),
-         file_name = paste(file_name_single, collapse=",")) %>% 
-  select(-filenames, -file_name_single) %>% 
+  mutate(file_path = paste(fullpath_filenames, collapse=","),
+         file_name = paste(filenames, collapse=",")) %>% 
+  select(-filenames, -fullpath_filenames) %>% 
   distinct()
 
 # Combine with study center provided covariate sheet.
@@ -113,7 +115,7 @@ hk_map_df = hk_map_df %>%
   mutate(case_id = substring(Barcode, 1, 12), 
          project_id = "GLSS-HK")
 # Select only those relevant fields.
-cases = hk_map_df %>% select(case_id, project_id)
+cases = hk_map_df %>% select(case_id, project_id) %>% distinct()
 
 
 
