@@ -1,6 +1,6 @@
 #######################################################
 # Create manifest for MD Anderson samples (n = 120, GLASS)
-# Date: 2018.08.10
+# Date: 2018.08.17
 # Author: Kevin J.
 #######################################################
 # Local directory for github repo.
@@ -12,6 +12,7 @@ setwd(mybasedir)
 MDA_batch1_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch1_n14_20180405.tsv"
 MDA_batch2_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch2_n94_20180603.tsv"
 MDA_batch3_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch2_n13_20180716.tsv"
+MDA_batch4_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch3_n13_20180816.tsv"
 
 # Clinical dataset priovided by Kristin Alfaro-Munoz at MD Anderson.
 # Modified to generate a sample_type (TP, R1, R2, R3) using the clinical information. See github issue #16.
@@ -52,29 +53,30 @@ library(stringr)
 
 ### MDA (Novogene cohort) barcode (re)generation ####
 # Novogene has processed 120 samples. In our master sheet normal blood samples were not provided. We need them for barcodes.
-# Inspect both batch1 and batch2 sequencing data for all blood/tumor data.
-mda_batch1_df <- read.table(MDA_batch1_file_path, col.names="file_path", stringsAsFactors = F)
-mda_batch1_df$filename = sapply(strsplit(mda_batch1_df$file_path, "/"), "[[", 8)
-mda_batch2_df <- read.table(MDA_batch2_file_path, col.names="file_path", stringsAsFactors = F)
-mda_batch2_df$filename = sapply(strsplit(mda_batch2_df$file_path, "/"), "[[", 3)
-mda_batch3_df <- read.table(MDA_batch3_file_path, col.names="file_path", stringsAsFactors = F)
-mda_batch3_df$filename = sapply(strsplit(mda_batch3_df$file_path, "/"), "[[", 3)
-mda_batch3_df$name <- sapply(strsplit(mda_batch3_df$file_path, "/"), "[[", 2)
-mda_batch3_df$novogene_id <- sapply(strsplit(mda_batch3_df$filename, "_"), "[[", 7)
-
+# Inspect both batch1/batch2/batch3 sequencing data for all blood/tumor data.
+mda_batch1_df <- read.table(MDA_batch1_file_path, col.names="relative_file_path", stringsAsFactors = F)
+mda_batch1_df$filename = sapply(strsplit(mda_batch1_df$relative_file_path, "/"), "[[", 3)
+mda_batch2_df <- read.table(MDA_batch2_file_path, col.names="relative_file_path", stringsAsFactors = F)
+mda_batch2_df$filename = sapply(strsplit(mda_batch2_df$relative_file_path, "/"), "[[", 3)
+mda_batch3_df <- read.table(MDA_batch3_file_path, col.names="relative_file_path", stringsAsFactors = F)
+mda_batch3_df$filename = sapply(strsplit(mda_batch3_df$relative_file_path, "/"), "[[", 3)
+mda_batch4_df <- read.table(MDA_batch4_file_path, col.names="relative_file_path", stringsAsFactors = F)
+mda_batch4_df$filename = sapply(strsplit(mda_batch4_df$relative_file_path, "/"), "[[", 3)
 
 # Replace the placeholder for pwd "./" from bash cmd: "find -name ".fq.gz" in parent directory of fastqs. 
-mda_batch1_df$file_path <- gsub("\\./RAW/20180405/128.120.88.242/C202SC18030593/raw_data/", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch1_n14_20180405/", mda_batch1_df$file_path)
-mda_batch2_df$file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/", mda_batch2_df$file_path)
-mda_batch3_df$file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch2_n13_20180716", mda_batch3_df$file_path)
+mda_batch1_df$working_file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch1_n14_20180405", mda_batch1_df$relative_file_path)
+mda_batch2_df$working_file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch1_n94_20180603", mda_batch2_df$relative_file_path)
+mda_batch3_df$working_file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch2_n13_20180716", mda_batch3_df$relative_file_path)
+mda_batch4_df$working_file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch3_n13_20180816", mda_batch4_df$relative_file_path)
 
 # Create an old sample.id for these subjects to be linked. No longer *necessary*, but kept in case it's helpful.
 mda_batch1_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch1_df$filename)
 mda_batch2_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch2_df$filename)
 mda_batch3_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch3_df$filename)
+mda_batch4_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch4_df$filename)
 
-# Combine these three sequencing data sets. There should be 552 files.
-mda_df <- bind_rows(mda_batch1_df, mda_batch2_df, mda_batch3_df)
+# Combine these three sequencing data sets. There should be 604 files.
+mda_df <- bind_rows(mda_batch1_df, mda_batch2_df, mda_batch3_df, mda_batch4_df)
 
 # Katie Shao (Novogene provided).
 novogene_linker = readWorkbook(novogene_sample_path, sheet = 1, startRow = 18, colNames = TRUE)
@@ -136,7 +138,7 @@ aliquots = aliquot_sheet %>% select(sample_id, aliquot_uuid, aliquot_id, portion
 
 ### Files ####
 # Generate *file* tsv containing: aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
-# From above ^: mda_df = bind_rows(mda_batch1_df, mda_batch2_df, mda_batch3_df)
+# From above ^: mda_df = bind_rows(mda_batch1_df, mda_batch2_df, mda_batch3_df, mda_batch4_df)
 
 # Retrieve the library, flowcell, and lane id from the filename.
 mda_df_meta  = mda_df %>% 
@@ -149,10 +151,11 @@ mda_df_meta$read_group = paste(mda_df_meta$library_id, mda_df_meta$flowcell_id, 
 
 # Comma separated file_paths and file_names. "L#_1" and "L#_2" can be any order. Doesn't yet matter for Snakemake.
 merged_mda_files = mda_df_meta %>% 
+  select(-relative_file_path) %>% 
   group_by(read_group) %>% 
-  mutate(file_path = paste(file_path, collapse=","), 
+  mutate(file_path = paste(working_file_path, collapse=","), 
          file_name = paste(filename, collapse=",")) %>% 
-  select(-filename) %>% 
+  select(-filename, -working_file_path) %>% 
   distinct()
 
 # Not all of the samples are separated by the same characters. Revise for consistency.
@@ -176,7 +179,7 @@ mda_map_df$file_uuid = paste(stri_rand_strings(dim(mda_map_df)[1], 8, "[a-z0-9]"
                             stri_rand_strings(dim(mda_map_df)[1], 12, "[a-z0-9]"),
                             sep = "-")
 
-# Sanity check: make sure each is unique. Ought to be 274 at this point.
+# Sanity check: make sure each is unique. Ought to be 300 at this point.
 n_distinct(mda_map_df$file_uuid)
 
 # We noticed that several fastq files are empty causing errors in Snakemake.
@@ -195,9 +198,8 @@ files_to_remove = empty_fastqs %>%
 # Since, the order of the paired fastqs was not ordered I needed to use either forward or reverse orientation.
 rows_to_remove <- which(mda_map_df$file_name%in%files_to_remove$filename==TRUE | mda_map_df$file_name%in%files_to_remove$filename_flipped==TRUE)
 
-# Remove the empty files. Should be 270 at this point.
+# Remove the empty files. Should be 296 at this point.
 mda_map_df <- mda_map_df[-rows_to_remove, ]
-
 
 # Need to record the file_size and file_md5sum for these samples.
 mda_map_df = mda_map_df %>% mutate(file_size = "NA",
@@ -270,7 +272,7 @@ pairs = rbind(p1, p2, p3, p4) %>% filter(complete.cases(tumor_aliquot_id, normal
 # Necessary information: file_uuid, aliquot_id, RGID, RGPL, RGPU, RGLB, RGPI, RGDT, RGSM, RGCN.
 readgroup_df = mda_map_df %>% 
   mutate(RGPL = "ILLUMINA",
-         RGPU = paste(substr(file_name, nchar(file_name)-19, nchar(file_name)-12), 
+         RGPU = paste(substr(file_name, nchar(file_name)-19, nchar(file_name)-11), 
                       substr(file_name, nchar(file_name)-8, nchar(file_name)-8), sep="."),
          RGLB = sub(".*_ *(.*?) *_H.*", "\\1", file_name),
          RGPI = 0,
