@@ -1,15 +1,20 @@
 #######################################################
 # Comparisons of maf files from TCGA (PCAWG vs. GLASS-WG Snakemake)
-# Date: 2018.07.26
+# Date: 2018.08.15
 # Author: Kevin J.
 #######################################################
-
 # Local directory for github repo.
-# We are comparing filtered Mutect2 and Varscan2 calls (not yet maf files).
-mybasedir = "~/mnt/scratchhelix/johnsk/GLASS_WG_floris/results/mutect2/vep"
-# mybasedir = "~/mnt/scratchhelix/verhaak-lab/GLASS-WG/results/varscan2/final"
- 
+# Use Kadir's linker file to identify the samples that overlap between PCAWG and GLASS-WG.
+mybasedir = "/Users/johnsk/Documents/Life-History/"
 setwd(mybasedir)
+
+# Kadir's linker files.
+pcawg_id_file <- "PCAWG May 2016 Data Release.xlsx"
+tcga_id_file <- "pcawg_specimen_histology_August2016_v8.xlsx"
+
+# Completed life-history barcodes.
+life_history_barcodes = "/Users/johnsk/Documents/Life-History/GLASS-WG/data/sequencing-information/master_life_history_uniform_naming_complete.txt"
+
 
 #######################################################
 
@@ -17,33 +22,44 @@ setwd(mybasedir)
 library(tidyverse)
 library(maftools)
 library(data.table)
+library(openxlsx)
 
 #######################################################
-# I concatenated all the TCGA gzipped files into one. It's ~400 Mb.
-test_vep_file = paste(mybasedir, "/TCGA_glioma_glass.maf.gz", sep="") 
-glioma_tcga_maf = read.maf(maf = test_vep_file)
+# Katie Shao (Novogene provided).
+pcawg_linker = readWorkbook(pcawg_id_file, sheet = 1, startRow = 1, colNames = TRUE)
+tcga_linker = readWorkbook(tcga_id_file, sheet = 1, startRow = 1, colNames = TRUE)
 
-# We can also analyze smaller maf files if that's helful. Mutect2 output.
-test_vep_primary_file = paste(mybasedir, "/TCGA-TQ-A8XE-TP-MF1R7Z.filtered2.anno.maf.gz", sep="")
-test_vep_recurrence_file = paste(mybasedir, "/TCGA-TQ-A8XE-R1-M2U7J4.filtered2.anno.maf.gz", sep="")
+# Gather the TCGA IDs from our GLASS-WG cohort.
+Mutect2dir =  "~/mnt/scratchhelix/johnsk/GLASS_WG_floris/results/mutect2/m2filter/"
+# Inspect Mutect2 filters applied to both SNVs and small indels.
+setwd(Mutect2dir)
 
-# Laod the single sample maf file into memory.
-TCGA_TQ_A8XE_TP_MF1R7Z = read.maf(maf = test_vep_primary_file)
-TCGA_TQ_A8XE_R1_M2U7J4= read.maf(maf = test_vep_recurrence_file)
+# Create list of names with the ".filtered2.vep_filters.txt". Sample "GLSS-MD-LP03" was removed due to poor quality.
+filenames <- list.files(pattern = "*_filters.txt")
+list_names <-substr(filenames, 1, 22)
+# Link "list_names" object with original TCGA names using barcodes.
+vcf_names <- substring(list_names, 1, 15)
+life_history_barcode_sheet = read.delim(life_history_barcodes, as.is=T)
+# Identify those samples that are used in the GLASS-WG project.
+glass_tcga_samples <- life_history_barcode_sheet %>% 
+  filter(Barcode%in%vcf_names) %>% 
+  filter(grepl("TCGA", Original_ID)) %>% 
+  select(Original_ID) %>% 
+  .[["Original_ID"]]
 
-# Examine a few samples, look at the mutations present, scope out a few genes.
-getSampleSummary(TCGA_TQ_A8XE_TP_MF1R7Z)
+#  11 samples from PCAWG (Mutect) are also represent in the GLASS-WG cohort.
+pcawg_glass_wg_samples <- life_history_barcode_sheet %>% 
+  filter(Original_ID%in%tcga_linker$submitted_sample_id) %>% 
+  select(Original_ID) %>% 
+  .[["Original_ID"]]
 
-# Example of gene summary. Also, plotmafSummary().
-getGeneSummary(TCGA_TQ_A8XE_TP_MF1R7Z)
+# Retrieve the 11 IDs for variants.
+  tcga_linker %>% 
+  filter(submitted_sample_id%in%pcawg_glass_wg_samples) %>% 
+  inner_join(pcawg_linker, by=c("donor_unique_id" = "donor_unique_id")) %>% 
+  inner_join(life_history_barcode_sheet, by=c("submitted_sample_id"="Original_ID")) %>% 
+  select(tumor_wgs_aliquot_id, submitted_sample_id, Barcode) %>% 
+  write.table(file="/Users/johnsk/Documents/Life-History/PCAWG-GLASS-sample-overlap.txt", sep="\t",
+            row.names=FALSE)
 
-# Example of the cBio lollipopPlot.
-lollipopPlot(maf = TCGA_TQ_A8XE_TP_MF1R7Z, gene = 'IDH1', AACol = 'Protein_Change', showMutationRate = TRUE)
 
-# Example of some important genes to glioma.
-genes = c("IDH1", "TP53", "TET1", "EGFR", "PDGFRA")
-
-#We will draw oncoplots for top ten mutated genes.
-oncoplot(maf = laml, top = 10, fontSize = 12)
-
-# It may be possible to load all of the TCGA LGG and GBM data in using this package.
