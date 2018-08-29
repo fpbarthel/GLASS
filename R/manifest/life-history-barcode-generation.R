@@ -4,7 +4,7 @@
 # Author: Kevin J
 #######################################################
 # Local directory for github repo.
-mybasedir = "/Users/johnsk/Documents/Life-History/GLASS-WG"
+mybasedir = here::here()
 setwd(mybasedir)
 
 # Hong Kong samples sequenced by Novogene.

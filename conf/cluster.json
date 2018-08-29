@@ -6,10 +6,10 @@
         "j" : "oe",
         "m" : "a",
         "M" : "floris.barthel@jax.org",
-        "nodes" : 1,
+        "nodes" : 2,
         "ppn" : 1,
-        "walltime" : "12:00:00",
-        "mem" : 6,
+        "walltime" : "72:00:00",
+        "mem" : 12,
         "queu" : "batch",
         "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_id}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_id}.err"
@@ -28,6 +28,12 @@
         "ppn" : 4,
         "mem" : 24,
         "walltime" : "70:00:00"
+    },
+    "bam2ubam" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "1:00:00"
     },
     "fq2ubam" :
     {
@@ -63,7 +69,8 @@
     {
         "ppn" : 2,
         "walltime" : "70:00:00",
-        "mem" : 12
+        "mem" : 12,
+        "mem_if_fail" : 72
     },
     "baserecalibrator" :
     {

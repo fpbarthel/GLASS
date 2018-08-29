@@ -1,10 +1,3 @@
-# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-# ## RevertSAM and FASTQ-2-uBAM both output uBAM files to the same directory
-# ## Snakemake needs to be informed which rule takes presidence
-# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-# #ruleorder: revertsam > fq2ubam
-
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Revert GDC-aligned legacy BAM to unaligned SAM file
 ## Clear BAM attributes, such as re-calibrated base quality scores, alignment information
@@ -23,20 +16,28 @@
 ## Issue: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
 ## Unlikely this will get fixed any time soon
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## 08/28/18
+## TCGA BAMs often have uninformative readgroup tags. Added an additional step
+## "bam2ubam" to rename these tags. This includes the RGID tag. Added a variable
+## ALIQUOT_TO_LEGACY_RGID that maps to legacy RGID tags. The variable ALIQUOT_TO_RGID
+## maps to the new (sometiomes renamed) RGIDs
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule revertsam:
     input:
         lambda wildcards: ALIQUOT_TO_BAM_PATH[wildcards.aliquot_id]
     output:
-        map = "results/align/ubam/{aliquot_id}/{aliquot_id}.output_map.txt",
-        bams = temp(expand("results/align/ubam/{{aliquot_id}}/{{aliquot_id}}.{rg}.unaligned.bam", rg=list(itertools.chain.from_iterable(ALIQUOT_TO_RGID.values()))))
+        map = "results/align/revertsam/{aliquot_id}/{aliquot_id}.output_map.txt",
+        bams = temp(expand("results/align/revertsam/{{aliquot_id}}/{{aliquot_id}}.{rg}.revertsam.bam", rg=list(itertools.chain.from_iterable(ALIQUOT_TO_RGID.values()))))
     params:
-        dir = "results/align/ubam/{aliquot_id}",
-        mem = CLUSTER_META["revertsam"]["mem"]
-    log: 
-        "logs/align/revertsam/{aliquot_id}.log"
+        dir = "results/align/revertsam/{aliquot_id}",
+        mem = CLUSTER_META["revertsam"]["mem"],
+        walltime = CLUSTER_META["revertsam"]["walltime"],
+        queu = CLUSTER_META["revertsam"]["queu"]
     threads:
         CLUSTER_META["revertsam"]["ppn"]
+    log: 
+        "logs/align/revertsam/{aliquot_id}.log"
     benchmark:
         "benchmarks/align/revertsam/{aliquot_id}.txt"
     message:
@@ -48,8 +49,8 @@ rule revertsam:
         ## Create a readgroup name / filename mapping file
         rgmap = pd.DataFrame(
             {
-                "READ_GROUP_ID": ALIQUOT_TO_RGID[wildcards["aliquot_id"]],
-                "OUTPUT": ["results/align/ubam/{aliquot_id}/{aliquot_id}.{rg}.unaligned.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in ALIQUOT_TO_RGID[wildcards["aliquot_id"]]]
+                "READ_GROUP_ID": ALIQUOT_TO_LEGACY_RGID[wildcards["aliquot_id"]],
+                "OUTPUT": ["results/align/revertsam/{aliquot_id}/{aliquot_id}.{rg}.revertsam.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in ALIQUOT_TO_RGID[wildcards["aliquot_id"]]]
             },
             columns = ["READ_GROUP_ID", "OUTPUT"]
         )
@@ -57,7 +58,7 @@ rule revertsam:
 
         ## Create empty files ("touch") for readgroups not in this BAM file
         ## Workaround for issue documented here: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
-        other_rg_f = ["results/align/ubam/{aliquot_id}/{aliquot_id}.{rg}.unaligned.bam".format(aliquot_id=wildcards["aliquot_id"],rg=rg) for sample, rgs in ALIQUOT_TO_RGID.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
+        other_rg_f = ["results/align/revertsam/{aliquot_id}/{aliquot_id}.{rg}.revertsam.bam".format(aliquot_id=wildcards["aliquot_id"],rg=rg) for sample, rgs in ALIQUOT_TO_RGID.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
         for f in other_rg_f:
             touch(f)
 
@@ -80,40 +81,88 @@ rule revertsam:
             --TMP_DIR={config[tempdir]} \
             > {log} 2>&1")
 
-# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-# ## Convert from FASTQ pair to uBAM
-# ## This step eases follow up steps
-# ## See: https://gatkforums.broadinstitute.org/gatk/discussion/6472/read-groups
-# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Replaces existing readgroup tag with a more informative one
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule fq2ubam:
+rule bam2ubam:
     input:
-        R1 = lambda wildcards: "{file}".format(sample=wildcards.aliquot_id, file=ALIQUOT_TO_FQ_PATH[wildcards.aliquot_id][wildcards.readgroup][0]),
-        R2 = lambda wildcards: "{file}".format(sample=wildcards.aliquot_id, file=ALIQUOT_TO_FQ_PATH[wildcards.aliquot_id][wildcards.readgroup][1])
+        "results/align/revertsam/{aliquot_id}/{aliquot_id}.{readgroup}.revertsam.bam"
     output:
         temp("results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam")
     params:
         RGID = lambda wildcards: wildcards.readgroup,
         RGPL = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPL"],
+        RGPM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPM"],
         RGPU = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPU"],
         RGLB = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGLB"],
         RGDT = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGDT"],
         RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGSM"],
         RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGCN"],
-        mem = CLUSTER_META["fq2ubam"]["mem"]
+        mem = CLUSTER_META["bam2ubam"]["mem"],
+        walltime = CLUSTER_META["bam2ubam"]["walltime"],
+        queu = CLUSTER_META["bam2ubam"]["queu"]
+    threads:
+        CLUSTER_META["bam2ubam"]["ppn"]
     log:
-        "logs/align/fq2ubam/{aliquot_id}.{readgroup}.log"
+        "logs/align/bam2ubam/{aliquot_id}.{readgroup}.log"
+    benchmark:
+        "benchmarks/align/bam2ubam/{aliquot_id}.{readgroup}.txt"
+    message:
+        "Updating RG tags\n"
+        "Sample: {wildcards.aliquot_id}\n"
+        "Readgroup: {wildcards.readgroup}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g AddOrReplaceReadGroups \
+            --INPUT={input} \
+            --OUTPUT={output} \
+            --RGID=\"{params.RGID}\" \
+            --RGPU=\"{params.RGPU}\" \
+            --RGPM=\"{params.RGPM}\" \
+            --RGSM=\"{params.RGSM}\" \
+            --RGPL=\"{params.RGPL}\" \
+            --RGLB=\"{params.RGLB}\" \
+            --RGCN=\"{params.RGCN}\" \
+            --RGDT=\"{params.RGDT}\" \
+            --TMP_DIR={config[tempdir]} \
+            > {log} 2>&1" 
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Convert from FASTQ pair to uBAM
+## This step eases follow up steps
+## See: https://gatkforums.broadinstitute.org/gatk/discussion/6472/read-groups
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule fq2ubam:
+    input:
+        R1 = lambda wildcards: ALIQUOT_TO_FQ_PATH[wildcards.aliquot_id][wildcards.readgroup][0],
+        R2 = lambda wildcards: ALIQUOT_TO_FQ_PATH[wildcards.aliquot_id][wildcards.readgroup][1]
+    output:
+        temp("results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam")
+    params:
+        RGID = lambda wildcards: wildcards.readgroup,
+        RGPL = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPL"],
+        RGPM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPM"],
+        RGPU = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPU"],
+        RGLB = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGLB"],
+        RGDT = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGDT"],
+        RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGSM"],
+        RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGCN"],
+        mem = CLUSTER_META["fq2ubam"]["mem"],
+        walltime = CLUSTER_META["fq2ubam"]["walltime"],
+        queu = CLUSTER_META["fq2ubam"]["queu"]
     threads:
         CLUSTER_META["fq2ubam"]["ppn"]
+    log:
+        "logs/align/fq2ubam/{aliquot_id}.{readgroup}.log"
     benchmark:
         "benchmarks/align/fq2ubam/{aliquot_id}.{readgroup}.txt"
     message:
         "Converting FASTQ file to uBAM format\n"
         "Sample: {wildcards.aliquot_id}\n"
         "Readgroup: {wildcards.readgroup}"
-    run:
-        ## ISODATE=`date +%Y-%m-%dT%H:%M:%S%z`; \
-        shell("gatk --java-options -Xmx{params.mem}g FastqToSam \
+    shell:
+        "gatk --java-options -Xmx{params.mem}g FastqToSam \
             --FASTQ={input.R1} \
             --FASTQ2={input.R2} \
             --OUTPUT={output} \
@@ -121,23 +170,20 @@ rule fq2ubam:
             --PLATFORM_UNIT=\"{params.RGPU}\" \
             --SAMPLE_NAME=\"{params.RGSM}\" \
             --PLATFORM=\"{params.RGPL}\" \
+            --PLATFORM_MODEL=\"{params.RGPM}\" \
             --LIBRARY_NAME=\"{params.RGLB}\" \
             --SEQUENCING_CENTER=\"{params.RGCN}\" \
+            --RUN_DATE=\"{params.RGDT}\" \
             --SORT_ORDER=queryname \
             --TMP_DIR={config[tempdir]} \
-            > {log} 2>&1")
-        #            --RUN_DATE=\"{params.RGDT}\" \
+            > {log} 2>&1"       
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Run FASTQC on uBAM
 ## URL: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+## 6/11/18
+## Added --extract parameter, which includes a "summary.txt" file which gives WARN, FAIL, PASS
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-# @sbamin Besides html, fastqc should provide a tab-delimited output, 
-# e.g., https://gist.github.com/chapmanb/3953983, 
-# https://gitlab.com/gmapps/railab_chipseq/tree/master/scripts 
-# A step further, that can be programmatically added to emit WARN or STOP if converted FQ fails to PASS base filters, e.g., per base or tile seq quality.
-## @barthf Added --extract parameter, which includes a "summary.txt" file which gives WARN, FAIL, PASS on various aspects 6/11/18
 
 rule fastqc:
     input:
@@ -146,7 +192,9 @@ rule fastqc:
         "results/align/fastqc/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned_fastqc.html"
     params:
         dir = "results/align/fastqc/{aliquot_id}",
-        mem = CLUSTER_META["fastqc"]["mem"]
+        mem = CLUSTER_META["fastqc"]["mem"],
+        walltime = CLUSTER_META["fastqc"]["walltime"],
+        queu = CLUSTER_META["fastqc"]["queu"]
     conda:
         "../envs/align.yaml"
     threads:
@@ -181,7 +229,9 @@ rule markadapters:
         bam = temp("results/align/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.bam"),
         metric = "results/align/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
     params:
-        mem = CLUSTER_META["markadapters"]["mem"]
+        mem = CLUSTER_META["markadapters"]["mem"],
+        walltime = CLUSTER_META["revertsam"]["walltime"],
+        queu = CLUSTER_META["revertsam"]["queu"]
     conda:
         "../envs/align.yaml"
     threads:
@@ -241,7 +291,9 @@ rule samtofastq_bwa_mergebamalignment:
     conda:
         "../envs/align.yaml"
     params:
-        mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
+        mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"],
+        walltime = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["walltime"],
+        queu = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["queu"]
     log: 
         "logs/align/samtofastq_bwa_mergebamalignment/{aliquot_id}.{readgroup}.log"
     benchmark:
@@ -293,8 +345,10 @@ rule markduplicates:
         bai = temp("results/align/markduplicates/{aliquot_id}.realn.mdup.bai"),
         metrics = "results/align/markduplicates/{aliquot_id}.metrics.txt"
     params:
-        mem = CLUSTER_META["markduplicates"]["mem"],
-        max_records = 6000000
+        max_records = 6000000,
+        mem = lambda wildcards, attempt: CLUSTER_META["markduplicates"]["mem"] if attempt == 1 else CLUSTER_META["markduplicates"]["mem_if_fail"],
+        walltime = lambda wildcards: CLUSTER_META["markduplicates"]["walltime"],
+        queu = lambda wildcards: CLUSTER_META["markduplicates"]["queu"]
     threads:
         CLUSTER_META["markduplicates"]["ppn"]
     log:
@@ -334,7 +388,9 @@ rule baserecalibrator:
     output:
         "results/align/bqsr/{aliquot_id}.bqsr.txt"
     params:
-        mem = CLUSTER_META["baserecalibrator"]["mem"]
+        mem = CLUSTER_META["baserecalibrator"]["mem"],
+        walltime = CLUSTER_META["baserecalibrator"]["walltime"],
+        queu = CLUSTER_META["baserecalibrator"]["queu"]
     threads:
         CLUSTER_META["baserecalibrator"]["ppn"]
     conda:
@@ -369,7 +425,9 @@ rule applybqsr:
     output:
         protected("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam")
     params:
-        mem = CLUSTER_META["applybqsr"]["mem"]
+        mem = CLUSTER_META["applybqsr"]["mem"],
+        walltime = CLUSTER_META["applybqsr"]["walltime"],
+        queu = CLUSTER_META["applybqsr"]["queu"]
     threads:
         CLUSTER_META["applybqsr"]["ppn"]
     conda:
@@ -404,15 +462,17 @@ rule wgsmetrics:
     output:
         "results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt"
     params:
-        mem = CLUSTER_META["wgsmetrics"]["mem"]
+        mem = CLUSTER_META["wgsmetrics"]["mem"],
+        walltime = CLUSTER_META["wgsmetrics"]["walltime"],
+        queu = CLUSTER_META["wgsmetrics"]["queu"]
     threads:
         CLUSTER_META["wgsmetrics"]["ppn"]
     conda:
         "../envs/align.yaml"
     log:
-        "logs/wgsmetrics/{aliquot_id}.WgsMetrics.log"
+        "logs/align/wgsmetrics/{aliquot_id}.WgsMetrics.log"
     benchmark:
-        "benchmarks/wgsmetrics/{aliquot_id}.WgsMetrics.txt"
+        "benchmarks/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt"
     message:
         "Computing WGS Metrics\n"
         "Sample: {wildcards.aliquot_id}"
@@ -440,15 +500,17 @@ rule validatebam:
     output:
         "results/align/validatebam/{aliquot_id}.ValidateSamFile.txt"
     params:
-        mem = CLUSTER_META["validatebam"]["mem"]
+        mem = CLUSTER_META["validatebam"]["mem"],
+        walltime = CLUSTER_META["validatebam"]["walltime"],
+        queu = CLUSTER_META["validatebam"]["queu"]
     threads:
         CLUSTER_META["validatebam"]["ppn"]
     conda:
         "../envs/align.yaml"
     log:
-        "logs/validatebam/{aliquot_id}.ValidateSamFile.log"
+        "logs/align/validatebam/{aliquot_id}.ValidateSamFile.log"
     benchmark:
-        "benchmarks/validatebam/{aliquot_id}.ValidateSamFile.txt"
+        "benchmarks/align/validatebam/{aliquot_id}.ValidateSamFile.txt"
     message:
         "Validating BAM file\n"
         "Sample: {wildcards.aliquot_id}"
@@ -480,7 +542,9 @@ rule multiqc:
         "results/align/multiqc/multiqc_report.html"
     params:
         dir = "results/align/multiqc",
-        mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
+        mem = CLUSTER_META["multiqc"]["mem"],
+        walltime = CLUSTER_META["multiqc"]["walltime"],
+        queu = CLUSTER_META["multiqc"]["queu"]
     threads:
         CLUSTER_META["multiqc"]["ppn"]
     conda:

@@ -2,12 +2,10 @@
 ## Limit to primary-recurrent triplets and 2nd recurrences
 ## @Author Floris Barthel
 
-library(GenomicDataCommons)
-library(listviewer)
 library(tidyverse)
 
 ## record base directory, typically ./.git dir is present
-mybasedir = "/Volumes/Helix-Projects/GLASS-WG/"
+mybasedir = here::here()
 setwd(mybasedir)
 getwd()
 
@@ -22,7 +20,7 @@ json_ext = "json"
 text_ext = "tsv"
 
 ## Aliquots
-df2 = read.delim("data/sequencing-information/master_life_history_uniform_naming_incomplete.txt", as.is=T)
+df2 = read.delim("data/ref/master_life_history_uniform_naming_complete.txt", as.is=T)
 df2 = df2 %>% select(aliquot_uuid = uuid, sample_id = Barcode) %>%
   mutate(aliquot_id = sprintf("%s-%s", sample_id, aliquot_uuid),
          analyte_type = "DNA",
