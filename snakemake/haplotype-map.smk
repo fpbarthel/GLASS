@@ -165,7 +165,7 @@ rule sort_VCF:
     message:
         "Sorting VCFs..."
     run:
-        VCF_file = input
+        VCF_file = str(input)
         
         # Sort VCF and record duplicates
         command = "awk -F'\t' '!($1 ~ /#/)' " + VCF_file \
