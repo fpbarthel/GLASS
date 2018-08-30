@@ -1,6 +1,6 @@
 #######################################################
-# To create sample barcodes for glioma life history
-# Date: 2018.08.29
+# To create sample barcodes for glioma life history.
+# Date: 2018.08.30
 # Author: Kevin J
 #######################################################
 # Local directory for github repo.
@@ -15,8 +15,8 @@ tcga_path = "data/clinical-data/TCGA/LGG-GBM-samples.tsv"
 rv_jdg_path = "data/clinical-data/Roel-JDG/Roel_JDG-original_bam_map.txt"
 # Glioblastoma from the Henry Ford data set.
 hgbm_path = "data/clinical-data/HF/HGBM-original_bam_map.txt"
-# The Australian subject that had multile recurrences and a bone metastasis.
-au_path ="data/sequencing-information/AU/Sample_Identifiers.txt"
+# The Australian subject (Northern Sydney Cancer Centre) that had multile recurrences and a bone metastasis.
+ns_path ="data/sequencing-information/NS/Sample_Identifiers.txt"
 # Different tissue source sites from TCGA.
 tss_path = "data/sequencing-information/tissueSourceSite.txt"
 
@@ -47,7 +47,7 @@ HK_df = read.table(hong_kong_path, header=T)
 TCGA_df = read_tsv(tcga_path)
 RV_JDG_df = read_tsv(rv_jdg_path)
 hGBM_df = read_tsv(hgbm_path)
-au_df = read_tsv(au_path)
+ns_df = read_tsv(ns_path)
 
 # The sample-specific barcode should include the following:
 # Project (TCGA/GLSS), Tissue Source Site (##), Subject Code (4), Sample Code (8), Tissue Code (01/02/10)
@@ -185,12 +185,12 @@ HGBM_sample_map = hGBM_df %>%
   unite(Barcode, c(SeqID, TSS, SubjectCode, TissueCode), sep = "-", remove = TRUE)
 
 ###### AU subject ##### 
-au_sample_map = au_df %>% 
+ns_sample_map = ns_df %>% 
   separate(Sample, c("Original_ID", "lane_id"), sep="_L[0-9]{1}_", extra = "merge") %>% 
   distinct(Original_ID) %>% 
-  mutate(Barcode = sprintf("GLSS-AU-0001-%s", c("TP", "R1", "R2", "M1", "NB")),
-         SubjectCode = "GLSS-AU-0001",
-         TissueSourceSite ="AU",
+  mutate(Barcode = sprintf("GLSS-NS-0001-%s", c("TP", "R1", "R2", "M1", "NB")),
+         SubjectCode = "GLSS-NS-0001",
+         TissueSourceSite ="NS",
          TissueCode = c("TP", "R1", "R2", "M1", "NB"))
 
 
@@ -203,10 +203,10 @@ TCGA_merge = TCGA_sample_map %>%  select(aliquot_id, Barcode)  %>% rename(Origin
 HGBM_merge = HGBM_sample_map %>%  select(samplename, Barcode)  %>% rename(Original_ID = samplename)
 RVJDG_merge = RVJDG_sample_map %>%  select(samplename, Barcode)  %>% rename(Original_ID = samplename)
 MDA_normal_merge = MDA_all_samples_map %>% filter(TissueCode=="NB") %>% select(Original_ID, Barcode) 
-AU_merge = au_sample_map %>% select(Original_ID, Barcode) 
+NS_merge = ns_sample_map %>% select(Original_ID, Barcode) 
 
 # Combine all 6 cohorts into one master table. 
-LifeHistory_barcodes = bind_rows(HongKong_merge, MDA_tumor_merge, TCGA_merge, HGBM_merge, RVJDG_merge, MDA_normal_merge, AU_merge)
+LifeHistory_barcodes = bind_rows(HongKong_merge, MDA_tumor_merge, TCGA_merge, HGBM_merge, RVJDG_merge, MDA_normal_merge, NS_merge)
 
 ## Addition of random string to use as a shortened identifier.
 # Create a random string identifier for each SAMPLE in the Life History study.
@@ -222,13 +222,17 @@ ifelse(n_distinct(uuid_LifeHistory)==dim(LifeHistory_barcodes)[1],
 # Write final combined dataset set for a data freeze.
 Life_history_all_samples = bind_cols(uuid_LifeHistory, LifeHistory_barcodes)
 Final_Life_History = Life_history_all_samples %>% 
-  separate(Barcode, c("ProjectID", "TissueSourceSite", "SubjectID", "TissueType"), remove = FALSE)
+  separate(Barcode, c("ProjectID", "TissueSourceSite", "SubjectID", "TissueType"), remove = FALSE) %>% 
+  mutate(portion = "01",
+         analyte_type = "WGS") %>% 
+  rename(legacy_sample_id = Original_ID, sample_id = Barcode) %>% 
+  select(sample_id, uuid, legacy_sample_id, portion, analyte_type)
+
 
 # Write file to be uploaded to GLASS-WG github page.
-write.table(Final_Life_History, file='data/sequencing-information/master_life_history_uniform_naming_complete.txt', quote=FALSE, sep='\t', row.names = F)
+write.table(Final_Life_History, file='data/ref/glass_wg_sample_mapping_table.txt', quote=FALSE, sep='\t', row.names = F)
 
-
-### Create dictionaries for different tissue centers.
+### Create dictionaries for different tissue centers. ####
 # Subset list of TissueSourceSites from TCGA plus add new rows for other datasets.
 TSS_info = read_tsv(tss_path)
 
@@ -239,7 +243,7 @@ TCGA_TSS = unique(TCGA_sample_map$TSS)
 colnames(TSS_info) = gsub( " ", ".", colnames(TSS_info))
 
 # Create more formal definitions.
-TSS_GLASS = data.frame(TSS.Code   = c("HK", "MD", "HF", "AU"),
+TSS_GLASS = data.frame(TSS.Code   = c("HK", "MD", "HF", "NS"),
                 Source.Site  = c("Chinese University of Hong Kong", "MD Anderson Cancer Center", "Henry Ford Hospital", "Northern Sydney Cancer Centre"),
                 Study.Name = c("Lower Grade Glioma / Glioblastoma", "Lower Grade Glioma / Glioblastoma", "Glioblastoma", "Metastatic Gliosarcoma"),
                 BCR      = rep("GLASS", 4))
@@ -249,9 +253,9 @@ TSS_TCGA_filtered = TSS_info %>%
 
 # Create new tissue source site dictionary.
 TissuSourceSite_dict = bind_rows(TSS_TCGA_filtered, TSS_GLASS)
-write.table(TissuSourceSite_dict, file='data/sequencing-information/life-history-tissue-source-sites.txt', quote=FALSE, sep='\t', row.names = F)
+write.table(TissuSourceSite_dict, file='data/ref/life-history-tissue-source-sites.txt', quote=FALSE, sep='\t', row.names = F)
 
 # Create sample type dictionary. 
 SampleType_dict = data.frame(Code   = c("NB", "TP", "R1", "R2", "R3", "M1"),
                        Definition  = c("Blood Derived Normal", "Primary Tumor", "First Recurrence Tumor", "Second Recurrence Tumor", "Third Reccurence Tumor", "Bone Metastasis"))
-write.table(SampleType_dict, file='data/sequencing-information/life-history-sample-type-dict.txt', quote=FALSE, sep='\t', row.names = F)
+write.table(SampleType_dict, file='data/ref/life-history-sample-type-dict.txt', quote=FALSE, sep='\t', row.names = F)
