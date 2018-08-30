@@ -83,7 +83,8 @@ rule extract_similar_SNPs:
     SIM = 0.1.
     '''
     input:
-        vcf = "data/1000GP-VCF/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+        vcf = "data/1000GP-VCF/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",
+        tbi = "data/1000GP-VCF/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
     output:
         "results/haplotype-map/snps/chr_{chr}-common-SNPs.list"
     message:
