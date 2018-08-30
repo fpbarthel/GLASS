@@ -678,5 +678,5 @@
         "name" : "{rule}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
-    },
+    }
 }
