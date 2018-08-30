@@ -100,7 +100,7 @@ rule extract_similar_SNPs:
 
             SNP =str(record.ID)
 
-            if SNP == '.' or not isinstance(SNP, basestring):
+            if SNP == '.' or not isinstance(SNP, str):
                 continue  # Skip over SNPs with no ID
 
             if SNP in SNPs:  # Skip duplicates
