@@ -81,14 +81,14 @@ rule extract_similar_SNPs:
     SIM = 0.1.
     '''
     input:
-        "data/1000GP-VCF/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+        vcf = "data/1000GP-VCF/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
     output:
         "results/haplotype-map/snps/chr_{chr}-common-SNPs.list"
     message:
         "Creating list of SNPs with similar MAFs across populations..."
     run:
         SIM = config["haplotype_map"]["similarity"]
-        vcf_reader = vcf.Reader(open(input, 'r'))  # Loop over VCF records
+        vcf_reader = vcf.Reader(open(input["vcf"], 'r'))  # Loop over VCF records
         SNPs = []
         for record in vcf_reader:
             info = record.INFO
