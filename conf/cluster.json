@@ -542,5 +542,141 @@
         "ppn" : 2,
         "mem" : 12,
         "walltime" : "70:00:00"
-    }
+    },
+    "haplotype_map_merge" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "1:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "download_vcf" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "2:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "download_map" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "2:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "extract_similar_SNPs" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "999:00:00",
+        "queu" : "special",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "create_VCFs" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "sort_VCF" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "create_PLINK_binary" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "LD_score" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "order" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "prune" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "LD_separate" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "clump" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "reformat_clumps" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "detect_negative_LD" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "switch_alleles" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
 }

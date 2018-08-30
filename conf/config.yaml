@@ -73,7 +73,7 @@ veppath:          "/projects/barthf/opt/ensembl-vep"
 vepdata:          "/projects/barthf/opt/.vep"
 
 ## Haplotype map (for fingerprinting)
-haplotype_map:    "/projects/barthf/GLASS-WG/data/ref/haplotype.filtered.map"
+# haplotype_map:    
 
 ## Based on GATK best practices RNAseq 04/05/18
 ## https://software.broadinstitute.org/gatk/documentation/article.php?id=3891
@@ -87,6 +87,24 @@ samtofastq_java_opt: "'-Dsamjdk.buffer_size=131072 -Dsamjdk.compression_level=1 
 mergebamalignment_java_opt: "'-Dsamjdk.buffer_size=131072 -Dsamjdk.use_async_io=true -Dsamjdk.compression_level=1 -XX:+UseStringCache -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Xmx5000m'"
 
 #### ACTUAL RUN
-revertsam_extra_args : "--MAX_DISCARD_FRACTION=0.02 "
+revertsam_extra_args: "--MAX_DISCARD_FRACTION=0.02 "
+
+### Haplotyping options
+## These options are mostly used for creating the haplotype map
+## The output file (`file`) can then be used for fingerprinting
+
+haplotype_map:
+  file: "/projects/barthf/GLASS-WG/data/ref/haplotype.filtered.map"
+  ld_script: "/projects/barthf/GLASS-WG/sandbox/ldsc/ldsc.py"
+  header: "/projects/barthf/GLASS-WG/data/ref/haplotype_map_header.txt"
+  tmp_dir: "tmp/haplotype-map"
+  similarity: 0.10
+  min_maf: 0.10
+  ld_score_window_autosome: 1.0
+  prune_window: 1500
+  prune_slide: 5
+  prune_cutoff: 0.1
+  clump_cutoff: 0.9
+  max_distance_clump: 1500
 
 ## END ##

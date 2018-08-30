@@ -32,8 +32,7 @@ rule revertsam:
     params:
         dir = "results/align/revertsam/{aliquot_id}",
         mem = CLUSTER_META["revertsam"]["mem"],
-        walltime = CLUSTER_META["revertsam"]["walltime"],
-        queu = CLUSTER_META["revertsam"]["queu"]
+        walltime = CLUSTER_META["revertsam"]["walltime"]
     threads:
         CLUSTER_META["revertsam"]["ppn"]
     log: 
@@ -100,8 +99,7 @@ rule bam2ubam:
         RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGSM"],
         RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGCN"],
         mem = CLUSTER_META["bam2ubam"]["mem"],
-        walltime = CLUSTER_META["bam2ubam"]["walltime"],
-        queu = CLUSTER_META["bam2ubam"]["queu"]
+        walltime = CLUSTER_META["bam2ubam"]["walltime"]
     threads:
         CLUSTER_META["bam2ubam"]["ppn"]
     log:
@@ -149,8 +147,7 @@ rule fq2ubam:
         RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGSM"],
         RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGCN"],
         mem = CLUSTER_META["fq2ubam"]["mem"],
-        walltime = CLUSTER_META["fq2ubam"]["walltime"],
-        queu = CLUSTER_META["fq2ubam"]["queu"]
+        walltime = CLUSTER_META["fq2ubam"]["walltime"]
     threads:
         CLUSTER_META["fq2ubam"]["ppn"]
     log:
@@ -193,8 +190,7 @@ rule fastqc:
     params:
         dir = "results/align/fastqc/{aliquot_id}",
         mem = CLUSTER_META["fastqc"]["mem"],
-        walltime = CLUSTER_META["fastqc"]["walltime"],
-        queu = CLUSTER_META["fastqc"]["queu"]
+        walltime = CLUSTER_META["fastqc"]["walltime"]
     conda:
         "../envs/align.yaml"
     threads:
@@ -230,8 +226,7 @@ rule markadapters:
         metric = "results/align/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
     params:
         mem = CLUSTER_META["markadapters"]["mem"],
-        walltime = CLUSTER_META["revertsam"]["walltime"],
-        queu = CLUSTER_META["revertsam"]["queu"]
+        walltime = CLUSTER_META["revertsam"]["walltime"]
     conda:
         "../envs/align.yaml"
     threads:
@@ -292,8 +287,7 @@ rule samtofastq_bwa_mergebamalignment:
         "../envs/align.yaml"
     params:
         mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"],
-        walltime = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["walltime"],
-        queu = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["queu"]
+        walltime = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["walltime"]
     log: 
         "logs/align/samtofastq_bwa_mergebamalignment/{aliquot_id}.{readgroup}.log"
     benchmark:
@@ -347,8 +341,7 @@ rule markduplicates:
     params:
         max_records = 6000000,
         mem = lambda wildcards, attempt: CLUSTER_META["markduplicates"]["mem"] if attempt == 1 else CLUSTER_META["markduplicates"]["mem_if_fail"],
-        walltime = lambda wildcards: CLUSTER_META["markduplicates"]["walltime"],
-        queu = lambda wildcards: CLUSTER_META["markduplicates"]["queu"]
+        walltime = lambda wildcards: CLUSTER_META["markduplicates"]["walltime"]
     threads:
         CLUSTER_META["markduplicates"]["ppn"]
     log:
@@ -389,8 +382,7 @@ rule baserecalibrator:
         "results/align/bqsr/{aliquot_id}.bqsr.txt"
     params:
         mem = CLUSTER_META["baserecalibrator"]["mem"],
-        walltime = CLUSTER_META["baserecalibrator"]["walltime"],
-        queu = CLUSTER_META["baserecalibrator"]["queu"]
+        walltime = CLUSTER_META["baserecalibrator"]["walltime"]
     threads:
         CLUSTER_META["baserecalibrator"]["ppn"]
     conda:
@@ -426,8 +418,7 @@ rule applybqsr:
         protected("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam")
     params:
         mem = CLUSTER_META["applybqsr"]["mem"],
-        walltime = CLUSTER_META["applybqsr"]["walltime"],
-        queu = CLUSTER_META["applybqsr"]["queu"]
+        walltime = CLUSTER_META["applybqsr"]["walltime"]
     threads:
         CLUSTER_META["applybqsr"]["ppn"]
     conda:
@@ -463,8 +454,7 @@ rule wgsmetrics:
         "results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt"
     params:
         mem = CLUSTER_META["wgsmetrics"]["mem"],
-        walltime = CLUSTER_META["wgsmetrics"]["walltime"],
-        queu = CLUSTER_META["wgsmetrics"]["queu"]
+        walltime = CLUSTER_META["wgsmetrics"]["walltime"]
     threads:
         CLUSTER_META["wgsmetrics"]["ppn"]
     conda:
@@ -501,8 +491,7 @@ rule validatebam:
         "results/align/validatebam/{aliquot_id}.ValidateSamFile.txt"
     params:
         mem = CLUSTER_META["validatebam"]["mem"],
-        walltime = CLUSTER_META["validatebam"]["walltime"],
-        queu = CLUSTER_META["validatebam"]["queu"]
+        walltime = CLUSTER_META["validatebam"]["walltime"]
     threads:
         CLUSTER_META["validatebam"]["ppn"]
     conda:
@@ -543,8 +532,7 @@ rule multiqc:
     params:
         dir = "results/align/multiqc",
         mem = CLUSTER_META["multiqc"]["mem"],
-        walltime = CLUSTER_META["multiqc"]["walltime"],
-        queu = CLUSTER_META["multiqc"]["queu"]
+        walltime = CLUSTER_META["multiqc"]["walltime"]
     threads:
         CLUSTER_META["multiqc"]["ppn"]
     conda:

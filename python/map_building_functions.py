@@ -170,7 +170,7 @@ def create_PLINK_binary(chrom, int_directory, recomb_directory):
                   + "_combined_b37.txt* " \
                   + chrom
     # Use recombination maps to write plink binary files with centimorgans
-    plink_command = "/projects/barthf/opt/miniconda3/envs/ldsc/bin/plink --vcf " \
+    plink_command = "plink --vcf " \
                     + int_directory + chrom + ".recode_u.vcf" \
                     + " --cm-map " + recomb_file \
                     + " --make-bed" \
@@ -236,14 +236,14 @@ def prune(chrom, int_directory, window, slide, cutoff):
                    + str(slide) + " " \
                    + str(cutoff)
 
-    plink_prune_command = "/projects/barthf/opt/miniconda3/envs/ldsc/bin/plink --bfile " + int_directory + chrom \
+    plink_prune_command = "plink --bfile " + int_directory + chrom \
                           + " --indep-pairwise " + prune_params \
                           + " --r" \
                           + " --out " + int_directory + chrom
     if chrom != "X":
         subprocess.check_call(plink_prune_command, shell=True)
 
-    plink_prune_command_X = "/projects/barthf/opt/miniconda3/envs/ldsc/bin/plink --bfile " + int_directory + chrom \
+    plink_prune_command_X = "plink --bfile " + int_directory + chrom \
                             + " --indep-pairwise " + prune_params \
                             + " --r" \
                             + " --ld-xchr 1" \
@@ -373,7 +373,7 @@ def clump(chrom, int_directory, cutoff, max_size):
     -------
     None
     '''
-    clump_commands = "/projects/barthf/opt/miniconda3/envs/ldsc/bin/plink --bfile " + int_directory + chrom \
+    clump_commands = "plink --bfile " + int_directory + chrom \
                      + " --clump " + int_directory + chrom + "_in.p " \
                      + int_directory + chrom + "_out.p " \
                      + "--clump-index-first " \
@@ -517,7 +517,7 @@ def switch_alleles(chrom, cwd, int_directory):
     # If no pairs were in negative linkage, copy to output folder and skip
     if not os.path.isfile(int_directory + chrom + ".negLD"):
         copy_command = "cp " + int_directory + chrom + ".map " \
-                       + cwd + "output/" + chrom + ".filtered.map"
+                       + cwd + "/" + chrom + ".filtered.map"
         subprocess.check_call(copy_command, shell=True)
         return None
 
@@ -527,7 +527,7 @@ def switch_alleles(chrom, cwd, int_directory):
     with negfile as neg:
         for line in neg:
             neglist.append(line.split()[0])
-    newmapfile =open(cwd + "output/" + chrom + ".filtered.map", 'w')
+    newmapfile =open(cwd + "/" + chrom + ".filtered.map", 'w')
     oldmapfile = open(int_directory + chrom + ".map", 'r')
     with oldmapfile as old:
         for k, line in enumerate(old):
