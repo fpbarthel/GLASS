@@ -42,7 +42,8 @@ rule haplotype_map_merge:
 
 rule download_vcf:
     output:
-        "data/1000GP-VCF/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+        "data/1000GP-VCF/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz",
+        "data/1000GP-VCF/ALL.chr{chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
     params:
         dir = "data/1000GP-VCF"
     conda:
@@ -52,7 +53,8 @@ rule download_vcf:
         "Chromosome: {wildcards.chr}"
     shell:
         "cd {params.dir} && \
-            wget -r -np -nH --cut-dirs 4 ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{wildcards.chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+            wget -r -np -nH --cut-dirs 4 ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{wildcards.chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz && \
+            wget -r -np -nH --cut-dirs 4 ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr{wildcards.chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz.tbi"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## This rule downloads the 1000GP haplotypes
