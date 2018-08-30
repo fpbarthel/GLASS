@@ -91,7 +91,7 @@ rule extract_similar_SNPs:
         "Creating list of SNPs with similar MAFs across populations..."
     run:
         SIM = config["haplotype_map"]["similarity"]
-        vcf_reader = vcf.Reader(open(input["vcf"], 'r'))  # Loop over VCF records
+        vcf_reader = vcf.Reader(filename=input["vcf"])  # Loop over VCF records
         SNPs = []
         for record in vcf_reader:
             info = record.INFO
@@ -454,7 +454,7 @@ rule reformat_clumps:
                     block_dict[variant] = anchor
         anchor_file.close()
 
-        old_map = vcf.Reader(open(input["vcf"], 'r'))
+        old_map = vcf.Reader(filename=input["vcf"])
         new_map = open(output["map"], 'w')
         
         '''
