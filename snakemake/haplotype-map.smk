@@ -140,6 +140,8 @@ rule create_VCFs:
         "../envs/haplotype.yaml"
     message:
         "Creating filtered VCFs."
+    log:
+        "logs/haplotype-map/create_VCFs.chr{chr}.log"
     shell:
     	"vcftools --gzvcf {input.vcf} \
     		--maf {config[haplotype_map][min_maf]} \
@@ -207,7 +209,7 @@ rule create_PLINK_binary:
     output:
         "results/haplotype-map/plink/{chr}.bed"
     log:
-        "logs/create_PLINK_binary.chr{chr}.log"
+        "logs/haplotype-map/create_PLINK_binary.chr{chr}.log"
     params:
         recomb_file = lambda wildcards: "data/1000GP-map/genetic_map_chr{chr}_combined_b37.txt* {chr}".format(chr = wildcards.chr)
     message:    
@@ -240,7 +242,7 @@ rule LD_score:
     message:
         "Calculating LDScores..."
     log:
-        "logs/LD_score.chr{chr}.log"
+        "logs/haplotype-map/LD_score.chr{chr}.log"
     conda:
         "../envs/haplotype.yaml"
     shell:
@@ -319,6 +321,8 @@ rule prune:
         "Pruning SNPs..."
     conda:
         "../envs/haplotype.yaml"
+    log:
+        "logs/haplotype-map/prune.chr{chr}.log"
     shell:
         "if [ \"{wildcards.chr}\" == \"X\" ]; \
         then \
@@ -407,6 +411,8 @@ rule clump:
         "Clumping SNPs..."
     conda:
         "../envs/haplotype.yaml"
+    log:
+        "logs/haplotype-map/clump.chr{chr}.log"
     shell:
         "plink --bfile {params.bfile} \
             --clump {input.independent} {input.dependent} \
