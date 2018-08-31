@@ -18,4 +18,4 @@ tmp/
 *.RDa
 .Rproj.user
 .Rproj.user/**
-
+.**

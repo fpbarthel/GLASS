@@ -4,6 +4,30 @@
 
 library(tidyverse)
 
+## Flowcell ID parsing taken from
+## https://github.com/10XGenomics/supernova/blob/master/tenkit/lib/python/tenkit/illumina_instrument.py
+# platform_unit_to_model <- function()
+
+# FCIDs = c("C[A-Z,0-9]{4}ANXX$" = "HiSeq 1500/2000/2500",
+#           "C[A-Z,0-9]{4}ACXX$" = "HiSeq 1000/1500/2000/2500",
+#           "H[A-Z,0-9]{4}ADXX$" = "HiSeq 1500/2500",
+#           "H[A-Z,0-9]{4}BCXX$" = "HiSeq 1500/2500",
+#           "H[A-Z,0-9]{4}BCXY$" = "HiSeq 1500/2500",
+#           "H[A-Z,0-9]{4}BBXX$" = "HiSeq 4000",
+#           "H[A-Z,0-9]{4}BBXY$" = "HiSeq 4000",
+#           "H[A-Z,0-9]{4}CCXX$" = "HiSeq X",
+#           "H[A-Z,0-9]{4}CCXY$" = "HiSeq X",
+#           "H[A-Z,0-9]{4}ALXX$" = "HiSeq X",
+#           "H[A-Z,0-9]{4}BGXX$" = "NextSeq",
+#           "H[A-Z,0-9]{4}BGXY$" = "NextSeq",
+#           "H[A-Z,0-9]{4}BGX2$" = "NextSeq",
+#           "H[A-Z,0-9]{4}AFXX$" = "NextSeq",
+#           "A[A-Z,0-9]{8}$" = "MiSeq",
+#           "B[A-Z,0-9]{8}$" = "MiSeq",
+#           "D[A-Z,0-9]{8}$" = "MiSeq",
+#           "G[A-Z,0-9]{8}$" = "MiSeq",
+#           "H[A-Z,0-9]{4}DMXX$" = "NovaSeq")
+
 ## record base directory, typically ./.git dir is present
 mybasedir = here::here()
 setwd(mybasedir)
@@ -20,48 +44,48 @@ json_ext = "json"
 text_ext = "tsv"
 
 ## Aliquots
-df2 = read.delim("data/ref/master_life_history_uniform_naming_complete.txt", as.is=T)
-df2 = df2 %>% select(aliquot_uuid = uuid, sample_id = Barcode) %>%
-  mutate(aliquot_id = sprintf("%s-%s", sample_id, aliquot_uuid),
-         analyte_type = "DNA",
-         analysis_type = "WGS",
-         portion = 1) %>%
+df2 = read.delim("data/ref/glass_wg_aliquots_mapping_table.txt", as.is=T)
+df2 = df2 %>% mutate(sample_id = substr(aliquot_id, 1, 15),
+                     case_id = substr(aliquot_id, 1, 12),
+                     aliquot_uuid = substr(aliquot_id, 25, 30),
+                     analyte = substr(aliquot_id, 19, 19),
+                     portion = substr(aliquot_id, 17, 18),
+                     analysis_type = substr(aliquot_id, 21, 23)) %>%
   filter(grepl("TCGA", sample_id))
 
 tmp = jsonlite::read_json("data/ref/TCGA_WGS_GDC_legacy_UUIDs.json", simplifyVector=T)
 df = tmp %>% unnest(samples) %>%
   unnest(files) %>%
   unnest(readgroups) %>%
-  mutate(legacy_sample_id = sample_id,
-         sample_id = sprintf("%s-%s", case_id, sample_type_code)) %>%
+  mutate(sample_id = sprintf("%s-%s", case_id, sample_type_code)) %>%
   left_join(df2)
 
 files = df %>% 
-  mutate(file_path = sprintf("/fastscratch/barthf/GLASS-WG/data/download/%s/%s", file_uuid, file_name)) %>%
+  mutate(file_path = sprintf("/fastscratch/verhaak-lab/GLASS-WG/data/bam/%s/%s", file_uuid, file_name)) %>%
   select(aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format) %>%
   distinct()
 
 ## Readgroups
 rgs = readLines('data/ref/TCGA_BAM_readgroups.txt')
 readgroups = data.frame(file_uuid = basename(dirname(gsub("\\t@RG.*$","",rgs))),
-                        RGID = gsub("^.*ID:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                        RGPL = gsub("^.*PL:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                        RGPU = gsub("^.*PU:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                        RGLB = gsub("^.*LB:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                        RGPI = gsub("^.*PI:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                        RGDT = gsub("^.*DT:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                        RGSM = gsub("^.*SM:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
-                        RGCN = gsub("^.*CN:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                        legacy_readgroup_id = gsub("^.*ID:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                        readgroup_platform = toupper(gsub("^.*PL:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T)),
+                        readgroup_platform_unit = substr(gsub("^.*PU:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),1,17),
+                        readgroup_library = gsub("^.*LB:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                        readgroup_date = gsub("^.*DT:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
+                        readgroup_center = gsub("^.*CN:([\\w\\.\\-\\:]+).*$", "\\1", rgs, perl=T),
                         stringsAsFactors = F) %>%
-  mutate(RGPI = ifelse(RGPI == 0, 0, NA)) %>%
   left_join(select(files, file_uuid, aliquot_id)) %>%
-  select(file_uuid, aliquot_id, everything())
+  mutate(readgroup_id = sprintf("%s.%s", substr(readgroup_platform_unit,1,5), substr(readgroup_platform_unit,17,17)),
+         readgroup_sample_id = aliquot_id,
+         readgroup_center = ifelse(readgroup_center == "broad", "BI", readgroup_center)) %>%
+  select(file_uuid, aliquot_id, readgroup_id, everything())
 
 ### aliquots
-aliquots = df %>% select(sample_id, aliquot_uuid, aliquot_id, portion, analyte_type, analysis_type) %>% distinct()
+aliquots = df %>% select(aliquot_id, legacy_aliquot_id, sample_id, case_id, case_project, aliquot_uuid, analyte, portion, analysis_type) %>% distinct()
 
 ## Samples
-samples = df %>% select(case_id, sample_id, legacy_sample_id, sample_type = sample_type_code) %>% distinct()
+samples = df %>% select(case_id, sample_id, sample_type = sample_type_code) %>% distinct()
 
 ### Cases
 cases = df %>% select(case_id, project_id = case_project)
@@ -72,7 +96,7 @@ p1 = samples %>%
   select(sample_type, aliquot_id, case_id) %>%
   filter(sample_type %in% c("TP", "NB")) %>% 
   spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = TP) %>%
+  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(TP, 14, 18), substr(NB, 14, 18), substr(TP, 21, 23))) %>%
   select(case_id, pair_id, tumor_aliquot_id = TP, normal_aliquot_id = NB)
 
 p2 = samples %>% 
@@ -80,7 +104,7 @@ p2 = samples %>%
   select(sample_type, aliquot_id, case_id) %>%
   filter(sample_type %in% c("R1", "NB")) %>%
   spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = R1) %>%
+  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(R1, 14, 18), substr(NB, 14, 18), substr(R1, 21, 23))) %>%
   select(case_id, pair_id, tumor_aliquot_id = R1, normal_aliquot_id = NB)
 
 p3 = samples %>% 
@@ -88,7 +112,7 @@ p3 = samples %>%
   select(sample_type, aliquot_id, case_id) %>%
   filter(sample_type %in% c("R2", "NB")) %>%
   spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = R2) %>%
+  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(R2, 14, 18), substr(NB, 14, 18), substr(R2, 21, 23))) %>%
   select(case_id, pair_id, tumor_aliquot_id = R2, normal_aliquot_id = NB)
 
 pairs = rbind(p1,p2,p3) %>% filter(complete.cases(tumor_aliquot_id, normal_aliquot_id))
@@ -110,22 +134,22 @@ write.table(pairs, file = sprintf("%s.%s", pairs_file, text_ext), sep="\t", row.
 
 ## Old - new name mapping table
 ## hack that works bc for now samples and aliquots map 1:1
-renamemap = samples %>% left_join(aliquots) %>%
-  mutate(old_bam = sprintf("%s.realn.dedup.bqsr.bam",legacy_sample_id),
-         old_bai = sprintf("%s.realn.dedup.bqsr.bai",legacy_sample_id),
-         old_md5 = sprintf("%s.realn.dedup.bqsr.bam.md5",legacy_sample_id),
-         old_bqsr = sprintf("%s.bqsr.txt",legacy_sample_id),
-         new_bam = sprintf("%s.realn.mdup.bqsr.bam",aliquot_id),
-         new_bai = sprintf("%s.realn.mdup.bqsr.bai",aliquot_id),
-         new_md5 = sprintf("%s.realn.mdup.bqsr.bam.md5",aliquot_id),
-         new_bqsr = sprintf("%s.bqsr.txt",aliquot_id)) %>%
-  select(aliquot_id, starts_with("new"), starts_with("old")) %>%
-  gather(starts_with("new"), starts_with("old"), key="var", value="filename") %>%
-  separate(var, into=c("a","file"), sep="_") %>%
-  spread(a, filename) %>%
-  select(old,new)
-
-write.table(renamemap, file="results_bqsr_renamemap.tsv", quote=F, row.names=F, sep="\t")
+# renamemap = samples %>% left_join(aliquots) %>%
+#   mutate(old_bam = sprintf("%s.realn.dedup.bqsr.bam",legacy_sample_id),
+#          old_bai = sprintf("%s.realn.dedup.bqsr.bai",legacy_sample_id),
+#          old_md5 = sprintf("%s.realn.dedup.bqsr.bam.md5",legacy_sample_id),
+#          old_bqsr = sprintf("%s.bqsr.txt",legacy_sample_id),
+#          new_bam = sprintf("%s.realn.mdup.bqsr.bam",aliquot_id),
+#          new_bai = sprintf("%s.realn.mdup.bqsr.bai",aliquot_id),
+#          new_md5 = sprintf("%s.realn.mdup.bqsr.bam.md5",aliquot_id),
+#          new_bqsr = sprintf("%s.bqsr.txt",aliquot_id)) %>%
+#   select(aliquot_id, starts_with("new"), starts_with("old")) %>%
+#   gather(starts_with("new"), starts_with("old"), key="var", value="filename") %>%
+#   separate(var, into=c("a","file"), sep="_") %>%
+#   spread(a, filename) %>%
+#   select(old,new)
+# 
+# write.table(renamemap, file="results_bqsr_renamemap.tsv", quote=F, row.names=F, sep="\t")
 
 mysession_info <- devtools::session_info()
 

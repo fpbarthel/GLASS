@@ -97,7 +97,6 @@ haplotype_map:
   file: "/projects/barthf/GLASS-WG/data/ref/haplotype.filtered.map"
   ld_script: "/projects/barthf/GLASS-WG/sandbox/ldsc/ldsc.py"
   header: "/projects/barthf/GLASS-WG/data/ref/haplotype_map_header.txt"
-  tmp_dir: "tmp/haplotype-map"
   similarity: 0.10
   min_maf: 0.10
   ld_score_window_autosome: 1.0
