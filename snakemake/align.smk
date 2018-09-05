@@ -91,13 +91,12 @@ rule bam2ubam:
         temp("results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam")
     params:
         RGID = lambda wildcards: wildcards.readgroup,                                                     ## ID
-        RGPL = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPL"], ## Platform
-        RGPM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPM"], ## Platform model
-        RGPU = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPU"], ## Platform unit
-        RGLB = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGLB"], ## Library
-        RGDT = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGDT"], ## Date
-        RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGSM"], ## Sample name
-        RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGCN"], ## Center
+        RGPL = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_platform"], ## Platform
+        RGPU = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_platform_unit"], ## Platform unit
+        RGLB = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_library"], ## Library
+        RGDT = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_date"], ## Date
+        RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_sample_id"], ## Sample name
+        RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_center"], ## Center
         mem = CLUSTER_META["bam2ubam"]["mem"],
         walltime = CLUSTER_META["bam2ubam"]["walltime"]
     threads:
@@ -116,7 +115,6 @@ rule bam2ubam:
             --OUTPUT={output} \
             --RGID=\"{params.RGID}\" \
             --RGPU=\"{params.RGPU}\" \
-            --RGPM=\"{params.RGPM}\" \
             --RGSM=\"{params.RGSM}\" \
             --RGPL=\"{params.RGPL}\" \
             --RGLB=\"{params.RGLB}\" \
@@ -139,13 +137,12 @@ rule fq2ubam:
         temp("results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam")
     params:
         RGID = lambda wildcards: wildcards.readgroup,                                                     ## ID
-        RGPL = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPL"], ## Platform
-        RGPM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPM"], ## Platform model
-        RGPU = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPU"], ## Platform unit
-        RGLB = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGLB"], ## Library
-        RGDT = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGDT"], ## Date
-        RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGSM"], ## Sample ID
-        RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGCN"], ## Center
+        RGPL = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_platform"], ## Platform
+        RGPU = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_platform_unit"], ## Platform unit
+        RGLB = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_library"], ## Library
+        RGDT = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_date"], ## Date
+        RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_sample_id"], ## Sample ID
+        RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_center"], ## Center
         mem = CLUSTER_META["fq2ubam"]["mem"],
         walltime = CLUSTER_META["fq2ubam"]["walltime"]
     threads:
@@ -167,7 +164,6 @@ rule fq2ubam:
             --PLATFORM_UNIT=\"{params.RGPU}\" \
             --SAMPLE_NAME=\"{params.RGSM}\" \
             --PLATFORM=\"{params.RGPL}\" \
-            --PLATFORM_MODEL=\"{params.RGPM}\" \
             --LIBRARY_NAME=\"{params.RGLB}\" \
             --SEQUENCING_CENTER=\"{params.RGCN}\" \
             --RUN_DATE=\"{params.RGDT}\" \
@@ -340,8 +336,10 @@ rule markduplicates:
         metrics = "results/align/markduplicates/{aliquot_id}.metrics.txt"
     params:
         max_records = 6000000,
-        mem = lambda wildcards, attempt: CLUSTER_META["markduplicates"]["mem"] if attempt == 1 else CLUSTER_META["markduplicates"]["mem_if_fail"],
-        walltime = lambda wildcards: CLUSTER_META["markduplicates"]["walltime"]
+        walltime = lambda wildcards: CLUSTER_META["markduplicates"]["walltime"],
+        mem = lambda wildcards: CLUSTER_META["markduplicates"]["mem"]
+    #resources:
+    # 	mem = lambda wildcards, attempt: CLUSTER_META["markduplicates"]["mem"] if attempt == 1 else CLUSTER_META["markduplicates"]["mem_if_fail"]
     threads:
         CLUSTER_META["markduplicates"]["ppn"]
     log:

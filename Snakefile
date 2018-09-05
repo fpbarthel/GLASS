@@ -42,30 +42,22 @@ PAIRS 		= json.load(open(config["pairs_json"]))
 ## JSON processing
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# @sbamin Unless already implemented, we should be explicitly checking json input for 
-# 1. non-empty variables, and 
-# 2. unique RGID and RGPU but an identical RGSM tags, e.g., https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L25 
-# We can either check it upfront while making json or more preferable to check just before snakemake submits a workflow per case or sample.
-# That way, snakemake should STOP with error or emit WARN for non-compliant RG format. 
-# This is more practical if input is FQ and not BAM unless we already have RG info for BAM file.
-## @barthf : TO-DO
+## Turn an unnamed list of dicts into a nammed list of dicts
+## Taken from stackoverflow
+## https://stackoverflow.com/questions/4391697/find-the-index-of-a-dict-within-a-list-by-matching-the-dicts-value
+def build_dict(seq, key):
+    return dict((d[key], dict(d, index=index)) for (index, d) in enumerate(seq))
 
-### NOTE NEED TO SPERATE BAM AND FASTQ READGROUPS
-
-## Validate CASES JSON
 ## CASES should be unique
 ## CHECK THAT ALL CASE_ID VALUES IN CASES ARE UNIQUE
-## TO-DO
+## IN PROGRESS
 
 
-## Validate FILES JSON
 ## FILES -> FILE_UUID should be unique
 ## CHECK THAT ALL FILE_UUID VALUES IN FILES ARE UNIQUE
-## Check that input files exist
-## TO-DO
+## IN PROGRESS
 
 
-## Validate PAIRS JSON
 ## PAIR -> PAIR_ID should be unique
 ## CHECK THAT ALL PAIR_ID VALUES IN PAIR ARE UNIQUE
 ## IN PROGRESS
@@ -74,95 +66,67 @@ PAIRS 		= json.load(open(config["pairs_json"]))
 ## CASES -> DICT
 CASES_DICT = build_dict(CASES, "case_id")
 
-
-## FILES -> DICT
-FILES_DICT = build_dict(FILES, "file_uuid")
+## SAMPLES -> DICT
+SAMPLES_DICT = build_dict(SAMPLES, "sample_id")
 
 ## ALIQUOTS -> DICT
 ALIQUOTS_DICT = build_dict(ALIQUOTS, "aliquot_id")
 
-## SAMPLES -> DICT
-SAMPLES_DICT = build_dict(SAMPLES, "sample_id")
-
+## FILES -> DICT
+FILES_DICT = build_dict(FILES, "file_uuid")
 
 ## Pair IDs are unique, PAIRS -> DICT
 PAIRS_DICT = build_dict(PAIRS, "pair_id")
 
-
-## Aliquot IDs and BAM/FQ files map 1:1 (or 1:2 for FQ)
-
+## Aliquot IDs and BAM files map 1:1
 ALIQUOT_TO_BAM_PATH = {}
 for file in FILES:
     if file["file_format"] == "BAM":
         ALIQUOT_TO_BAM_PATH[ file["aliquot_id"] ] = file["file_path"]
-
-
+        
+## Case to aliquots
 ## Dict of aliquots per case
-## Dict of aliquots per batch
-
-BATCH_TO_ALIQUOT = {}
 CASE_TO_ALIQUOT = {}
 for aliquot in ALIQUOTS:
-    aliquot["case_id"] = SAMPLES_DICT[ aliquot["sample_id"] ]["case_id"]
-    aliquot["project_id"] = CASES_DICT[ aliquot["case_id"] ]["project_id"]
-    
+    aliquot["case_id"] = SAMPLES_DICT[ aliquot["sample_id"] ]["case_id"]  
     if aliquot["case_id"] not in CASE_TO_ALIQUOT:
         CASE_TO_ALIQUOT[ aliquot["case_id"] ] = [ aliquot["aliquot_id"] ]
     elif aliquot["aliquot_id"] not in CASE_TO_ALIQUOT[ aliquot["case_id"] ]:
         CASE_TO_ALIQUOT[ aliquot["case_id"] ].append(aliquot["aliquot_id"])
-    
-    if aliquot["project_id"] not in BATCH_TO_ALIQUOT:
-        BATCH_TO_ALIQUOT[ aliquot["project_id"] ] = [ aliquot["aliquot_id"] ]
-    elif aliquot["aliquot_id"] not in BATCH_TO_ALIQUOT:
-        BATCH_TO_ALIQUOT[ aliquot["project_id"] ].append(aliquot["aliquot_id"])
-
-
 
 ## Aliquots and RGIDs map 1:many
-
-ALIQUOT_TO_RGID = {}        
+ALIQUOT_TO_RGID = {}     
+ALIQUOT_TO_LEGACY_RGID = {}
 for readgroup in READGROUPS:
     if readgroup["aliquot_id"] not in ALIQUOT_TO_RGID:
-        ALIQUOT_TO_RGID[ readgroup["aliquot_id"] ] = [ readgroup["RGID"] ]
+        ALIQUOT_TO_RGID[ readgroup["aliquot_id"] ] = [ readgroup["readgroup_id"] ]
     else:
-        ALIQUOT_TO_RGID[ readgroup["aliquot_id"] ].append(readgroup["RGID"])
-
-
-## Batches and normal aliquot IDs map 1:many
-## Normal aliquot IDs are repeated across multiple pairs from same case
-## Each pair has one normal and one tumor
-
-BATCH_TO_NORMAL = {}
-for pair in PAIRS:
-    pair["project_id"] = CASES_DICT[ pair["case_id"] ]["project_id"]
-    PAIRS_DICT[ pair["pair_id"] ]["project_id"] = pair["project_id"]
-    if pair["project_id"] not in BATCH_TO_NORMAL:
-        BATCH_TO_NORMAL[ pair["project_id"] ] = [ pair["normal_aliquot_id"] ]
-    elif pair["normal_aliquot_id"] not in BATCH_TO_NORMAL[ pair["project_id"] ]:
-        BATCH_TO_NORMAL[ pair["project_id"] ].append(pair["normal_aliquot_id"])
+        ALIQUOT_TO_RGID[ readgroup["aliquot_id"] ].append(readgroup["readgroup_id"])
+    if len(readgroup["legacy_readgroup_id"]) == 0:
+        continue
+    if readgroup["aliquot_id"] not in ALIQUOT_TO_LEGACY_RGID:
+        ALIQUOT_TO_LEGACY_RGID[ readgroup["aliquot_id"] ] = [ readgroup["legacy_readgroup_id"] ]
+    else:
+        ALIQUOT_TO_LEGACY_RGID[ readgroup["aliquot_id"] ].append(readgroup["readgroup_id"])
         
-
 ## Readgroup information and 
 ## Aliquots and RGIDs map 1:many
 ## RGIDs are unique within an aliquot
 ## Aliquot IDs and fastQ files map 1:many
-
-ALIQUOT_TO_READGROUP = {}
+## Because FQ files are also seperated by readgroup, create dictionary of FQ files here as well
+ALIQUOT_TO_READGROUP = {} 
 ALIQUOT_TO_FQ_PATH = {}
-ALIQUOT_TO_SM = {}
 for readgroup in READGROUPS:
-    if readgroup["aliquot_id"] not in ALIQUOT_TO_SM:
-        ALIQUOT_TO_SM[ readgroup["aliquot_id"] ] = readgroup["RGSM"]
     if readgroup["aliquot_id"] not in ALIQUOT_TO_READGROUP:
-        ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ] = { readgroup["RGID"] : readgroup }
+        ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ] = { readgroup["readgroup_id"] : readgroup }
     else:
-        ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ] = readgroup
-    ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_path"] = FILES_DICT[ ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_uuid"] ]["file_path"]
-    ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_format"] = FILES_DICT[ ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_uuid"] ]["file_format"]
-    if ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_format"] == "FQ":
+        ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["readgroup_id"] ] = readgroup
+    ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["readgroup_id"] ]["file_path"] = FILES_DICT[ ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["readgroup_id"] ]["file_uuid"] ]["file_path"]
+    ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["readgroup_id"] ]["file_format"] = FILES_DICT[ ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["readgroup_id"] ]["file_uuid"] ]["file_format"]
+    if ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["readgroup_id"] ]["file_format"] == "FQ":
         if readgroup["aliquot_id"] not in ALIQUOT_TO_FQ_PATH:
             ALIQUOT_TO_FQ_PATH[ readgroup["aliquot_id"] ] = {}
-        ALIQUOT_TO_FQ_PATH[ readgroup["aliquot_id"] ][ readgroup["RGID"] ] = ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_path"].split(",")
+        ALIQUOT_TO_FQ_PATH[ readgroup["aliquot_id"] ][ readgroup["readgroup_id"] ] = ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["readgroup_id"] ]["file_path"].split(",")
 
 ## List of scatterlist items to iterate over
 ## Each Mutect2 run spawns 50 jobs based on this scatterlist
@@ -303,14 +267,14 @@ rule telseq:
 ## Check sample and case fingerprints
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule fingerprint:
-    input:
-        expand("results/fingerprinting/sample/{aliquot_id}.crosscheck_metrics", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
-        expand("results/fingerprinting/case/{case_id}.crosscheck_metrics", case_id=CASES_DICT.keys()),
-        expand("results/fingerprinting/batch/{batch}.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
-        "results/fingerprinting/GLASS-WG.crosscheck_metrics",
-        expand("results/fingerprinting/batch/{batch}.clustered.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
-        "results/fingerprinting/GLASS-WG.clustered.crosscheck_metrics"
+#rule fingerprint:
+#    input:
+#        expand("results/fingerprinting/sample/{aliquot_id}.crosscheck_metrics", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
+#        expand("results/fingerprinting/case/{case_id}.crosscheck_metrics", case_id=CASES_DICT.keys()),
+#        expand("results/fingerprinting/batch/{batch}.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
+#        "results/fingerprinting/GLASS-WG.crosscheck_metrics",
+#        expand("results/fingerprinting/batch/{batch}.clustered.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
+#        "results/fingerprinting/GLASS-WG.clustered.crosscheck_metrics"
        
 
 ## END ##

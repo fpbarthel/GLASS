@@ -25,7 +25,9 @@ unpaired_json = "data/ref/TCGA_WGS_GDC_legacy_UUIDs.json"
 add_fields = c("cases.project.project_id",
                "cases.samples.sample_type", 
                "cases.samples.portions.analytes.aliquots.submitter_id",
-               "cases.case_id")
+               "cases.case_id",
+               "cases.diagnoses.age_at_diagnosis",
+               "cases.demographic.gender")
 
 # Inspect data types.
 files(legacy = TRUE) %>% facet(c('data_type')) %>% aggregations()
@@ -51,10 +53,12 @@ fres$case_id = unlist(map(fres$cases, "case_id")) # To explicitly grab "case_id"
 fres$project = map(fres$cases, "project") %>% map_chr("project_id")
 fres$sample_type = map(fres$cases, "samples") %>% map(unlist) %>% map_chr("sample_type")
 fres$aliquot_id = map(fres$cases, "samples") %>% map(unlist) %>% map_chr("portions.analytes.aliquots.submitter_id")
+fres$age = map(fres$cases, "diagnoses") %>% map(unlist) %>% map_chr("age_at_diagnosis") %>% as.integer() / 365.25
+fres$sex = map(fres$cases, "demographic") %>% map(unlist) %>% map_chr("gender")
 
 # Convert to dataframe.
 df = as.data.frame(fres[-which(names(fres) %in% c("cases", "acl", "analysis"))], stringsAsFactors = F) %>%
-  select(id, aliquot_id, project, sample_type, case_id, experimental_strategy, file_size, md5sum, file_name, created_datetime, updated_datetime) %>%
+  select(id, aliquot_id, project, sample_type, case_id, experimental_strategy, file_size, md5sum, file_name, created_datetime, updated_datetime, age, sex) %>%
   filter(grepl("TCGA", project)) %>%
   mutate(sample_id = substr(aliquot_id,1,16),
          ali_id = substr(aliquot_id,1,12))

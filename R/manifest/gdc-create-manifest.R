@@ -44,23 +44,24 @@ json_ext = "json"
 text_ext = "tsv"
 
 ## Aliquots
-df2 = read.delim("data/ref/glass_wg_aliquots_mapping_table.txt", as.is=T)
-df2 = df2 %>% mutate(sample_id = substr(aliquot_id, 1, 15),
-                     case_id = substr(aliquot_id, 1, 12),
-                     aliquot_uuid = substr(aliquot_id, 25, 30),
-                     analyte = substr(aliquot_id, 19, 19),
-                     portion = substr(aliquot_id, 17, 18),
-                     analysis_type = substr(aliquot_id, 21, 23)) %>%
+aliquots_master = read.delim("data/ref/glass_wg_aliquots_mapping_table.txt", as.is=T)
+aliquots_master = aliquots_master %>% mutate(sample_id = substr(aliquot_id, 1, 15),
+                                             sample_type_code = substr(aliquot_id, 14, 15),
+                                             case_id = substr(aliquot_id, 1, 12),
+                                             aliquot_uuid = substr(aliquot_id, 25, 30),
+                                             analyte = substr(aliquot_id, 19, 19),
+                                             portion = substr(aliquot_id, 17, 18),
+                                             analysis_type = substr(aliquot_id, 21, 23)) %>%
   filter(grepl("TCGA", sample_id))
 
-tmp = jsonlite::read_json("data/ref/TCGA_WGS_GDC_legacy_UUIDs.json", simplifyVector=T)
-df = tmp %>% unnest(samples) %>%
-  unnest(files) %>%
-  unnest(readgroups) %>%
-  mutate(sample_id = sprintf("%s-%s", case_id, sample_type_code)) %>%
-  left_join(df2)
+## Files
+files_master = jsonlite::read_json("data/ref/TCGA_WGS_GDC_legacy_UUIDs.json", simplifyVector=T)
+files_master = files_master %>% #unnest(samples) %>% unnest(files) %>% unnest(readgroups) %>% mutate(sample_id = sprintf("%s-%s", case_id, sample_type_code)) %>%
+  select(case_project=project,file_uuid=id,file_md5sum=md5sum,file_name,file_size,legacy_aliquot_id=aliquot_id,age,sex) %>%
+  mutate(file_format="BAM") %>%
+  left_join(aliquots_master)
 
-files = df %>% 
+files = files_master %>% 
   mutate(file_path = sprintf("/fastscratch/verhaak-lab/GLASS-WG/data/bam/%s/%s", file_uuid, file_name)) %>%
   select(aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format) %>%
   distinct()
@@ -82,13 +83,20 @@ readgroups = data.frame(file_uuid = basename(dirname(gsub("\\t@RG.*$","",rgs))),
   select(file_uuid, aliquot_id, readgroup_id, everything())
 
 ### aliquots
-aliquots = df %>% select(aliquot_id, legacy_aliquot_id, sample_id, case_id, case_project, aliquot_uuid, analyte, portion, analysis_type) %>% distinct()
+aliquots = aliquots_master %>% 
+  select(aliquot_id, legacy_aliquot_id, sample_id, case_id, aliquot_uuid, analyte, portion, analysis_type) %>% 
+  distinct()
 
 ## Samples
-samples = df %>% select(case_id, sample_id, sample_type = sample_type_code) %>% distinct()
+samples = aliquots_master %>% 
+  select(case_id, sample_id, sample_type = sample_type_code) %>% 
+  distinct()
 
 ### Cases
-cases = df %>% select(case_id, project_id = case_project)
+cases = aliquots_master %>% 
+  left_join(select(files_master,legacy_aliquot_id,age,sex)) %>%
+  mutate(case_project = "TCGA") %>%
+  select(case_id, case_project, age, sex) %>% distinct()
 
 ## Pairs
 p1 = samples %>% 
