@@ -107,7 +107,7 @@ for readgroup in READGROUPS:
     if readgroup["aliquot_id"] not in ALIQUOT_TO_LEGACY_RGID:
         ALIQUOT_TO_LEGACY_RGID[ readgroup["aliquot_id"] ] = [ readgroup["legacy_readgroup_id"] ]
     else:
-        ALIQUOT_TO_LEGACY_RGID[ readgroup["aliquot_id"] ].append(readgroup["readgroup_id"])
+        ALIQUOT_TO_LEGACY_RGID[ readgroup["aliquot_id"] ].append(readgroup["legacy_readgroup_id"])
         
 ## Readgroup information and 
 ## Aliquots and RGIDs map 1:many
