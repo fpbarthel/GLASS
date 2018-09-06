@@ -102,7 +102,7 @@ for readgroup in READGROUPS:
         ALIQUOT_TO_RGID[ readgroup["aliquot_id"] ] = [ readgroup["readgroup_id"] ]
     else:
         ALIQUOT_TO_RGID[ readgroup["aliquot_id"] ].append(readgroup["readgroup_id"])
-    if len(readgroup["legacy_readgroup_id"]) == 0:
+    if "legacy_readgroup_id" not in readgroup or len(readgroup["legacy_readgroup_id"]) == 0:
         continue
     if readgroup["aliquot_id"] not in ALIQUOT_TO_LEGACY_RGID:
         ALIQUOT_TO_LEGACY_RGID[ readgroup["aliquot_id"] ] = [ readgroup["legacy_readgroup_id"] ]
