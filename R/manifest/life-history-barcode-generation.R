@@ -215,7 +215,7 @@ life_history_all_samples = bind_cols(life_history_barcodes, uuid_life_history) %
   unite(aliquot_id, c(glass_aliquot_id, uuid), sep = "-", remove = TRUE)
 
 # Write file to be uploaded to GLASS-WG github page.
-write.table(life_history_all_samples, file='data/ref/glass_wg_sample_mapping_table.txt', quote=FALSE, sep='\t', row.names = F)
+write.table(life_history_all_samples, file='data/ref/glass_wg_aliquots_mapping_table.txt', quote=FALSE, sep='\t', row.names = F)
 
 ### Create dictionaries for different tissue centers. ####
 # Subset list of TissueSourceSites from TCGA plus add new rows for other datasets.

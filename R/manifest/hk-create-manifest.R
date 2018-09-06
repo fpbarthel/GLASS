@@ -1,16 +1,16 @@
 #######################################################
 # Create manifest for hong kong samples (GLASS)
-# Date: 2018.08.13
+# Date: 2018.09.06
 # Author: Kevin J., Floris B.
 #######################################################
-
 # Local directory for github repo.
 mybasedir = "/Users/johnsk/Documents/Life-History/GLASS-WG"
 setwd(mybasedir)
 
 # Files with information about fastq information and barcodes.
 hk_file_path = "data/sequencing-information/HK/hong_kong_file_list_complete.20180813.tsv"
-life_history_barcodes = "data/sequencing-information/master_life_history_uniform_naming_complete.txt"
+life_history_barcodes = "data/ref/glass_wg_aliquots_mapping_table.txt"
+hk_clinical_info = "data/clinical-data/HK/recurrent.glioma.HongKong.20161221.xlsx"
 
 # Create extensions for samples.
 json_ext = "json"
@@ -37,6 +37,8 @@ library(stringr)
 #######################################################
 # We need to generate the following fields required by the SNV snakemake pipeline:
 # aliquots, files, cases, samples, pairs, and readgroups.
+
+
 
 ### Aliquot ####
 master_sheet = read.delim(life_history_barcodes, as.is=T)
@@ -111,6 +113,10 @@ files = hk_map_df %>% select(aliquot_id, file_path, file_name, file_uuid, file_s
 
 
 ### Cases ####
+# Clinical data to extract subject sex.
+hk_clinical_data <- readWorkbook(hk_clinical_info, sheet = 1, startRow = 1, colNames = TRUE)
+hk_clinical_data$Sex[1:5]
+
 hk_map_df = hk_map_df %>% 
   mutate(case_id = substring(Barcode, 1, 12), 
          project_id = "GLSS-HK")
