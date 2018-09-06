@@ -82,6 +82,9 @@ rule revertsam:
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Replaces existing readgroup tag with a more informative one
+# Removing RGDT because of bug
+# See https://gatkforums.broadinstitute.org/gatk/discussion/12085/fastqtosam-no-value-found-for-tagged-argument-for-iso-8601-run-date-parameter
+#             --RGDT=\"{params.RGDT}\" \
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule bam2ubam:
@@ -119,7 +122,6 @@ rule bam2ubam:
             --RGPL=\"{params.RGPL}\" \
             --RGLB=\"{params.RGLB}\" \
             --RGCN=\"{params.RGCN}\" \
-            --RGDT=\"{params.RGDT}\" \
             --TMP_DIR={config[tempdir]} \
             > {log} 2>&1" 
 
