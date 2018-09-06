@@ -33,7 +33,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "1:00:00"
+        "walltime" : "70:00:00"
     },
     "fq2ubam" :
     {
