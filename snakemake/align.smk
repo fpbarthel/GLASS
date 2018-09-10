@@ -89,7 +89,8 @@ rule revertsam:
 
 rule bam2ubam:
     input:
-        "results/align/revertsam/{aliquot_id}/{aliquot_id}.{readgroup}.revertsam.bam"
+        bam = lambda wildcards: ALIQUOT_TO_BAM_PATH[wildcards.aliquot_id],
+        rgbam = "results/align/revertsam/{aliquot_id}/{aliquot_id}.{readgroup}.revertsam.bam"
     output:
         temp("results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam")
     params:
@@ -114,7 +115,7 @@ rule bam2ubam:
         "Readgroup: {wildcards.readgroup}"
     shell:
         "gatk --java-options -Xmx{params.mem}g AddOrReplaceReadGroups \
-            --INPUT={input} \
+            --INPUT={input.rgbam} \
             --OUTPUT={output} \
             --RGID=\"{params.RGID}\" \
             --RGPU=\"{params.RGPU}\" \
@@ -168,12 +169,9 @@ rule fq2ubam:
             --PLATFORM=\"{params.RGPL}\" \
             --LIBRARY_NAME=\"{params.RGLB}\" \
             --SEQUENCING_CENTER=\"{params.RGCN}\" \
-            --RUN_DATE=\"{params.RGDT}\" \
             --SORT_ORDER=queryname \
             --TMP_DIR={config[tempdir]} \
-            > {log} 2>&1"       
-
-ruleorder: fq2ubam > bam2ubam
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Run FASTQC on uBAM
