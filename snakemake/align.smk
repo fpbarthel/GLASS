@@ -173,6 +173,8 @@ rule fq2ubam:
             --TMP_DIR={config[tempdir]} \
             > {log} 2>&1"       
 
+ruleorder: fq2ubam > bam2ubam
+
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Run FASTQC on uBAM
 ## URL: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
