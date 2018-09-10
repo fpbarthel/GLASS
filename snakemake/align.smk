@@ -48,7 +48,7 @@ rule revertsam:
         ## Create a readgroup name / filename mapping file
         rgmap = pd.DataFrame(
             {
-                "READ_GROUP_ID": ALIQUOT_TO_LEGACY_RGID[wildcards["aliquot_id"]],
+                "READ_GROUP_ID": ALIQUOT_TO_LEGACY_RGID[wildcards["aliquot_id"]] if wildcards["aliquot_id"] in ALIQUOT_TO_LEGACY_RGID else "",
                 "OUTPUT": ["results/align/revertsam/{aliquot_id}/{aliquot_id}.{rg}.revertsam.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in ALIQUOT_TO_RGID[wildcards["aliquot_id"]]]
             },
             columns = ["READ_GROUP_ID", "OUTPUT"]
