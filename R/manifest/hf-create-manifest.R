@@ -1,6 +1,6 @@
 #######################################################
 # Create manifest for low pass Henry Ford sample (hGBM)
-# Date: 2018.09.10
+# Date: 2018.09.11
 # Author: Kevin J., Floris B.
 #######################################################
 # Local directory for github repo.
@@ -128,7 +128,7 @@ p1 = samples %>%
   select(sample_type, aliquot_id, case_id) %>%
   filter(sample_type %in% c("TP", "NB")) %>% 
   spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = TP) %>%
+  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(TP, 14, 18), substr(NB, 14, 18), substr(TP, 21, 23))) %>%
   select(case_id, pair_id, tumor_aliquot_id = TP, normal_aliquot_id = NB)
 
 p2 = samples %>% 
@@ -136,7 +136,7 @@ p2 = samples %>%
   select(sample_type, aliquot_id, case_id) %>%
   filter(sample_type %in% c("R1", "NB")) %>%
   spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = R1) %>%
+  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(R1, 14, 18), substr(NB, 14, 18), substr(R1, 21, 23))) %>%
   select(case_id, pair_id, tumor_aliquot_id = R1, normal_aliquot_id = NB)
 
 # Note: The Henry Ford sample HF-3016 originally had two NB, we selected HF-3016-10-28D because
@@ -157,7 +157,7 @@ readgroup_df = hf_map_df %>%
          readgroup_date = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%dT%H:%M:%S%z"),
          readgroup_library = RGLB,
          readgroup_center = RGCN,
-         readgroup_sample_id = RGSM, 
+         readgroup_sample_id = aliquot_id, 
          readgroup_id = paste0(substring(readgroup_platform_unit, 1, 5), substring(readgroup_platform_unit, nchar(readgroup_platform_unit)-1, nchar(readgroup_platform_unit)), ""))
          
 

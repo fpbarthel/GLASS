@@ -1,6 +1,6 @@
 #######################################################
 # Create manifest for hong kong samples (GLASS)
-# Date: 2018.09.06
+# Date: 2018.09.11
 # Author: Kevin J., Floris B.
 #######################################################
 # Local directory for github repo.
@@ -148,7 +148,7 @@ p1 = samples %>%
   select(sample_type, aliquot_id, case_id) %>%
   filter(sample_type %in% c("TP", "NB")) %>% 
   spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = TP) %>%
+  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(TP, 14, 18), substr(NB, 14, 18), substr(TP, 21, 23))) %>%
   select(case_id, pair_id, tumor_aliquot_id = TP, normal_aliquot_id = NB)
 
 p2 = samples %>% 
@@ -156,7 +156,7 @@ p2 = samples %>%
   select(sample_type, aliquot_id, case_id) %>%
   filter(sample_type %in% c("R1", "NB")) %>%
   spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = R1) %>%
+  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(R1, 14, 18), substr(NB, 14, 18), substr(R1, 21, 23))) %>%
   select(case_id, pair_id, tumor_aliquot_id = R1, normal_aliquot_id = NB)
 
 # Note: Hong Kong samples do not have second recurrences.

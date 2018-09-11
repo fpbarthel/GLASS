@@ -1,6 +1,6 @@
 #######################################################
 # Create manifest for MD Anderson samples (n = 120, GLASS)
-# Date: 2018.08.17
+# Date: 2018.09.11
 # Author: Kevin J.
 #######################################################
 # Local directory for github repo.
@@ -23,7 +23,7 @@ mda_master_path = "data/clinical-data/MDACC/MDA-Clinical-Dataset/Master Log for 
 novogene_sample_path = "data/sequencing-information/MDACC/Novogene_SIF_14.xlsx"
 
 # Completed life-history barcodes.
-life_history_barcodes = "data/sequencing-information/master_life_history_uniform_naming_complete.txt"
+life_history_barcodes = "data/ref/glass_wg_aliquots_mapping_table.txt"
 
 # Create extensions for samples.
 json_ext = "json"
