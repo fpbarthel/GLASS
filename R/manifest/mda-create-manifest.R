@@ -13,6 +13,7 @@ MDA_batch1_file_path = "data/sequencing-information/MDACC/file_list_C202SC180305
 MDA_batch2_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch2_n94_20180603.tsv"
 MDA_batch3_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch2_n13_20180716.tsv"
 MDA_batch4_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch3_n13_20180816.tsv"
+mda_clinical_info = "data/clinical-data/MDACC/MDA-Clinical-Dataset/Protocol_Surgery_39_final.20180821.xlsx"
 
 # Clinical dataset priovided by Kristin Alfaro-Munoz at MD Anderson.
 # Modified to generate a sample_type (TP, R1, R2, R3) using the clinical information. See github issue #16.
@@ -46,6 +47,7 @@ library(jsonlite)
 library(listviewer)
 library(stringi)
 library(stringr)
+library(lubridate)
 
 #######################################################
 # We need to generate the following fields required by the SNV snakemake pipeline:
@@ -64,10 +66,10 @@ mda_batch4_df <- read.table(MDA_batch4_file_path, col.names="relative_file_path"
 mda_batch4_df$filename = sapply(strsplit(mda_batch4_df$relative_file_path, "/"), "[[", 3)
 
 # Replace the placeholder for pwd "./" from bash cmd: "find -name ".fq.gz" in parent directory of fastqs. 
-mda_batch1_df$working_file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch1_n14_20180405", mda_batch1_df$relative_file_path)
-mda_batch2_df$working_file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch1_n94_20180603", mda_batch2_df$relative_file_path)
-mda_batch3_df$working_file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch2_n13_20180716", mda_batch3_df$relative_file_path)
-mda_batch4_df$working_file_path <- gsub("^", "/fastscratch/johnsk/GLASS-WG/mdacc/C202SC18030593_batch3_n13_20180816", mda_batch4_df$relative_file_path)
+mda_batch1_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc", mda_batch1_df$relative_file_path)
+mda_batch2_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc", mda_batch2_df$relative_file_path)
+mda_batch3_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc", mda_batch3_df$relative_file_path)
+mda_batch4_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc", mda_batch4_df$relative_file_path)
 
 # Create an old sample.id for these subjects to be linked. No longer *necessary*, but kept in case it's helpful.
 mda_batch1_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch1_df$filename)
@@ -124,17 +126,21 @@ mda_all_samples_df <- bind_rows(mda_normal_blood_map, mda_tumor_sample_map)
 
 
 ### Aliquot ####
-mda_barcode_sheet = read.delim("data/sequencing-information/master_life_history_uniform_naming_complete.txt", as.is=T)
-aliquot_sheet = mda_barcode_sheet %>% select(aliquot_uuid = uuid, sample_id = Barcode, Original_ID)  %>%
-  mutate(aliquot_id = sprintf("%s-%s", sample_id, aliquot_uuid),
-         analyte_type = "DNA",
-         analysis_type = "WGS",
-         portion = 1) %>% 
-  filter(grepl("GLASS", Original_ID))
+life_history_ids = read.delim(life_history_barcodes, as.is=T)
+aliquots_master = life_history_ids %>% mutate(sample_id = substr(aliquot_id, 1, 15),
+                                              sample_type_code = substr(aliquot_id, 14, 15),
+                                              case_id = substr(aliquot_id, 1, 12),
+                                              aliquot_uuid = substr(aliquot_id, 25, 30),
+                                              analyte = substr(aliquot_id, 19, 19),
+                                              portion = substr(aliquot_id, 17, 18),
+                                              analysis_type = substr(aliquot_id, 21, 23)) %>%
+  filter(grepl("GLSS-MD", sample_id)) %>% 
+  filter(!grepl("MD-LP", sample_id))
 
-# Aliquot file to be written.
-aliquots = aliquot_sheet %>% select(sample_id, aliquot_uuid, aliquot_id, portion, analyte_type, analysis_type) %>% distinct()
-
+### aliquots
+aliquots = aliquots_master %>% 
+  select(aliquot_id, legacy_aliquot_id, sample_id, case_id, aliquot_uuid, analyte, portion, analysis_type) %>% 
+  distinct()
 
 ### Files ####
 # Generate *file* tsv containing: aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
@@ -166,7 +172,7 @@ merged_mda_files$revised_id <- gsub("G01_", "GLASS_01_00", merged_mda_files$old_
 # This action will remove the Yung sample.
 mda_map_df = merged_mda_files %>% 
   inner_join(novogene_linker_unique, by = c("library_id" = "Novogene.ID")) %>%  
-  inner_join(mda_barcode_sheet, by = c("*SampleName" = "Original_ID")) %>%  
+  inner_join(aliquots_master, by = c("*SampleName" = "legacy_aliquot_id")) %>%  
   ungroup()
 
 # Generate uuids for each of the mdacc files.
@@ -204,7 +210,6 @@ mda_map_df <- mda_map_df[-rows_to_remove, ]
 # Need to record the file_size and file_md5sum for these samples.
 mda_map_df = mda_map_df %>% mutate(file_size = "NA",
                                  file_md5sum = "NA",
-                                 aliquot_id = sprintf("%s-%s", Barcode, uuid), 
                                  file_format = "FQ")
 
 # Order needs to be: # aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
@@ -214,20 +219,37 @@ files = mda_map_df %>% select(aliquot_id, file_path, file_name, file_uuid, file_
 
 
 ### Cases ####
-mda_map_df = mda_map_df %>% 
-  mutate(case_id = substring(Barcode, 1, 12), 
-         project_id = "GLSS-MD")
+# Clinical data to extract subject sex.
+mda_clinical_data <- readWorkbook(mda_clinical_info, sheet = 1, startRow = 1, colNames = TRUE)
+
+# Create an Age at Diagnosis variable from birthdate to date of first surgery.
+mda_clinical <- mda_clinical_data %>% 
+  distinct(MRN, .keep_all = TRUE) %>% 
+  mutate(Birth.Date = convertToDate(Birth.Date),
+         Surgery.Date = convertToDate(Surgery.Date),
+         Age.At.Diagnosis = as.numeric(difftime(Surgery.Date, Birth.Date, units = "weeks")/52))
+
 # Select only those relevant fields.
-cases = mda_map_df %>% select(case_id, project_id) %>% 
+cases = mda_clinical %>% 
+  mutate(age = Age.At.Diagnosis,
+         sex = recode(Gender, "Male"="male", "Female"="female")) %>% 
+  inner_join(mda_master, by ="MRN") %>% 
+  inner_join(mda_map_df, by= c("Jax.Lib.Prep.Customer.Sample.Name"="*SampleName")) %>% 
+  mutate(case_id = substring(aliquot_id, 1, 12), 
+         case_project = "GLSS-MD") %>% 
+  distinct(MRN, .keep_all = T) %>% 
+  select(case_id, case_project, age, sex) %>% 
   distinct()
 
 
 
 ### Samples ####
 # Grab last two characrters of barcode.
-mda_map_df$sample_type = substring(mda_map_df$Barcode, 14, 15)
+mda_map_df$sample_type = substring(mda_map_df$aliquot_id, 14, 15)
 # Recode variables to match Floris' fields.
-samples = mda_map_df %>% select(case_id, sample_id = Barcode, legacy_sample_id = `*SampleName`, sample_type) %>% distinct()
+samples = mda_map_df %>% select(case_id, sample_id, legacy_sample_id = `*SampleName`, sample_type) %>% distinct()
+
+
 
 
 
@@ -237,7 +259,7 @@ p1 = samples %>%
   select(sample_type, aliquot_id, case_id) %>%
   filter(sample_type %in% c("TP", "NB")) %>% 
   spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = TP) %>%
+  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(TP, 14, 18), substr(NB, 14, 18), substr(TP, 21, 23))) %>%
   select(case_id, pair_id, tumor_aliquot_id = TP, normal_aliquot_id = NB)
 
 p2 = samples %>% 
@@ -245,7 +267,7 @@ p2 = samples %>%
   select(sample_type, aliquot_id, case_id) %>%
   filter(sample_type %in% c("R1", "NB")) %>%
   spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = R1) %>%
+  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(R1, 14, 18), substr(NB, 14, 18), substr(R1, 21, 23))) %>%
   select(case_id, pair_id, tumor_aliquot_id = R1, normal_aliquot_id = NB)
 
 p3 = samples %>% 
@@ -253,7 +275,7 @@ p3 = samples %>%
   select(sample_type, aliquot_id, case_id) %>%
   filter(sample_type %in% c("R2", "NB")) %>%
   spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = R2) %>%
+  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(R2, 14, 18), substr(NB, 14, 18), substr(R2, 21, 23))) %>%
   select(case_id, pair_id, tumor_aliquot_id = R2, normal_aliquot_id = NB)
 
 p4 = samples %>% 
@@ -261,7 +283,7 @@ p4 = samples %>%
   select(sample_type, aliquot_id, case_id) %>%
   filter(sample_type %in% c("R3", "NB")) %>%
   spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = R3) %>%
+  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(R3, 14, 18), substr(NB, 14, 18), substr(R3, 21, 23))) %>%
   select(case_id, pair_id, tumor_aliquot_id = R3, normal_aliquot_id = NB)
 
 # Note: May need to revise once we gather additional information from Kristin @ MD Anderson.
@@ -271,18 +293,18 @@ pairs = rbind(p1, p2, p3, p4) %>% filter(complete.cases(tumor_aliquot_id, normal
 ### Readgroups ####
 # Necessary information: file_uuid, aliquot_id, RGID, RGPL, RGPU, RGLB, RGPI, RGDT, RGSM, RGCN.
 readgroup_df = mda_map_df %>% 
-  mutate(RGPL = "ILLUMINA",
-         RGPU = paste(substr(file_name, nchar(file_name)-19, nchar(file_name)-11), 
-                      substr(file_name, nchar(file_name)-8, nchar(file_name)-8), sep="."),
-         RGLB = sub(".*_ *(.*?) *_H.*", "\\1", file_name),
-         RGPI = 0,
-         RGDT = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%dT%H:%M:%S%z"), 
-         RGSM = Barcode,
-         RGCN = "NVGN_MD",
-         RGID = paste0(substring(RGPU, 1, 4), substring(RGPU, nchar(RGPU)-1, nchar(RGPU)), ""))
+  mutate(readgroup_platform = "ILLUMINA",
+       readgroup_platform_unit = paste(substr(file_name, nchar(file_name)-19, nchar(file_name)-11), 
+                                       substr(file_name, nchar(file_name)-8, nchar(file_name)-8), sep="."),
+       readgroup_library = sub(".*_ *(.*?) *_H.*", "\\1", file_name),
+       readgroup_date = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%dT%H:%M:%S%z"), 
+       readgroup_sample_id = aliquot_id,
+       readgroup_center = "NVGN_MD",
+       readgroup_id = paste0(substring(readgroup_platform_unit, 1, 5), substring(readgroup_platform_unit, nchar(readgroup_platform_unit)-1, nchar(readgroup_platform_unit)), "")) 
 
 # Finalize readgroup information in predefined order.
-readgroups = readgroup_df %>% select(file_uuid, aliquot_id, RGID, RGPL, RGPU, RGLB, RGPI, RGDT, RGSM, RGCN) %>% distinct()
+readgroups = readgroup_df %>% select(file_uuid, aliquot_id, readgroup_id, readgroup_platform, readgroup_platform_unit, readgroup_library, readgroup_date, readgroup_center, readgroup_sample_id) %>% distinct()
+
 
 ### OUTPUT ####
 # Output the json and .tsv files.
