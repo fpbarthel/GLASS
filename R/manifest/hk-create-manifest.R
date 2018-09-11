@@ -89,7 +89,6 @@ hk_map_df <- merged_hk_files %>%
 
 # Generate uuids for each of the hong kong files.
 # Example from TCGA: 24c6f54a-e7a2-4148-8335-045e3c74096e
-set.seed(1)
 hk_map_df$file_uuid = paste(stri_rand_strings(dim(hk_map_df)[1], 8, "[a-z0-9]"),
   stri_rand_strings(dim(hk_map_df)[1], 4, "[a-z0-9]"),
   stri_rand_strings(dim(hk_map_df)[1], 4, "[a-z0-9]"),
