@@ -119,7 +119,7 @@ cases = jdg_map_df %>%
 # Grab last two characrters of barcode.
 jdg_map_df$sample_type = substring(jdg_map_df$aliquot_id, 14, 15)
 # Recode variables to match Floris' fields.
-samples = jdg_map_df %>% select(case_id, sample_id, legacy_sample_id, sample_type) %>% distinct()
+samples = jdg_map_df %>% select(case_id, sample_id, sample_type) %>% distinct()
 
 
 ### Pairs ####
