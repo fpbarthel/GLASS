@@ -67,7 +67,7 @@
     },
     "markduplicates" :
     {
-        "ppn" : 2,
+        "ppn" : 12,
         "walltime" : "70:00:00",
         "mem" : 12,
         "mem_if_fail" : 72
