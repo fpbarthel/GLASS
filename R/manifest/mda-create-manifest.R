@@ -1,6 +1,6 @@
 #######################################################
 # Create manifest for MD Anderson samples (n = 120, GLASS)
-# Date: 2018.09.11
+# Date: 2018.09.12
 # Author: Kevin J.
 #######################################################
 # Local directory for github repo.
@@ -67,9 +67,9 @@ mda_batch4_df$filename = sapply(strsplit(mda_batch4_df$relative_file_path, "/"),
 
 # Replace the placeholder for pwd "./" from bash cmd: "find -name ".fq.gz" in parent directory of fastqs. 
 mda_batch1_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc", mda_batch1_df$relative_file_path)
-mda_batch2_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc", mda_batch2_df$relative_file_path)
-mda_batch3_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc", mda_batch3_df$relative_file_path)
-mda_batch4_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc", mda_batch4_df$relative_file_path)
+mda_batch2_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc/C202SC18030593_batch1_n94_20180603", mda_batch2_df$relative_file_path)
+mda_batch3_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc/C202SC18030593_batch2_n13_20180716", mda_batch3_df$relative_file_path)
+mda_batch4_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc/DT20180816", mda_batch4_df$relative_file_path)
 
 # Create an old sample.id for these subjects to be linked. No longer *necessary*, but kept in case it's helpful.
 mda_batch1_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch1_df$filename)
@@ -247,7 +247,7 @@ cases = mda_clinical %>%
 # Grab last two characrters of barcode.
 mda_map_df$sample_type = substring(mda_map_df$aliquot_id, 14, 15)
 # Recode variables to match Floris' fields.
-samples = mda_map_df %>% select(case_id, sample_id, legacy_sample_id = `*SampleName`, sample_type) %>% distinct()
+samples = mda_map_df %>% select(case_id, sample_id, sample_type) %>% distinct()
 
 
 
