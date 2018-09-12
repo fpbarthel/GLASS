@@ -161,7 +161,13 @@ rule build_haplotype_map:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule align:
-    input: expand("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id=ALIQUOTS_DICT.keys())
+    input:
+        expand("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id=ALIQUOTS_DICT.keys()),
+        expand("results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
+        expand("results/align/validatebam/{aliquot_id}.ValidateSamFile.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
+        lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample=sample, rg=readgroup)
+          for sample, readgroups in ALIQUOT_TO_RGID.items()
+          for readgroup in readgroups]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download only rule
@@ -177,9 +183,7 @@ rule download_only:
 
 rule qc:
     input: 
-        "results/align/multiqc/multiqc_report.html",
-        expand("results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
-        expand("results/align/validatebam/{aliquot_id}.ValidateSamFile.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys())
+        "results/align/multiqc/multiqc_report.html"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SNV rule
