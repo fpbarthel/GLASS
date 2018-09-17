@@ -69,8 +69,7 @@
     {
         "ppn" : 12,
         "walltime" : "72:00:00",
-        "mem" : 12,
-        "mem_if_fail" : 72
+        "mem" : 72
     },
     "baserecalibrator" :
     {
