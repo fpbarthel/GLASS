@@ -28,7 +28,7 @@ workdir: config["workdir"]
 KEYFILE     = config["gdc_token"]
 
 ## Cluster metadata (memory, CPU, etc)
-CLUSTER_META    = json.load(open(config["cluster_json"]))
+CLUSTER_META    = json.load(open(config["cluster_config"]))
 
 ## JSON data
 CASES 		= json.load(open(config["cases_json"]))
