@@ -117,9 +117,13 @@ rule extract_similar_SNPs:
             if max(differences) > SIM or len(values) != 5 or SNP == ".":
                 continue  # If similarity threshold is exceeded, skip SNP
 
-            with open(str(output), 'a') as similar_SNPs: 
-                similar_SNPs.write(SNP + '\n')
-                SNPs.append(SNP)
+            SNPs.append(SNP)
+
+        ## Print SNPs to file
+        with open(str(output), 'a') as similar_SNPs: 
+            for snp in SNPs:
+                similar_SNPs.write(snp + '\n')
+                
 
 rule create_VCFs:
     '''
