@@ -25,10 +25,10 @@
 
 rule revertsam:
     input:
-        lambda wildcards: ALIQUOT_TO_BAM_PATH[wildcards.aliquot_id]
+        lambda wildcards: manifest.getSourceBAM(wildcards.aliquot_id)
     output:
         map = "results/align/revertsam/{aliquot_id}/{aliquot_id}.output_map.txt",
-        bams = temp(expand("results/align/revertsam/{{aliquot_id}}/{{aliquot_id}}.{rg}.revertsam.bam", rg=list(itertools.chain.from_iterable(ALIQUOT_TO_RGID.values()))))
+        bams = temp(expand("results/align/revertsam/{{aliquot_id}}/{{aliquot_id}}.{rg}.revertsam.bam", rg = manifest.getAllReadgroups(limit_bam = True)))
     params:
         dir = "results/align/revertsam/{aliquot_id}",
         mem = CLUSTER_META["revertsam"]["mem"],
@@ -45,11 +45,13 @@ rule revertsam:
         "by readgroup.\n"
         "Sample: {wildcards.aliquot_id}"
     run:
+        old_rg = manifest.getLegacyRGID(wildcards["aliquot_id"]) # if wildcards["aliquot_id"] in ALIQUOT_TO_LEGACY_RGID else ""
+        new_rg = manifest.getRGID(wildcards["aliquot_id"])
         ## Create a readgroup name / filename mapping file
         rgmap = pd.DataFrame(
             {
-                "READ_GROUP_ID": ALIQUOT_TO_LEGACY_RGID[wildcards["aliquot_id"]] if wildcards["aliquot_id"] in ALIQUOT_TO_LEGACY_RGID else "",
-                "OUTPUT": ["results/align/revertsam/{aliquot_id}/{aliquot_id}.{rg}.revertsam.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in ALIQUOT_TO_RGID[wildcards["aliquot_id"]]]
+                "READ_GROUP_ID": old_rg,
+                "OUTPUT": ["results/align/revertsam/{aliquot_id}/{aliquot_id}.{rg}.revertsam.bam".format(aliquot_id = wildcards["aliquot_id"], rg = rg) for rg in new_rg]
             },
             columns = ["READ_GROUP_ID", "OUTPUT"]
         )
@@ -57,7 +59,7 @@ rule revertsam:
 
         ## Create empty files ("touch") for readgroups not in this BAM file
         ## Workaround for issue documented here: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
-        other_rg_f = ["results/align/revertsam/{aliquot_id}/{aliquot_id}.{rg}.revertsam.bam".format(aliquot_id=wildcards["aliquot_id"],rg=rg) for sample, rgs in ALIQUOT_TO_RGID.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
+        other_rg_f = ["results/align/revertsam/{aliquot_id}/{aliquot_id}.{rg}.revertsam.bam".format(aliquot_id = wildcards["aliquot_id"], rg = rg) for rg in manifest.getRGIDsNotInAliquot(wildcards["aliquot_id"])]
         for f in other_rg_f:
             touch(f)
 
@@ -89,18 +91,18 @@ rule revertsam:
 
 rule bam2ubam:
     input:
-        bam = lambda wildcards: ALIQUOT_TO_BAM_PATH[wildcards.aliquot_id],
+        bam = lambda wildcards: manifest.getSourceBAM(wildcards.aliquot_id), ### Input BAM is not actually used, but needs to check if present to prioritize this rule over others
         rgbam = "results/align/revertsam/{aliquot_id}/{aliquot_id}.{readgroup}.revertsam.bam"
     output:
         temp("results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam")
     params:
         RGID = lambda wildcards: wildcards.readgroup,                                                     ## ID
-        RGPL = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_platform"], ## Platform
-        RGPU = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_platform_unit"], ## Platform unit
-        RGLB = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_library"], ## Library
-        RGDT = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_date"], ## Date
-        RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_sample_id"], ## Sample name
-        RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_center"], ## Center
+        RGPL = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_platform"), ## Platform
+        RGPU = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_platform_unit"), ## Platform unit
+        RGLB = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_library"), ## Library
+        RGDT = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_date"), ## Date
+        RGSM = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_sample_id"), ## Sample name
+        RGCN = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_center"), ## Center
         mem = CLUSTER_META["bam2ubam"]["mem"],
         walltime = CLUSTER_META["bam2ubam"]["walltime"]
     threads:
@@ -134,18 +136,18 @@ rule bam2ubam:
 
 rule fq2ubam:
     input:
-        R1 = lambda wildcards: ALIQUOT_TO_FQ_PATH[wildcards.aliquot_id][wildcards.readgroup][0],
-        R2 = lambda wildcards: ALIQUOT_TO_FQ_PATH[wildcards.aliquot_id][wildcards.readgroup][1]
+        R1 = lambda wildcards: manifest.getFASTQ(wildcards.aliquot_id, wildcards.readgroup)[0],
+        R2 = lambda wildcards: manifest.getFASTQ(wildcards.aliquot_id, wildcards.readgroup)[1]
     output:
         temp("results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam")
     params:
         RGID = lambda wildcards: wildcards.readgroup,                                                     ## ID
-        RGPL = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_platform"], ## Platform
-        RGPU = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_platform_unit"], ## Platform unit
-        RGLB = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_library"], ## Library
-        RGDT = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_date"], ## Date
-        RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_sample_id"], ## Sample ID
-        RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["readgroup_center"], ## Center
+        RGPL = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_platform"), ## Platform
+        RGPU = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_platform_unit"), ## Platform unit
+        RGLB = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_library"), ## Library
+        RGDT = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_date"), ## Date
+        RGSM = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_sample_id"(, ## Sample ID
+        RGCN = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_center"), ## Center
         mem = CLUSTER_META["fq2ubam"]["mem"],
         walltime = CLUSTER_META["fq2ubam"]["walltime"]
     threads:
@@ -331,7 +333,7 @@ rule samtofastq_bwa_mergebamalignment:
 
 rule markduplicates:
     input:
-        lambda wildcards: expand("results/align/bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.aliquot_id, rg=ALIQUOT_TO_RGID[wildcards.aliquot_id])
+        lambda wildcards: expand("results/align/bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.aliquot_id, rg=manifest.getRGID(wildcards.aliquot_id))
     output:
         bam = temp("results/align/markduplicates/{aliquot_id}.realn.mdup.bam"),
         bai = temp("results/align/markduplicates/{aliquot_id}.realn.mdup.bai"),
@@ -522,11 +524,10 @@ rule validatebam:
 
 rule multiqc:
     input:
-        expand("results/align/validatebam/{sample}.ValidateSamFile.txt", sample=ALIQUOT_TO_RGID.keys()),
-        expand("results/align/wgsmetrics/{sample}.WgsMetrics.txt", sample=ALIQUOT_TO_RGID.keys()),
+        expand("results/align/validatebam/{sample}.ValidateSamFile.txt", sample = manifest.getSelectedAliquots()),
+        expand("results/align/wgsmetrics/{sample}.WgsMetrics.txt", sample = manifest.getSelectedAliquots()),
         lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample=sample, rg=readgroup)
-          for sample, readgroups in ALIQUOT_TO_RGID.items()
-          for readgroup in readgroups] 
+          for readgroup in manifest.getAllReadgroups()]
     output:
         "results/align/multiqc/multiqc_report.html"
     params:

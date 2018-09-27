@@ -3,7 +3,7 @@
 CAUTION: Do not modify this file unless you know what you are doing.
          Unexpected results may occur if the code is changed deliberately.
 -->
-<dbmodel pgmodeler-ver="0.9.2-alpha" last-position="20,460" last-zoom="1"
+<dbmodel pgmodeler-ver="0.9.2-alpha" last-position="0,459" last-zoom="1"
 	 default-owner="postgres">
 <role name="verhaak-lab"
       login="true">
@@ -149,7 +149,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 	<column name="readgroup_library" not-null="true">
 		<type name="varchar" length="32"/>
 	</column>
-	<column name="readgroup_date">
+	<column name="readgroup_timestamp">
 		<type name="timestamp" length="0"/>
 	</column>
 	<column name="readgroup_center">
@@ -221,7 +221,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 	<schema name="analysis"/>
 	<role name="&quot;verhaak-lab&quot;"/>
 	<position x="980" y="840"/>
-	<reference alias="pair_id">
+	<reference alias="pair_barcode">
 		<expression><![CDATA[substring(a1.aliquot_barcode from 1 for 18) || substring(a2.aliquot_barcode from 13 for 10) ]]></expression>
 	</reference>
 	<reference table="biospecimen.aliquots" column="aliquot_barcode" alias="a1" column-alias="tumor_barcode"/>

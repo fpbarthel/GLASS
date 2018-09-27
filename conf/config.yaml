@@ -1,6 +1,11 @@
 ## Snakemake configuration
 ## @Author Floris Barthel
 
+## Database settings
+db:
+  configfile: "/home/barthf/.odbc.ini"
+  configsection: "VerhaakDB"
+
 ## Full path to cluster settings
 cluster_json:     "conf/cluster.json"
 

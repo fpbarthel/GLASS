@@ -174,9 +174,9 @@ rule collectalleliccounts:
 
 rule modelsegments:
     input:
-        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_id}.denoisedCR.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        tumor_counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        normal_counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"])
+        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_id}.denoisedCR.tsv".format(aliquot_id = manifest.getTumor(wildcards.pair_id)),
+        tumor_counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id = manifest.getTumor(wildcards.pair_id)),
+        normal_counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id = manifest.getNormal(wildcards.pair_id))
     output:
         "results/cnv/modelsegments/{pair_id}/{pair_id}.modelBegin.seg",
         "results/cnv/modelsegments/{pair_id}/{pair_id}.modelFinal.seg",
@@ -249,7 +249,7 @@ rule callsegments:
 
 rule plotmodeledsegments:
     input:
-        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_id}.denoisedCR.tsv".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
+        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_id}.denoisedCR.tsv".format(aliquot_id = manifest.getTumor(wildcards.pair_id)),
         tumor_counts = "results/cnv/modelsegments/{pair_id}/{pair_id}.hets.tsv",
         tumor_segments = "results/cnv/modelsegments/{pair_id}/{pair_id}.modelFinal.seg"
     output:
