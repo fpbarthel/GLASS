@@ -184,7 +184,7 @@ class PostgreSQLManifestHandler(ManifestHandler):
         Returns a list of dictionaries containing all files and aliquots
         """
         q = "SELECT aliquot_barcode, file_name, file_format \
-             FROM analysis.files"
+             FROM analysis.files;"
         
         return self.query(q, cursor_factory = psycopg2.extras.RealDictCursor)
     
@@ -193,8 +193,26 @@ class PostgreSQLManifestHandler(ManifestHandler):
         Returns a list of dictionaries containing all pairs
         """
         q = "SELECT pair_barcode, tumor_barcode, normal_barcode \
-             FROM analysis.pairs"
+             FROM analysis.pairs;"
         
         return self.query(q, cursor_factory = psycopg2.extras.RealDictCursor)
+
+    def getAllReadgroupsByAliquot(self):
+        """
+        Returns a dictionary with aliquots as keys and a list of rgids as value
+        """
+        q = "SELECT aliquot_barcode, readgroup_idtag \
+             FROM biospecimen.readgroups;"
+        
+        res = self.query(q, cursor_factory = psycopg2.extras.RealDictCursor)
+
+        d = {}
+        for i in res:
+            if i["aliquot_barcode"] in d:
+                d[i["aliquot_barcode"]].append(i["readgroup_idtag"])
+            else:
+                d[i["aliquot_barcode"]] = [i["readgroup_idtag"]]
+
+        return d
 
 ## END ##

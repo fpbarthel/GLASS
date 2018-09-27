@@ -63,9 +63,10 @@ rule align:
     input:
         expand("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = manifest.getSelectedAliquots()),
         expand("results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt", aliquot_id = manifest.getSelectedAliquots()),
-        expand("results/align/validatebam/{aliquot_id}.ValidateSamFile.txt", aliquot_id = manifest.getSelectedAliquots())#,
-        #lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample = sample, rg = readgroup)
-        #  for readgroup in manifest.getSelectedReadgroups()]
+        expand("results/align/validatebam/{aliquot_id}.ValidateSamFile.txt", aliquot_id = manifest.getSelectedAliquots()),
+        lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample = aliquot_barcode, rg = readgroup)
+          for aliquot_barcode, readgroups in manifest.getAllReadgroupsByAliquot().items()
+          for readgroup in readgroups]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download only rule

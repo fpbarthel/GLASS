@@ -16,6 +16,7 @@ class ManifestHandler:
 
     selected_aliquots = set()
     selected_pairs = set()
+    selected_readgroups = set()
     
     def __init__(self, source_file_basepath, aligned_file_basepath):
         self.source_files = self.locateSourceFiles(source_file_basepath)
@@ -63,6 +64,12 @@ class ManifestHandler:
         """
         return self.selected_pairs
 
+    def getSelectedPairs(self):
+        """
+        Return a list of selected pairs
+        """
+        return self.selected_pairs
+
     def locateSourceFiles(self, source_file_basepath):
         """
         Locate raw/unaligned FASTQ/BAM files
@@ -87,7 +94,6 @@ class ManifestHandler:
                                   "file_path" : [f for f in locate("{}.realn.mdup.bqsr.bam".format(barcode), aligned_file_basepath)]})
         
         return aligned_files
-        
     
     def getAllFiles(self):
         raise NotImplementedError("ManifestHandler should not be implemented directly")
@@ -96,6 +102,9 @@ class ManifestHandler:
         raise NotImplementedError("ManifestHandler should not be implemented directly")
         
     def getAllPairs(self):
+        raise NotImplementedError("ManifestHandler should not be implemented directly")
+
+    def getAllReadgroups(self):
         raise NotImplementedError("ManifestHandler should not be implemented directly")
 
 ## END ##

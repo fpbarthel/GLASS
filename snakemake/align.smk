@@ -45,8 +45,8 @@ rule revertsam:
         "by readgroup.\n"
         "Sample: {wildcards.aliquot_id}"
     run:
-        old_rg = manifest.getLegacyRGID(wildcards["aliquot_id"]) # if wildcards["aliquot_id"] in ALIQUOT_TO_LEGACY_RGID else ""
-        new_rg = manifest.getRGID(wildcards["aliquot_id"])
+        old_rg = manifest.getLegacyRGIDs(wildcards["aliquot_id"]) # if wildcards["aliquot_id"] in ALIQUOT_TO_LEGACY_RGID else ""
+        new_rg = manifest.getRGIDs(wildcards["aliquot_id"])
         ## Create a readgroup name / filename mapping file
         rgmap = pd.DataFrame(
             {
@@ -146,7 +146,7 @@ rule fq2ubam:
         RGPU = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_platform_unit"), ## Platform unit
         RGLB = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_library"), ## Library
         RGDT = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_date"), ## Date
-        RGSM = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_sample_id"(, ## Sample ID
+        RGSM = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_sample_id"), ## Sample ID
         RGCN = lambda wildcards: manifest.getRGTag(wildcards.aliquot_id, wildcards.readgroup, "readgroup_center"), ## Center
         mem = CLUSTER_META["fq2ubam"]["mem"],
         walltime = CLUSTER_META["fq2ubam"]["walltime"]
@@ -333,7 +333,7 @@ rule samtofastq_bwa_mergebamalignment:
 
 rule markduplicates:
     input:
-        lambda wildcards: expand("results/align/bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.aliquot_id, rg=manifest.getRGID(wildcards.aliquot_id))
+        lambda wildcards: expand("results/align/bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.aliquot_id, rg=manifest.getRGIDs(wildcards.aliquot_id))
     output:
         bam = temp("results/align/markduplicates/{aliquot_id}.realn.mdup.bam"),
         bai = temp("results/align/markduplicates/{aliquot_id}.realn.mdup.bai"),
@@ -522,34 +522,34 @@ rule validatebam:
 ## export LANG=en_US.UTF-8
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule multiqc:
-    input:
-        expand("results/align/validatebam/{sample}.ValidateSamFile.txt", sample = manifest.getSelectedAliquots()),
-        expand("results/align/wgsmetrics/{sample}.WgsMetrics.txt", sample = manifest.getSelectedAliquots()),
-        lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample=sample, rg=readgroup)
-          for readgroup in manifest.getAllReadgroups()]
-    output:
-        "results/align/multiqc/multiqc_report.html"
-    params:
-        dir = "results/align/multiqc",
-        mem = CLUSTER_META["multiqc"]["mem"],
-        walltime = CLUSTER_META["multiqc"]["walltime"]
-    threads:
-        CLUSTER_META["multiqc"]["ppn"]
-    conda:
-        "../envs/align.yaml"
-    log:
-        "logs/align/multiqc/multiqc.log"
-    benchmark:
-        "benchmarks/align/multiqc/multiqc.txt"
-    message:
-        "Running MultiQC"
-    shell:
-        "multiqc \
-            --interactive \
-            -o {params.dir} {config[workdir]}/results/align \
-            > {log} 2>&1; \
-            cp -R {params.dir}/* {config[html_dir]}"
+# rule multiqc:
+#     input:
+#         expand("results/align/validatebam/{sample}.ValidateSamFile.txt", sample = manifest.getSelectedAliquots()),
+#         expand("results/align/wgsmetrics/{sample}.WgsMetrics.txt", sample = manifest.getSelectedAliquots()),
+#         lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample=sample, rg=readgroup)
+#           for readgroup in manifest.getAllReadgroups()]
+#     output:
+#         "results/align/multiqc/multiqc_report.html"
+#     params:
+#         dir = "results/align/multiqc",
+#         mem = CLUSTER_META["multiqc"]["mem"],
+#         walltime = CLUSTER_META["multiqc"]["walltime"]
+#     threads:
+#         CLUSTER_META["multiqc"]["ppn"]
+#     conda:
+#         "../envs/align.yaml"
+#     log:
+#         "logs/align/multiqc/multiqc.log"
+#     benchmark:
+#         "benchmarks/align/multiqc/multiqc.txt"
+#     message:
+#         "Running MultiQC"
+#     shell:
+#         "multiqc \
+#             --interactive \
+#             -o {params.dir} {config[workdir]}/results/align \
+#             > {log} 2>&1; \
+#             cp -R {params.dir}/* {config[html_dir]}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Run FASTQC on aligned BAM
