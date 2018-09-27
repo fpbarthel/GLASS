@@ -1,4 +1,8 @@
-## Helper functions
+"""
+GLASS helper functions
+"""
+
+import os, fnmatch
 from configparser import ConfigParser
 
 def touch(fname, mode=0o666, dir_fd=None, **kwargs):
@@ -40,7 +44,7 @@ def dbconfig(filename, section):
  
     return db
 
-def locate(pattern, root=os.curdir):
+def locate(pattern, root = os.curdir):
     """
     Locate all files matching supplied filename pattern in and below
     supplied root directory.
@@ -49,3 +53,5 @@ def locate(pattern, root=os.curdir):
     for path, dirs, files in os.walk(os.path.abspath(root)):
         for filename in fnmatch.filter(files, pattern):
             yield os.path.join(path, filename)
+
+## END ##

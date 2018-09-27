@@ -3,28 +3,29 @@
 ## Authors: Floris Barthel, Samir Amin
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+import os
 import pandas as pd
 import itertools
-import os
 
 ## Import manifest processing functions
-from python import glassfunc
-from python import PostgreSQLManifestHandler
+from python.glassfunc import dbconfig, locate
+from python.PostgreSQLManifestHandler import PostgreSQLManifestHandler
 
 ## Connect to database
-dbconf = dbconfig(config["db"]["configfile"],config["db"]["configsection"])
+dbconf = dbconfig(config["db"]["configfile"], config["db"]["configsection"])
 
 ## Instantiate manifest
 manifest = PostgreSQLManifestHandler(host = dbconf["servername"], port = dbconf["port"], user = dbconf["username"], password = dbconf["password"], database = dbconf["database"])
+print(manifest)
 
 ## Set working directory based on configuration file
 workdir: config["workdir"]
 
 ## GDC token file for authentication
-KEYFILE     = config["gdc_token"]
+KEYFILE = config["gdc_token"]
 
 ## Cluster metadata (memory, CPU, etc)
-CLUSTER_META    = json.load(open(config["cluster_json"]))
+CLUSTER_META = json.load(open(config["cluster_json"]))
 
 ## List of scatterlist items to iterate over
 ## Each Mutect2 run spawns 50 jobs based on this scatterlist
@@ -32,19 +33,19 @@ CLUSTER_META    = json.load(open(config["cluster_json"]))
 WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in range(50)]
 
 ## Load modules
-include: "snakemake/haplotype-map.smk"
-include: "snakemake/download.smk"
-include: "snakemake/align.smk"
-include: "snakemake/mutect2.smk"
-include: "snakemake/vep.smk"
-include: "snakemake/lumpy.smk"
-include: "snakemake/cnv-gatk.smk"
-include: "snakemake/varscan2.smk"
-include: "snakemake/fingerprinting.smk"
-include: "snakemake/delly.smk"
-include: "snakemake/manta.smk"
-include: "snakemake/cnvnator.smk"
-include: "snakemake/telseq.smk"
+# include: "snakemake/haplotype-map.smk"
+# include: "snakemake/download.smk"
+# include: "snakemake/align.smk"
+# include: "snakemake/mutect2.smk"
+# include: "snakemake/vep.smk"
+# include: "snakemake/lumpy.smk"
+# include: "snakemake/cnv-gatk.smk"
+# include: "snakemake/varscan2.smk"
+# include: "snakemake/fingerprinting.smk"
+# include: "snakemake/delly.smk"
+# include: "snakemake/manta.smk"
+# include: "snakemake/cnvnator.smk"
+# include: "snakemake/telseq.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Haplotype map creation rule
@@ -62,9 +63,9 @@ rule align:
     input:
         expand("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = manifest.getSelectedAliquots()),
         expand("results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt", aliquot_id = manifest.getSelectedAliquots()),
-        expand("results/align/validatebam/{aliquot_id}.ValidateSamFile.txt", aliquot_id = manifest.getSelectedAliquots()),
-        lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample = sample, rg = readgroup)
-          for readgroup in manifest.getSelectedReadgroups()]
+        expand("results/align/validatebam/{aliquot_id}.ValidateSamFile.txt", aliquot_id = manifest.getSelectedAliquots())#,
+        #lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample = sample, rg = readgroup)
+        #  for readgroup in manifest.getSelectedReadgroups()]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download only rule

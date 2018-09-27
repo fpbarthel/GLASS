@@ -1,6 +1,8 @@
-import json
-import psycopg2
-import psycopg2.extras
+"""
+ManifestHandler
+"""
+
+from python.glassfunc import locate
 
 class ManifestHandler:
     """
@@ -49,13 +51,13 @@ class ManifestHandler:
         s += "Selected {} of {} possible pairs.\n".format(n_pairs_selected, n_pairs)
         return(s)
         
-    def getSelectedAliquots():
+    def getSelectedAliquots(self):
         """
         Return a list of selected aliquots
         """
         return self.selected_aliquots
 
-    def getSelectedPairs():
+    def getSelectedPairs(self):
         """
         Return a list of selected pairs
         """
@@ -87,13 +89,13 @@ class ManifestHandler:
         return aligned_files
         
     
-    def getAllFiles():
+    def getAllFiles(self):
         raise NotImplementedError("ManifestHandler should not be implemented directly")
         
-    def getAllAliquots():
+    def getAllAliquots(self):
         raise NotImplementedError("ManifestHandler should not be implemented directly")
         
-    def getAllPairs():
+    def getAllPairs(self):
         raise NotImplementedError("ManifestHandler should not be implemented directly")
 
 ## END ##

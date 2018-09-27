@@ -1,4 +1,11 @@
-import ManifestHandler
+"""
+PostgreSQL database
+Manifest handler
+"""
+
+from python.ManifestHandler import ManifestHandler
+import psycopg2
+import psycopg2.extras
         
 class PostgreSQLManifestHandler(ManifestHandler):
     __conn = None
@@ -16,7 +23,6 @@ class PostgreSQLManifestHandler(ManifestHandler):
             self.__conn.close()
         except(Exception, psycopg2.DatabaseError) as error:
             print(error)
-
 
     def getCursor(self, cursor_factory = None):
         if cursor_factory is not None:
@@ -189,6 +195,6 @@ class PostgreSQLManifestHandler(ManifestHandler):
         q = "SELECT pair_barcode, tumor_barcode, normal_barcode \
              FROM analysis.pairs"
         
-        return self.query(q, cursor_factory = psycopg2.extras.RealDictCursor
+        return self.query(q, cursor_factory = psycopg2.extras.RealDictCursor)
 
 ## END ##
