@@ -16,7 +16,8 @@ rule callpon:
     output:
         temp("results/mutect2/callpon/{aliquot_barcode}/{aliquot_barcode}.{interval}.pon.vcf")
     params:
-        mem = CLUSTER_META["callpon"]["mem"]
+        mem = CLUSTER_META["callpon"]["mem"],
+        readgroup_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(wildcards.aliquot_barcode)
     conda:
         "../envs/gatk4.yaml"
     threads:
@@ -30,17 +31,14 @@ rule callpon:
         "Aliquot: {wildcards.aliquot_barcode}\n"
         "Interval: {wildcards.interval}"
     shell:
-        "TUMOR_SM=`samtools view -H {input} | grep '^@RG' | sed \"s/.*SM:\\([^\\t]*\\).*/\\1/g\" | uniq`; \
-        gatk --java-options -Xmx{params.mem}g Mutect2 \
+        "gatk --java-options -Xmx{params.mem}g Mutect2 \
             -R {config[reference_fasta]} \
             -I {input.bam} \
             -L {input.intervallist} \
-            --tumor-sample $TUMOR_SM \
+            --tumor-sample {params.readgroup_sample_tag} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             -O {output} \
             > {log} 2>&1"
-
-            #        TUMOR_SM=${TUMOR_SM:-\"TUMOR\"}; \
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## MergePON
@@ -133,7 +131,9 @@ rule callsnv:
         vcf = temp("results/mutect2/m2vcf-scatter/{pair_id}.{interval}.vcf"),
         bam = "results/mutect2/m2bam/{pair_id}.{interval}.bam"
     params:
-        mem = CLUSTER_META["callsnv"]["mem"]
+        mem = CLUSTER_META["callsnv"]["mem"],
+        tumor_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(manifest.getTumor(wildcards.pair_id)),
+        normal_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(manifest.getNormal(wildcards.pair_id))
     conda:
         "../envs/gatk4.yaml"
     threads:
@@ -147,20 +147,16 @@ rule callsnv:
         "Pair: {wildcards.pair_id}\n"
         "Interval: {wildcards.interval}"
     shell:
-        "TEST_NAM=`samtools view -H {input.tumor} | grep '^@RG' | sed \"s/.*SM:\\([^\\t]*\\).*/\\1/g\" | uniq`;"
-        "CTRL_NAM=`samtools view -H {input.normal} | grep '^@RG' | sed \"s/.*SM:\\([^\\t]*\\).*/\\1/g\" | uniq`;"
-        #"TEST_NAM=${TEST_NAM:-\"TUMOR\"};"
-        #"CTRL_NAM=${CTRL_NAM:-\"NORMAL\"};"
         "gatk --java-options -Xmx{params.mem}g Mutect2 \
             -R {config[reference_fasta]} \
             -I {input.tumor} \
             -I {input.normal} \
             -L {input.intervallist} \
-            --tumor-sample $TEST_NAM \
-            --normal-sample $CTRL_NAM \
+            --tumor-sample {params.tumor_sample_tag} \
+            --normal-sample {params.normal_sample_tag} \
             --panel-of-normals {input.pon} \
-            --germline-resource {config[gnomad_vcf]} \
-            --af-of-alleles-not-in-resource {config[af_of_alleles_not_in_resource]} \
+            --germline-resource {config[mutect2][gnomad_vcf]} \
+            --af-of-alleles-not-in-resource {config[mutect2][af_of_alleles_not_in_resource]} \
             --dont-use-soft-clipped-bases true \
             --standard-min-confidence-threshold-for-calling 20 \
             -O {output.vcf} \
@@ -229,7 +225,7 @@ rule pileupsummaries:
     shell:
         "gatk --java-options -Xmx{params.mem}g GetPileupSummaries \
             -I {input} \
-            -V {config[tiny_vcf]} \
+            -V {config[mutect2][tiny_vcf]} \
             -O {output} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             > {log} 2>&1"

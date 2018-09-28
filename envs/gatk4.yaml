@@ -5,7 +5,7 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - gatk4=4.0.7.0=0
+  - gatk4=4.0.9.0=0
   - r-optparse=1.3.2=r3.3.2_0
   - samtools=1.7=1
   - bzip2=1.0.6=h14c3975_5
@@ -67,5 +67,4 @@ dependencies:
   - r-rpart=4.1_10=r3.3.2_0
   - r-spatial=7.3_11=r3.3.2_0
   - r-survival=2.40_1=r3.3.2_0
-prefix: /projects/barthf/opt/miniconda3/envs/gatk4
 

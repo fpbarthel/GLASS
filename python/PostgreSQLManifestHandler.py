@@ -121,6 +121,16 @@ class PostgreSQLManifestHandler(ManifestHandler):
         
         return self.query(q, (aliquot_barcode,))
 
+    def getRGSampleTagByAliquot(self, aliquot_barcode):
+        """
+        Returns a list of RGIDs given an aliquot barcode
+        """
+        q = "SELECT DISTINCT readgroup_sample_id \
+             FROM biospecimen.readgroups \
+             WHERE aliquot_barcode = %s;"
+        
+        return self.query(q, (aliquot_barcode,))
+
     def getRGIDsNotInAliquot(self, aliquot_barcode):
         """
         Returns a list of RGIDs NOT in a given aliquot barcode

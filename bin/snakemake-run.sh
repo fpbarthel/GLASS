@@ -97,7 +97,7 @@ then
 	snakemake --configfile "${CONFIGFILE}" --dag | dot -Tpng > dag.png
 else
 	mkdir -p "${WORKDIR}/logs/drmaa"
-	snakemake ${OPTS} --jobs 400 -k --use-conda --latency-wait 120 --max-jobs-per-second 8 --config workdir="${WORKDIR}" --restart-times 1 --configfile "${CONFIGFILE}" --cluster-config "${CLUSTRCONF}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -q {cluster.queu} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e ${WORKDIR}/{cluster.stderr} -o ${WORKDIR}/{cluster.stdout}" $EXTRA_OPTS $TARGET
+	snakemake ${OPTS} --jobs 800 -k --use-conda --latency-wait 120 --max-jobs-per-second 8 --config workdir="${WORKDIR}" --restart-times 1 --configfile "${CONFIGFILE}" --cluster-config "${CLUSTRCONF}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -q {cluster.queu} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e ${WORKDIR}/{cluster.stderr} -o ${WORKDIR}/{cluster.stdout}" $EXTRA_OPTS $TARGET
 fi
 
 ## END ##

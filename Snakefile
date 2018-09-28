@@ -86,12 +86,20 @@ rule qc:
         "results/align/multiqc/multiqc_report.html"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## SNV rule
-## Run snakemake with target 'snv'
+## SNV rule (Mutect2)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule mt2:
-    input: expand("results/mutect2/final/{pair_id}.final.vcf", pair_id = manifest.getSelectedPairs())
+rule mutect2:
+    input:
+    	expand("results/mutect2/final/{pair_id}.final.vcf", pair_id = manifest.getSelectedPairs())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## SNV rule (Mutect2)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule mutect2pon:
+    input:
+    	"results/mutect2/pon/pon.vcf"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SNV rule (VarScan2)
