@@ -40,12 +40,12 @@ include: "snakemake/align.smk"
 include: "snakemake/fingerprinting.smk"
 include: "snakemake/telseq.smk"
 include: "snakemake/mutect2.smk"
-# include: "snakemake/lumpy.smk"
+include: "snakemake/varscan2.smk"
+include: "snakemake/cnvnator.smk"
+include: "snakemake/lumpy.smk"
+include: "snakemake/delly.smk"
+include: "snakemake/manta.smk"
 # include: "snakemake/cnv-gatk.smk"
-# include: "snakemake/varscan2.smk"
-# include: "snakemake/delly.smk"
-# include: "snakemake/manta.smk"
-# include: "snakemake/cnvnator.smk"
 # include: "snakemake/vep.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -62,9 +62,9 @@ rule build_haplotype_map:
 
 rule align:
     input:
-        expand("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id = manifest.getSelectedAliquots()),
-        expand("results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt", aliquot_id = manifest.getSelectedAliquots()),
-        expand("results/align/validatebam/{aliquot_id}.ValidateSamFile.txt", aliquot_id = manifest.getSelectedAliquots()),
+        expand("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/align/validatebam/{aliquot_barcode}.ValidateSamFile.txt", aliquot_barcode = manifest.getSelectedAliquots()),
         lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample = aliquot_barcode, rg = readgroup)
           for aliquot_barcode, readgroups in manifest.getSelectedReadgroupsByAliquot().items()
           for readgroup in readgroups]
@@ -91,10 +91,10 @@ rule qc:
 
 rule mutect2:
     input:
-    	expand("results/mutect2/final/{pair_id}.final.vcf", pair_id = manifest.getSelectedPairs())
+    	expand("results/mutect2/final/{pair_barcode}.final.vcf", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## SNV rule (Mutect2)
+## PON rule (Mutect2)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule mutect2pon:
@@ -103,12 +103,11 @@ rule mutect2pon:
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SNV rule (VarScan2)
-## Run snakemake with target 'snv'
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule vs2:
+rule varscan2:
     input:
-        expand("results/varscan2/final/{pair_id}.somatic.hc.filtered.final.vcf.gz", pair_id = manifest.getSelectedPairs())
+        expand("results/varscan2/fpfilter/{pair_barcode}.{type}.Somatic.hc.final.vcf", pair_barcode = manifest.getSelectedPairs(), type = ["snp", "indel"])
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## CNV calling pipeline
@@ -117,9 +116,9 @@ rule vs2:
 
 rule cnv:
     input:
-        expand("results/cnv/callsegments/{pair_id}.called.seg", pair_id = manifest.getSelectedPairs()),
-        expand("results/cnv/plotmodeledsegments/{pair_id}/{pair_id}.modeled.png", pair_id = manifest.getSelectedPairs()),
-        expand("results/cnv/plotcr/{aliquot_id}/{aliquot_id}.denoised.png", aliquot_id = manifest.getSelectedAliquots())
+        expand("results/cnv/callsegments/{pair_barcode}.called.seg", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/cnv/plotmodeledsegments/{pair_barcode}/{pair_barcode}.modeled.png", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png", aliquot_barcode = manifest.getSelectedAliquots())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SV using Delly
@@ -127,7 +126,7 @@ rule cnv:
 
 rule delly:
     input:
-        expand("results/delly/filter/{pair_id}.prefilt.bcf", pair_id = manifest.getSelectedPairs())
+        expand("results/delly/filter/{pair_barcode}.prefilt.bcf", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SV using LUMPY-SV
@@ -135,9 +134,9 @@ rule delly:
 
 rule lumpy:
     input:
-        expand("results/lumpy/svtyper/{pair_id}.dict.svtyper.vcf", pair_id = manifest.getSelectedPairs()),
-        expand("results/lumpy/libstat/{pair_id}.libstat.pdf", pair_id = manifest.getSelectedPairs()),
-        expand("results/lumpy/filter/{pair_id}.dict.svtyper.filtered.vcf", pair_id = manifest.getSelectedPairs())
+        expand("results/lumpy/svtyper/{pair_barcode}.dict.svtyper.vcf", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/lumpy/libstat/{pair_barcode}.libstat.pdf", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/lumpy/filter/{pair_barcode}.dict.svtyper.filtered.vcf", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SV using Manta
@@ -145,7 +144,7 @@ rule lumpy:
 
 rule manta:
     input:
-        expand("results/manta/{pair_id}/results/variants/somaticSV.vcf.gz", pair_id = manifest.getSelectedPairs())
+        expand("results/manta/{pair_barcode}/results/variants/somaticSV.vcf.gz", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call CNV using Manta
@@ -153,7 +152,7 @@ rule manta:
 
 rule cnvnator:
     input:
-        expand("results/cnvnator/vcf/{aliquot_id}.call.vcf", aliquot_id = manifest.getSelectedAliquots())
+        expand("results/cnvnator/vcf/{aliquot_barcode}.call.vcf", aliquot_barcode = manifest.getSelectedAliquots())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SVs using all callers
@@ -161,10 +160,10 @@ rule cnvnator:
 
 rule svdetect:
     input:
-        expand("results/lumpy/svtyper/{pair_id}.dict.svtyper.vcf", pair_id = manifest.getSelectedPairs()),
-        expand("results/lumpy/libstat/{pair_id}.libstat.pdf", pair_id = manifest.getSelectedPairs()),
-        expand("results/delly/call/{pair_id}.vcf.gz", pair_id = manifest.getSelectedPairs()),
-        expand("results/manta/{pair_id}/results/variants/somaticSV.vcf.gz", pair_id = manifest.getSelectedPairs())
+        expand("results/lumpy/svtyper/{pair_barcode}.dict.svtyper.vcf", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/lumpy/libstat/{pair_barcode}.libstat.pdf", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/delly/call/{pair_barcode}.vcf.gz", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/manta/{pair_barcode}/results/variants/somaticSV.vcf.gz", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Estimate TL using telseq
@@ -172,7 +171,7 @@ rule svdetect:
 
 rule telseq:
     input:
-        expand("results/telseq/{aliquot_id}.telseq.txt", aliquot_id = manifest.getSelectedAliquots())
+        expand("results/telseq/{aliquot_barcode}.telseq.txt", aliquot_barcode = manifest.getSelectedAliquots())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Fingerprinting pipeline
@@ -181,7 +180,7 @@ rule telseq:
 
 #rule fingerprint:
 #    input:
-#        expand("results/fingerprinting/sample/{aliquot_id}.crosscheck_metrics", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
+#        expand("results/fingerprinting/sample/{aliquot_barcode}.crosscheck_metrics", aliquot_barcode=ALIQUOT_TO_READGROUP.keys()),
 #        expand("results/fingerprinting/case/{case_id}.crosscheck_metrics", case_id=CASES_DICT.keys()),
 #        expand("results/fingerprinting/batch/{batch}.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
 #        "results/fingerprinting/GLASS-WG.crosscheck_metrics",
