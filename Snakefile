@@ -10,6 +10,7 @@ import itertools
 ## Import manifest processing functions
 from python.glassfunc import dbconfig, locate
 from python.PostgreSQLManifestHandler import PostgreSQLManifestHandler
+from python.JSONManifestHandler import JSONManifestHandler
 
 ## Connect to database
 dbconf = dbconfig(config["db"]["configfile"], config["db"]["configsection"])
@@ -33,19 +34,19 @@ CLUSTER_META = json.load(open(config["cluster_json"]))
 WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in range(50)]
 
 ## Load modules
-# include: "snakemake/haplotype-map.smk"
-# include: "snakemake/download.smk"
+include: "snakemake/haplotype-map.smk"
+include: "snakemake/download.smk"
 include: "snakemake/align.smk"
-# include: "snakemake/mutect2.smk"
-# include: "snakemake/vep.smk"
+include: "snakemake/fingerprinting.smk"
+include: "snakemake/telseq.smk"
+include: "snakemake/mutect2.smk"
 # include: "snakemake/lumpy.smk"
 # include: "snakemake/cnv-gatk.smk"
 # include: "snakemake/varscan2.smk"
-# include: "snakemake/fingerprinting.smk"
 # include: "snakemake/delly.smk"
 # include: "snakemake/manta.smk"
 # include: "snakemake/cnvnator.smk"
-# include: "snakemake/telseq.smk"
+# include: "snakemake/vep.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Haplotype map creation rule
@@ -65,7 +66,7 @@ rule align:
         expand("results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt", aliquot_id = manifest.getSelectedAliquots()),
         expand("results/align/validatebam/{aliquot_id}.ValidateSamFile.txt", aliquot_id = manifest.getSelectedAliquots()),
         lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample = aliquot_barcode, rg = readgroup)
-          for aliquot_barcode, readgroups in manifest.getAllReadgroupsByAliquot().items()
+          for aliquot_barcode, readgroups in manifest.getSelectedReadgroupsByAliquot().items()
           for readgroup in readgroups]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 

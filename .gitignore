@@ -19,3 +19,5 @@ tmp/
 .Rproj.user
 .Rproj.user/**
 .**
+*.pyc
+*.pyo

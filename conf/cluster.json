@@ -367,7 +367,7 @@
         "stdout" : "logs/drmaa/{rule}.{wildcards.case_id}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.case_id}.err"
     },
-    "fingerprintbatch" :
+    "fingerprintproject" :
     {
         "ppn" : 2,
         "mem" : 12,
@@ -376,7 +376,7 @@
         "stdout" : "logs/drmaa/{rule}.{wildcards.batch}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.batch}.err"
     },
-    "fingerprintcohort" :
+    "fingerprintall" :
     {
         "ppn" : 2,
         "mem" : 12,
@@ -385,7 +385,7 @@
         "stdout" : "logs/drmaa/{rule}.out",
         "stderr" : "logs/drmaa/{rule}.err"
     },
-    "clusterfingerprintbatch" :
+    "clusterfingerprintproject" :
     {
         "ppn" : 2,
         "mem" : 12,
@@ -394,7 +394,7 @@
         "stdout" : "logs/drmaa/{rule}.{wildcards.batch}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.batch}.err"
     },
-    "clusterfingerprintcohort" :
+    "clusterfingerprintall" :
     {
         "ppn" : 2,
         "mem" : 12,

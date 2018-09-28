@@ -5,9 +5,9 @@
 
 rule telseq_run:
     input:
-        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
     output:
-        protected("results/telseq/{aliquot_id}.telseq.txt")
+        protected("results/telseq/{aliquot_barcode}.telseq.txt")
     params:
         mem = CLUSTER_META["telseq_run"]["mem"]
     threads:
@@ -15,12 +15,12 @@ rule telseq_run:
     conda:
         "../envs/telseq.yaml"
     log:
-        "logs/telseq/{aliquot_id}.log"
+        "logs/telseq/{aliquot_barcode}.log"
     benchmark:
-        "benchmarks/telseq/{aliquot_id}.txt"
+        "benchmarks/telseq/{aliquot_barcode}.txt"
     message:
         "Telomere content estimates from BAM file\n"
-        "Sample: {wildcards.aliquot_id}"
+        "Sample: {wildcards.aliquot_barcode}"
     shell:
         "telseq -o {output} \
             -r {config[telseq_r]} \

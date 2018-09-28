@@ -6,6 +6,15 @@ db:
   configfile: "/home/barthf/.odbc.ini"
   configsection: "VerhaakDB"
 
+#### JSON files (as alternative to database)
+json:
+  cases:       "/projects/barthf/GLASS-WG/data/manifest/cases.json"
+  samples:     "/projects/barthf/GLASS-WG/data/manifest/samples.json"
+  aliquots:    "/projects/barthf/GLASS-WG/data/manifest/aliquots.json"
+  files:       "/projects/barthf/GLASS-WG/data/manifest/files.json"
+  readgroups:  "/projects/barthf/GLASS-WG/data/manifest/readgroups.json"
+  pairs:       "/projects/barthf/GLASS-WG/data/manifest/pairs.json"
+
 ## Full path to cluster settings
 cluster_json:     "conf/cluster.json"
 
@@ -15,14 +24,6 @@ cluster_json:     "conf/cluster.json"
 ## HTML dir
 # @sbamin helix ~/ has 50GB limit. multiqc and fastqc files may grow in size.
 html_dir:         "/home/barthf/ShinyApps/"
-
-#### JSON files
-cases_json:       "/projects/barthf/GLASS-WG/data/manifest/tcga/cases.json"
-samples_json:     "/projects/barthf/GLASS-WG/data/manifest/tcga/samples.json"
-aliquots_json:    "/projects/barthf/GLASS-WG/data/manifest/tcga/aliquots.json"
-files_json:       "/projects/barthf/GLASS-WG/data/manifest/tcga/files.json"
-readgroups_json:  "/projects/barthf/GLASS-WG/data/manifest/tcga/readgroups.json"
-pairs_json:       "/projects/barthf/GLASS-WG/data/manifest/tcga/pairs.json"
 
 #### GLOBAL PARAMETERS
 

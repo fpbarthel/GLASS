@@ -16,7 +16,7 @@ class ManifestHandler:
 
     selected_aliquots = set()
     selected_pairs = set()
-    selected_readgroups = set()
+    selected_readgroups_by_aliquot = {}
     
     def __init__(self, source_file_basepath, aligned_file_basepath):
         self.source_files = self.locateSourceFiles(source_file_basepath)
@@ -28,6 +28,10 @@ class ManifestHandler:
         for pair in self.getAllPairs():
             if(pair["tumor_barcode"] in self.selected_aliquots and pair["normal_barcode"] in self.selected_aliquots):
                 self.selected_pairs.add(pair["pair_barcode"])
+
+        for aliquot, readgroups in self.getAllReadgroupsByAliquot().items():
+            if aliquot in self.selected_aliquots:
+                self.selected_readgroups_by_aliquot[aliquot] = readgroups
         
     def __str__(self):
         n_source_fastq = len([j["file_path"] for j in self.source_files if j["file_format"] == "FASTQ"]) 
@@ -70,6 +74,12 @@ class ManifestHandler:
         """
         return self.selected_pairs
 
+    def getSelectedReadgroupsByAliquot(self):
+        """
+        Return a list of selected pairs
+        """
+        return self.selected_readgroups_by_aliquot
+
     def locateSourceFiles(self, source_file_basepath):
         """
         Locate raw/unaligned FASTQ/BAM files
@@ -104,7 +114,7 @@ class ManifestHandler:
     def getAllPairs(self):
         raise NotImplementedError("ManifestHandler should not be implemented directly")
 
-    def getAllReadgroups(self):
+    def getAllReadgroupsByAliquot(self):
         raise NotImplementedError("ManifestHandler should not be implemented directly")
 
 ## END ##

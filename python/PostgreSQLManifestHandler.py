@@ -63,7 +63,7 @@ class PostgreSQLManifestHandler(ManifestHandler):
         
         return self.query(q, (aliquot_barcode,))
 
-    def getAliquots(self, case_barcode):
+    def getAliquotsByCase(self, case_barcode):
         """
         Returns a list of aliquots given a case barcode
         """
@@ -75,6 +75,19 @@ class PostgreSQLManifestHandler(ManifestHandler):
     
         return self.query(q, (case_barcode,))  
     
+    def getAliquotsByProject(self, case_project):
+        """
+        Returns a list of aliquots given a project name
+        """
+        
+        q = "SELECT al.aliquot_barcode \
+             FROM biospecimen.aliquots AS al \
+                INNER JOIN biospecimen.samples AS s ON al.sample_barcode = s.sample_barcode \
+                INNER JOIN clinical.cases AS cl ON cl.case_barcode = s.case_barcode \
+             WHERE cl.case_project = %s;"
+    
+        return self.query(q, (case_project,))  
+
     def getAllAliquots(self):
         """
         Returns a list of all aliquots
@@ -82,6 +95,18 @@ class PostgreSQLManifestHandler(ManifestHandler):
         
         q = "SELECT aliquot_barcode \
              FROM biospecimen.aliquots;"
+    
+        return self.query(q)
+
+    def getPONAliquots(self):
+        """
+        Returns a list of all aliquots
+        """
+        
+        q = "SELECT al.aliquot_barcode \
+             FROM biospecimen.aliquots AS al \
+                INNER JOIN biospecimen.samples AS s ON al.sample_barcode = s.sample_barcode \
+             WHERE s.sample_type = 'NB';"
     
         return self.query(q) 
     
@@ -153,7 +178,7 @@ class PostgreSQLManifestHandler(ManifestHandler):
                 INNER JOIN analysis.files AS f ON f.aliquot_barcode = rg.aliquot_barcode"
 
         if limit_bam:
-            q += "WHERE f.file_format = 'uBAM';"
+            q += " WHERE f.file_format = 'uBAM';"
         else:
             q += ";"
 
