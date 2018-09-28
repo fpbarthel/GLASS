@@ -341,7 +341,7 @@ rule filterorientation:
         art = lambda wildcards: "results/mutect2/artifacts/{aliquot_barcode}.pre_adapter_detail_metrics.txt".format(aliquot_barcode = manifest.getTumor(wildcards.pair_id)),
         vcf = "results/mutect2/m2filter/{pair_id}.filtered.vcf"
     output:
-        "results/mutect2/m2filter/{pair_id}.filtered2.vcf"
+        "results/mutect2/final/{pair_id}.final.vcf"
     params:
         mem = CLUSTER_META["filterorientation"]["mem"]
     threads:
