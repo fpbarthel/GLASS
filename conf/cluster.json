@@ -2,7 +2,7 @@
     "__default__" :
     {
         "_comment" : "Cluster parameters taken from GLASS pipeline on GitHub (https://github.com/TheJacksonLaboratory/hourglass/blob/master/glass_alignments/wgs_wes/flowr/flowr_aln_fqs.def) and from GATK forum (https://gatkforums.broadinstitute.org/gatk/discussion/1975/how-can-i-use-parallelism-to-make-gatk-tools-run-faster)",
-        "name" : "{rule}.{wildcards.aliquot_id}",
+        "name" : "{rule}.{wildcards.aliquot_barcode}",
         "j" : "oe",
         "m" : "a",
         "M" : "floris.barthel@jax.org",
@@ -11,8 +11,8 @@
         "walltime" : "72:00:00",
         "mem" : 12,
         "queu" : "batch",
-        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_id}.out",
-        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_id}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.err"
     },
     "download" :
     {
@@ -354,9 +354,9 @@
         "ppn" : 2,
         "mem" : 12,
         "walltime" : "72:00:00",
-        "name" : "{rule}.{wildcards.aliquot_id}",
-        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_id}.out",
-        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_id}.err"
+        "name" : "{rule}.{wildcards.aliquot_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.err"
     },
     "fingerprintcase" :
     {
