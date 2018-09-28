@@ -60,19 +60,13 @@ class ManifestHandler:
         """
         Return a list of selected aliquots
         """
-        return self.selected_aliquots
+        return list(self.selected_aliquots)
 
     def getSelectedPairs(self):
         """
         Return a list of selected pairs
         """
-        return self.selected_pairs
-
-    def getSelectedPairs(self):
-        """
-        Return a list of selected pairs
-        """
-        return self.selected_pairs
+        return list(self.selected_pairs)
 
     def getSelectedReadgroupsByAliquot(self):
         """

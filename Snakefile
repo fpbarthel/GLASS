@@ -91,7 +91,7 @@ rule qc:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule mt2:
-    input: expand("results/mutect2/m2filter/{pair_id}.filtered2.vcf", pair_id = manifest.getSelectedPairs())
+    input: expand("results/mutect2/final/{pair_id}.final.vcf", pair_id = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SNV rule (VarScan2)
