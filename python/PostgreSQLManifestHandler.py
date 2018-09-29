@@ -202,7 +202,7 @@ class PostgreSQLManifestHandler(ManifestHandler):
              FROM analysis.pairs AS pa \
              WHERE pa.pair_barcode = %s;"
 
-        return self.query(q, (pair_id, ))
+        return self.query(q, (pair_id, ))[0]
 
     def getNormal(self, pair_id):
         """
@@ -212,7 +212,7 @@ class PostgreSQLManifestHandler(ManifestHandler):
              FROM analysis.pairs AS pa \
              WHERE pa.pair_barcode = %s;"
 
-        return self.query(q, (pair_id, ))
+        return self.query(q, (pair_id, ))[0]
 
     def getAllFiles(self):
         """
