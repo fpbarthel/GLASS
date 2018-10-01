@@ -4,6 +4,10 @@ ManifestHandler
 
 from python.glassfunc import locate
 
+SOURCE_FASTQ_TYPE = "FASTQ"
+SOURCE_BAM_TYPE = "uBAM"
+ALIGNED_BAM_TYPE = "aligned BAM"
+
 class ManifestHandler:
     """
     Class that defines the GLASS manifest
@@ -18,40 +22,29 @@ class ManifestHandler:
     pairs = {} ## Dictionary of pairs, keys = pair_barcode
     
     files_readgroups = [] ## List of file to readgroup mappings
-    
-    source_files = []
-    aligned_files = []
 
     selected_aliquots = set()
     selected_pairs = set()
     
     def __init__(self, source_file_basepath, aligned_file_basepath):
         
-        self.initFiles()
-        self.initAliquots()
-        self.initReadgroups()
-        self.initPairs()
-        self.initFilesReadgroups()
-        
-        self.locateSourceFiles(source_file_basepath)
-        self.aligned_files = self.locateAlignedBAMFiles(aligned_file_basepath)
+        self.locateFiles(source_file_basepath, aligned_file_basepath)
         
         self.selected_aliquots.update([f["aliquot_barcode"] for (file_name, f) in self.files.items() if len(f["file_path"]) > 0])
-        self.selected_aliquots.update([i["aliquot_barcode"] for i in self.aligned_files if len(i["file_path"]) > 0])
-        
+
         for (pair_barcode, pair) in self.pairs.items():
             if(pair["tumor_barcode"] in self.selected_aliquots and pair["normal_barcode"] in self.selected_aliquots):
                 self.selected_pairs.add(pair_barcode)
         
     def __str__(self):
-        n_source_fastq = len([j["file_path"] for j in self.source_files if j["file_format"] == "FASTQ"]) 
-        n_source_fastq_found = n_source_fastq - [j["file_path"] for j in self.source_files if j["file_format"] == "FASTQ"].count([])
+        n_source_fastq = len([j["file_path"] for j in self.files.values() if j["file_format"] == SOURCE_FASTQ_TYPE]) 
+        n_source_fastq_found = n_source_fastq - [j["file_path"] for j in self.files.values() if j["file_format"] == SOURCE_FASTQ_TYPE].count([])
         
-        n_source_bam = len([j["file_path"] for j in self.source_files if j["file_format"] == "uBAM"])
-        n_source_bam_found = n_source_bam - [j["file_path"] for j in self.source_files if j["file_format"] == "uBAM"].count([])
+        n_source_bam = len([j["file_path"] for j in self.files.values() if j["file_format"] == SOURCE_BAM_TYPE])
+        n_source_bam_found = n_source_bam - [j["file_path"] for j in self.files.values() if j["file_format"] == SOURCE_BAM_TYPE].count([])
         
-        n_aligned_bam = len(self.aligned_files)
-        n_aligned_bam_found = n_aligned_bam - [j["file_path"] for j in self.aligned_files].count([])
+        n_aligned_bam = len([j["file_path"] for j in self.files.values() if j["file_format"] == ALIGNED_BAM_TYPE])
+        n_aligned_bam_found = n_aligned_bam - [j["file_path"] for j in self.files.values() if j["file_format"] == ALIGNED_BAM_TYPE].count([])
         
         n_aliquots = len(self.aliquots)
         n_aliquots_selected = len(self.selected_aliquots)
@@ -83,29 +76,16 @@ class ManifestHandler:
         Return a dictionary of readgroup_idtag (keys = aliquot_barcode) limited to selected aliquots
         """
         return {aliquot_barcode: self.getRGIDs(aliquot_barcode) for aliquot_barcode in self.getSelectedAliquots()}
-
-    def locateSourceFiles(self, source_file_basepath):
+    
+    def locateFiles(self, source_file_basepath, aligned_file_basepath):
         """
-        Locate raw/unaligned FASTQ/BAM files
+        Locate FASTQ/BAM files
         """
         for (file_name, file) in self.files.items():
-            file["file_path"] = [f for f in locate(file_name, source_file_basepath)]
-            
-        #return sources_files
-        
-    def locateAlignedBAMFiles(self, aligned_file_basepath):
-        """
-        Locate re-aligned BAM files
-        """
-        
-        aligned_files = []
-        for barcode in self.getAllAliquots():
-            aligned_files.append({"aliquot_barcode" : barcode,
-                                  "file_name" : "{}.realn.mdup.bqsr.bam".format(barcode),
-                                  "file_format" : "aligned BAM",
-                                  "file_path" : [f for f in locate("{}.realn.mdup.bqsr.bam".format(barcode), aligned_file_basepath)]})
-        
-        return aligned_files
+            if file["file_format"] == SOURCE_FASTQ_TYPE or file["file_format"] == SOURCE_BAM_TYPE:
+                file["file_path"] = [f for f in locate(file_name, source_file_basepath)]
+            elif file["file_format"] == ALIGNED_BAM_TYPE:
+                file["file_path"] = [f for f in locate(file_name, aligned_file_basepath)]
     
     def initFiles(self):
         raise NotImplementedError("ManifestHandler should not be implemented directly")

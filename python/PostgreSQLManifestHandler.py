@@ -16,6 +16,12 @@ class PostgreSQLManifestHandler(ManifestHandler):
         except(Exception, psycopg2.DatabaseError) as error:
             print(error)
             
+        self.initFiles()
+        self.initAliquots()
+        self.initReadgroups()
+        self.initPairs()
+        self.initFilesReadgroups()
+            
         ManifestHandler.__init__(self, source_file_basepath, aligned_file_basepath)
 
     def __del__(self):
