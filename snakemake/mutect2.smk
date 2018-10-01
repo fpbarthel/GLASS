@@ -226,6 +226,7 @@ rule pileupsummaries:
         "gatk --java-options -Xmx{params.mem}g GetPileupSummaries \
             -I {input} \
             -V {config[mutect2][tiny_vcf]} \
+            -L {config[mutect2][tiny_vcf]} \
             -O {output} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             > {log} 2>&1"
