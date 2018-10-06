@@ -1,23 +1,42 @@
 ## Snakemake configuration
 ## @Author Floris Barthel
 
+## Database settings
+db:
+  configfile: "/home/barthf/.odbc.ini"
+  configsection: "VerhaakDB"
+
+#### JSON files (as alternative to database)
+json:
+  cases:       "/projects/barthf/GLASS-WG/data/manifest/cases.json"
+  samples:     "/projects/barthf/GLASS-WG/data/manifest/samples.json"
+  aliquots:    "/projects/barthf/GLASS-WG/data/manifest/aliquots.json"
+  files:       "/projects/barthf/GLASS-WG/data/manifest/files.json"
+  readgroups:  "/projects/barthf/GLASS-WG/data/manifest/readgroups.json"
+  pairs:       "/projects/barthf/GLASS-WG/data/manifest/pairs.json"
+
 ## Full path to cluster settings
 cluster_json:     "conf/cluster.json"
 
 ## Working directory
 #workdir:          "/fastscratch/verhaak-lab/TCGA-WG"
 
+gnomad_vcf:       "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/af-only-gnomad.raw.sites.b37.vcf.gz"
+
+## Mutect2 settings
+mutect2:
+  ## GnomAD VCF file
+  gnomad_vcf:       "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/af-only-gnomad.raw.sites.b37.vcf.gz"
+  ## Tiny VCF
+  tiny_vcf:         "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/GetPileupSummaries/small_exac_common_3_b37.vcf.gz"
+  ## Based on GATK best practices RNAseq 04/05/18
+  ## https://software.broadinstitute.org/gatk/documentation/article.php?id=3891
+  ## Calculate af-of-alleles: 1/(2*123136) = 0.00000406055 (6 sign. digits)
+  af_of_alleles_not_in_resource: 0.00000406055
+
 ## HTML dir
 # @sbamin helix ~/ has 50GB limit. multiqc and fastqc files may grow in size.
 html_dir:         "/home/barthf/ShinyApps/"
-
-#### JSON files
-cases_json:       "/projects/barthf/GLASS-WG/data/manifest/tcga/cases.json"
-samples_json:     "/projects/barthf/GLASS-WG/data/manifest/tcga/samples.json"
-aliquots_json:    "/projects/barthf/GLASS-WG/data/manifest/tcga/aliquots.json"
-files_json:       "/projects/barthf/GLASS-WG/data/manifest/tcga/files.json"
-readgroups_json:  "/projects/barthf/GLASS-WG/data/manifest/tcga/readgroups.json"
-pairs_json:       "/projects/barthf/GLASS-WG/data/manifest/tcga/pairs.json"
 
 #### GLOBAL PARAMETERS
 
@@ -57,12 +76,6 @@ reference_fasta:  "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/hum
 ## Reference dictionary
 reference_dict:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/human_g1k_v37_decoy.dict"
 
-## GnomAD VCF file
-gnomad_vcf:       "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/af-only-gnomad.raw.sites.b37.vcf.gz"
-
-## Tiny VCF
-tiny_vcf:         "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/GetPileupSummaries/small_exac_common_3_b37.vcf.gz"
-
 ## Vcf2MAF Perl Script location
 vcf2maf:          "/projects/verhaak-lab/mskcc-vcf2maf-747a1bb/vcf2maf.pl"
 
@@ -72,13 +85,6 @@ veppath:          "/projects/barthf/opt/ensembl-vep"
 ## VEP cache directory
 vepdata:          "/projects/barthf/opt/.vep"
 
-## Haplotype map (for fingerprinting)
-# haplotype_map:    
-
-## Based on GATK best practices RNAseq 04/05/18
-## https://software.broadinstitute.org/gatk/documentation/article.php?id=3891
-## Calculate af-of-alleles: 1/(2*123136) = 0.00000406055 (6 sign. digits)
-af_of_alleles_not_in_resource: 0.00000406055
 
 seconds_between_progress_updates: 900
 

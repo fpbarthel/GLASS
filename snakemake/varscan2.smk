@@ -12,30 +12,34 @@ SNV_TYPES = ["snp","indel"]
 ## 07/23/2018:
 ## Added ancient() flag to input because BAM input files are frequently copied and
 ## timestamps change
+## 09/28/2018 additional parameters taken from @sbamin code
+## based on table 3 of Koboldt 2013 et al., https://doi.org/10.1002/0471250953.bi1504s44
+## min-var-freq of 0.08 to account for lower tumor purity and subclonal variants;
+## keep tumor purity to 1 but filter for variants with low VAFs in downstream steps.
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule varscan:
     input:
-        tumor = lambda wildcards: ancient("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"])),
-        normal = lambda wildcards: ancient("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"])),
-        intervalbed = lambda wildcards: "{dir}/{interval}/scattered.bed".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
+        tumor = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+        normal = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
+        intervalbed = lambda wildcards: "{dir}/{interval}/scattered.bed".format(dir=config["wgs_scatterdir"], interval = wildcards.interval)
     output:
-        temp("results/varscan2/vs2-scatter/{pair_id}.{interval}.snp.vcf"),
-        temp("results/varscan2/vs2-scatter/{pair_id}.{interval}.indel.vcf")
+        temp("results/varscan2/vs2-scatter/{pair_barcode}.{interval}.snp.vcf"),
+        temp("results/varscan2/vs2-scatter/{pair_barcode}.{interval}.indel.vcf")
     params:
         mem = CLUSTER_META["varscan"]["mem"],
-        outputprefix = "results/varscan2/vs2-scatter/{pair_id}.{interval}"
+        outputprefix = "results/varscan2/vs2-scatter/{pair_barcode}.{interval}"
     conda:
         "../envs/varscan2.yaml"
     threads:
         CLUSTER_META["varscan"]["ppn"]
     log:
-        "logs/varscan/{pair_id}.{interval}.log"
+        "logs/varscan/{pair_barcode}.{interval}.log"
     benchmark:
-        "benchmarks/varscan/{pair_id}.{interval}.txt"
+        "benchmarks/varscan/{pair_barcode}.{interval}.txt"
     message:
         "Calling SNVs (VarScan2)\n"
-        "Pair: {wildcards.pair_id}\n"
+        "Pair: {wildcards.pair_barcode}\n"
         "Interval: {wildcards.interval}"
     shell:
         "TUMOR_MPILEUP=$(printf 'samtools mpileup -q 1 -f {config[reference_fasta]} -l {input.intervalbed} {input.tumor}');"
@@ -48,7 +52,9 @@ rule varscan:
             --min-coverage 8 \
             --min-coverage-normal 6 \
             --min-coverage-tumor 8 \
-            --min-var-freq 0.10 \
+            --min-reads2 2 \
+            --min-avg-qual 15 \
+            --min-var-freq 0.08 \
             --min-freq-for-hom 0.75 \
             --tumor-purity 1.0 \
             --strand-filter 1 \
@@ -68,13 +74,13 @@ rule varscan:
 
 rule fixvs2header:
     input:
-        snp = "results/varscan2/vs2-scatter/{pair_id}.{interval}.snp.vcf",
-        indel = "results/varscan2/vs2-scatter/{pair_id}.{interval}.indel.vcf"
+        snp = "results/varscan2/vs2-scatter/{pair_barcode}.{interval}.snp.vcf",
+        indel = "results/varscan2/vs2-scatter/{pair_barcode}.{interval}.indel.vcf"
     output:
-        snp1 = temp("results/varscan2/vs2-fixheader/{pair_id}.{interval}.snp.fixedIUPAC.vcf"),
-        indel1 = temp("results/varscan2/vs2-fixheader/{pair_id}.{interval}.indel.fixedIUPAC.vcf"),
-        snp2 = temp("results/varscan2/vs2-fixheader/{pair_id}.{interval}.snp.fixed.vcf"),
-        indel2 = temp("results/varscan2/vs2-fixheader/{pair_id}.{interval}.indel.fixed.vcf")
+        snp1 = temp("results/varscan2/vs2-fixheader/{pair_barcode}.{interval}.snp.fixedIUPAC.vcf"),
+        indel1 = temp("results/varscan2/vs2-fixheader/{pair_barcode}.{interval}.indel.fixedIUPAC.vcf"),
+        snp2 = temp("results/varscan2/vs2-fixheader/{pair_barcode}.{interval}.snp.fixed.vcf"),
+        indel2 = temp("results/varscan2/vs2-fixheader/{pair_barcode}.{interval}.indel.fixed.vcf")
     params:
         mem = CLUSTER_META["fixvs2header"]["mem"]
     conda:
@@ -82,12 +88,12 @@ rule fixvs2header:
     threads:
         CLUSTER_META["fixvs2header"]["ppn"]
     log:
-        "logs/fixvs2header/{pair_id}.{interval}.log"
+        "logs/fixvs2header/{pair_barcode}.{interval}.log"
     benchmark:
-        "benchmarks/fixvs2header/{pair_id}.{interval}.txt"
+        "benchmarks/fixvs2header/{pair_barcode}.{interval}.txt"
     message:
         "Fixing VCF header\n"
-        "Pair: {wildcards.pair_id}\n"
+        "Pair: {wildcards.pair_barcode}\n"
         "Interval: {wildcards.interval}"
     shell:
         "awk '{{gsub(/\\y[W|K|Y|R|S|M]\\y/,\"N\",$4); OFS = \"\\t\"; print}}' {input.snp} | sed '/^$/d' > {output.snp1}; "
@@ -113,22 +119,22 @@ rule fixvs2header:
 
 rule mergevarscan:
     input:
-        snp = lambda wildcards: expand("results/varscan2/vs2-fixheader/{pair_id}.{interval}.snp.fixed.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST),
-        indel = lambda wildcards: expand("results/varscan2/vs2-fixheader/{pair_id}.{interval}.indel.fixed.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST)
+        snp = lambda wildcards: expand("results/varscan2/vs2-fixheader/{pair_barcode}.{interval}.snp.fixed.vcf", pair_barcode = wildcards.pair_barcode, interval = WGS_SCATTERLIST),
+        indel = lambda wildcards: expand("results/varscan2/vs2-fixheader/{pair_barcode}.{interval}.indel.fixed.vcf", pair_barcode = wildcards.pair_barcode, interval = WGS_SCATTERLIST)
     output:
-        snp = protected("results/varscan2/vcf/{pair_id}.snp.vcf.gz"),
-        indel = protected("results/varscan2/vcf/{pair_id}.indel.vcf.gz")
+        snp = protected("results/varscan2/vcf/{pair_barcode}.snp.vcf.gz"),
+        indel = protected("results/varscan2/vcf/{pair_barcode}.indel.vcf.gz")
     params:
         mem = CLUSTER_META["mergevarscan"]["mem"]
     threads:
         CLUSTER_META["mergevarscan"]["ppn"]
     log:
-        "logs/mergevarscan/{pair_id}.log"
+        "logs/mergevarscan/{pair_barcode}.log"
     benchmark:
-        "benchmarks/mergevarscan/{pair_id}.txt"
+        "benchmarks/mergevarscan/{pair_barcode}.txt"
     message:
         "Merging VCF files (VS2)\n"
-        "Pair: {wildcards.pair_id}"
+        "Pair: {wildcards.pair_barcode}"
     run:
         input_snps = " ".join(["-I " + s for s in input['snp']])
         input_indels = " ".join(["-I " + s for s in input['indel']])
@@ -147,19 +153,20 @@ rule mergevarscan:
 ## Process Somatic (Varscan)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Isolate Germline/LOH/Somatic calls from output and identifies high confidence calls
+## Update 9/28/2018 updated parameters based on @sbamin code
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule processsomatic:
     input:
-        "results/varscan2/vcf/{pair_id}.{type}.vcf.gz"
+        "results/varscan2/vcf/{pair_barcode}.{type}.vcf.gz"
     output:
-        tmpvcf = temp("results/varscan2/vs2-processed/{pair_id}/{pair_id}.{type}.vcf"),
-        germlinehc = temp("results/varscan2/vs2-processed/{pair_id}/{pair_id}.{type}.Germline.hc.vcf"),
-        germline = temp("results/varscan2/vs2-processed/{pair_id}/{pair_id}.{type}.Germline.vcf"),
-        lohhc = temp("results/varscan2/vs2-processed/{pair_id}/{pair_id}.{type}.LOH.hc.vcf"),
-        loh = temp("results/varscan2/vs2-processed/{pair_id}/{pair_id}.{type}.LOH.vcf"),
-        somatichc = temp("results/varscan2/vs2-processed/{pair_id}/{pair_id}.{type}.Somatic.hc.vcf"),
-        somatic = temp("results/varscan2/vs2-processed/{pair_id}/{pair_id}.{type}.Somatic.vcf")
+        tmpvcf = temp("results/varscan2/vs2-processed/{pair_barcode}/{pair_barcode}.{type}.vcf"),
+        germlinehc = temp("results/varscan2/vs2-processed/{pair_barcode}/{pair_barcode}.{type}.Germline.hc.vcf"),
+        germline = temp("results/varscan2/vs2-processed/{pair_barcode}/{pair_barcode}.{type}.Germline.vcf"),
+        lohhc = temp("results/varscan2/vs2-processed/{pair_barcode}/{pair_barcode}.{type}.LOH.hc.vcf"),
+        loh = temp("results/varscan2/vs2-processed/{pair_barcode}/{pair_barcode}.{type}.LOH.vcf"),
+        somatichc = temp("results/varscan2/vs2-processed/{pair_barcode}/{pair_barcode}.{type}.Somatic.hc.vcf"),
+        somatic = temp("results/varscan2/vs2-processed/{pair_barcode}/{pair_barcode}.{type}.Somatic.vcf")
     params:
         mem = CLUSTER_META["processsomatic"]["mem"]
     conda:
@@ -167,42 +174,46 @@ rule processsomatic:
     threads:
         CLUSTER_META["processsomatic"]["ppn"]
     log:
-        "logs/processsomatic/{pair_id}.{type}.log"
+        "logs/processsomatic/{pair_barcode}.{type}.log"
     benchmark:
-        "benchmarks/processsomatic/{pair_id}.{type}.txt"
+        "benchmarks/processsomatic/{pair_barcode}.{type}.txt"
     message:
         "Isolate Germline/LOH/Somatic calls from output and identifies high confidence calls (Varscan2)\n"
-        "Pair: {wildcards.pair_id}\n"
+        "Pair: {wildcards.pair_barcode}\n"
         "SNP or indels: {wildcards.type}"
     shell:
         "zcat {input} > {output.tmpvcf}; "
         "java -Xmx{params.mem}g -Djava.io.tmpdir={config[tempdir]} \
             -jar jar/VarScan.v2.4.3.jar processSomatic {output.tmpvcf} \
+            --min-tumor-freq 0.10 \
+            --max-normal-freq 0.05 \
+            --p-value 0.07 \
             > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Somatic Filter (Varscan)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Filter somatic variants for clusters/indels
+## Update 9/28/2018 updated parameters based on @sbamin code
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule somaticfilter:
     input:
-        vcf = "results/varscan2/vs2-processed/{pair_id}/{pair_id}.{type}.Somatic.hc.vcf",
-        indel = "results/varscan2/vs2-processed/{pair_id}/{pair_id}.indel.vcf"
+        vcf = "results/varscan2/vs2-processed/{pair_barcode}/{pair_barcode}.{type}.Somatic.hc.vcf",
+        indel = "results/varscan2/vs2-processed/{pair_barcode}/{pair_barcode}.indel.vcf"
     output:
-        temp("results/varscan2/vs2-filter/{pair_id}.{type}.Somatic.hc.filter.vcf")
+        temp("results/varscan2/vs2-filter/{pair_barcode}.{type}.Somatic.hc.filter.vcf")
     params:
         mem = CLUSTER_META["somaticfilter"]["mem"]
     threads:
         CLUSTER_META["somaticfilter"]["ppn"]
     log:
-        "logs/somaticfilter/{pair_id}.{type}.log"
+        "logs/somaticfilter/{pair_barcode}.{type}.log"
     benchmark:
-        "benchmarks/somaticfilter/{pair_id}.{type}.txt"
+        "benchmarks/somaticfilter/{pair_barcode}.{type}.txt"
     message:
         "Filter somatic variants for clusters/indels (Varscan2)\n"
-        "Pair: {wildcards.pair_id}\n"
+        "Pair: {wildcards.pair_barcode}\n"
         "SNP or indels: {wildcards.type}"
     run:
         if wildcards["type"] == "snp":
@@ -215,6 +226,11 @@ rule somaticfilter:
         shell("java -Xmx{params.mem}g -Djava.io.tmpdir={config[tempdir]} \
             -jar jar/VarScan.v2.4.3.jar somaticFilter {input.vcf} {indel_file}\
             --output-file {output} \
+            --min-coverage 10 \
+            --min-reads2 4 \
+            --min-strands2 1 \
+            --min-var-freq 0.15 \
+            --p-value 0.05 \
             > {log} 2>&1")
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -226,21 +242,21 @@ rule somaticfilter:
 
 rule bamreadcount:
     input:
-        vcf = "results/varscan2/vs2-filter/{pair_id}.{type}.Somatic.hc.filter.vcf",
-        bam = lambda wildcards: ancient("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]))
+        vcf = "results/varscan2/vs2-filter/{pair_barcode}.{type}.Somatic.hc.filter.vcf",
+        bam = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode))
     output:
-        temp("results/varscan2/bam-readcount/{pair_id}.{type}.readcounts")
+        temp("results/varscan2/bam-readcount/{pair_barcode}.{type}.readcounts")
     params:
         mem = CLUSTER_META["bamreadcount"]["mem"]
     threads:
         CLUSTER_META["bamreadcount"]["ppn"]
     log:
-        "logs/bamreadcount/{pair_id}.{type}.log"
+        "logs/bamreadcount/{pair_barcode}.{type}.log"
     benchmark:
-        "benchmarks/bamreadcount/{pair_id}.{type}.txt"
+        "benchmarks/bamreadcount/{pair_barcode}.{type}.txt"
     message:
         "Obtain BAM readcounts for a given list of variants (Varscan2)\n"
-        "Pair: {wildcards.pair_id}\n"
+        "Pair: {wildcards.pair_barcode}\n"
         "SNP or indels: {wildcards.type}"
     run:
         if wildcards["type"] == "snp":
@@ -254,6 +270,7 @@ rule bamreadcount:
             bam-readcount \
             -q 1 \
             -b 20 \
+            -w 10 \
             -f {config[reference_fasta]} \
             -l /dev/stdin \
             {input.bam} \
@@ -268,10 +285,10 @@ rule bamreadcount:
 
 rule fpfilter:
     input:
-        rc = "results/varscan2/bam-readcount/{pair_id}.{type}.readcounts",
-        vcf = "results/varscan2/vs2-filter/{pair_id}.{type}.Somatic.hc.filter.vcf"
+        rc = "results/varscan2/bam-readcount/{pair_barcode}.{type}.readcounts",
+        vcf = "results/varscan2/vs2-filter/{pair_barcode}.{type}.Somatic.hc.filter.vcf"
     output:
-        temp("results/varscan2/fpfilter/{pair_id}.{type}.Somatic.hc.final.vcf")
+        protected("results/varscan2/fpfilter/{pair_barcode}.{type}.Somatic.hc.final.vcf")
     params:
         mem = CLUSTER_META["fpfilter"]["mem"]
     threads:
@@ -279,12 +296,12 @@ rule fpfilter:
     conda:
         "../envs/varscan2.yaml"
     log:
-        "logs/fpfilter/{pair_id}.{type}.log"
+        "logs/fpfilter/{pair_barcode}.{type}.log"
     benchmark:
-        "benchmarks/fpfilter/{pair_id}.{type}.txt"
+        "benchmarks/fpfilter/{pair_barcode}.{type}.txt"
     message:
         "Apply the false-positive filter (Varscan2)\n"
-        "Pair: {wildcards.pair_id}\n"
+        "Pair: {wildcards.pair_barcode}\n"
         "SNP or indels: {wildcards.type}"
     shell:
         "java -Xmx{params.mem}g -Djava.io.tmpdir={config[tempdir]} \
@@ -299,28 +316,28 @@ rule fpfilter:
 ## Merging somatic SNP and indel VCF files (VS2) (Varscan2)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule mergevarscanfinal:
-    input:
-        lambda wildcards: expand("results/varscan2/fpfilter/{pair_id}.{type}.Somatic.hc.final.vcf", pair_id=wildcards.pair_id, type=SNV_TYPES)
-    output:
-        protected("results/varscan2/final/{pair_id}.somatic.hc.filtered.final.vcf.gz")
-    params:
-        mem = CLUSTER_META["mergevarscanfinal"]["mem"]
-    threads:
-        CLUSTER_META["mergevarscanfinal"]["ppn"]
-    log:
-        "logs/mergevarscanfinal/{pair_id}.log"
-    benchmark:
-        "benchmarks/mergevarscanfinal/{pair_id}.txt"
-    message:
-        "Merging somatic SNP and indel VCF files (VS2)\n"
-        "Pair: {wildcards.pair_id}"
-    run:
-        inputfiles = " ".join(["-I " + s for s in input])
-        shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
-            {inputfiles} \
-            -O {output} \
-            --CREATE_INDEX true \
-            > {log} 2>&1")
+# rule mergevarscanfinal:
+#     input:
+#         lambda wildcards: expand("results/varscan2/fpfilter/{pair_barcode}.{type}.Somatic.hc.final.vcf", pair_barcode=wildcards.pair_barcode, type=SNV_TYPES)
+#     output:
+#         protected("results/varscan2/final/{pair_barcode}.somatic.hc.filtered.final.vcf.gz")
+#     params:
+#         mem = CLUSTER_META["mergevarscanfinal"]["mem"]
+#     threads:
+#         CLUSTER_META["mergevarscanfinal"]["ppn"]
+#     log:
+#         "logs/mergevarscanfinal/{pair_barcode}.log"
+#     benchmark:
+#         "benchmarks/mergevarscanfinal/{pair_barcode}.txt"
+#     message:
+#         "Merging somatic SNP and indel VCF files (VS2)\n"
+#         "Pair: {wildcards.pair_barcode}"
+#     run:
+#         inputfiles = " ".join(["-I " + s for s in input])
+#         shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
+#             {inputfiles} \
+#             -O {output} \
+#             --CREATE_INDEX true \
+#             > {log} 2>&1")
 
 ## END ##

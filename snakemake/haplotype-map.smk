@@ -1,4 +1,3 @@
-
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Snakefile for GLASS-WG pipeline
 ## Authors: Floris Barthel, Nauman Javed

@@ -46,7 +46,7 @@ readgroups = data.frame(readgroup_id = sprintf("%s.%s", substr(rginfo$Flowcell.I
 
 readgroups = readgroups %>% 
   left_join(select(aliquots_master, aliquot_id, legacy_aliquot_id)) %>%
-  select(aliquot_barcode=aliquot_id, readgroup_idtag=readgroup_id, everything()) %>%
+  select(aliquot_barcode=aliquot_id, readgroup_idtag=readgroup_id, everything(), -legacy_aliquot_id) %>%
   mutate(readgroup_sample_id = aliquot_barcode)
 
 
