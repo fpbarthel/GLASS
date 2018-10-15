@@ -178,7 +178,7 @@ class ManifestHandler:
         """
         return [p["tumor_barcode"] for (barcode, p) in self.pairs.items() if barcode == pair_barcode][0]
 
-    def getNormal(self, pair_id):
+    def getNormal(self, pair_barcode):
         """
         Returns a normal aliquot ID given a pair ID
         """

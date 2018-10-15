@@ -290,7 +290,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "2:00:00",
+        "walltime" : "4:00:00",
         "name" : "{rule}.{wildcards.pair_barcode}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.{wildcards.interval}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.{wildcards.interval}.err"

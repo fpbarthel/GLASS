@@ -22,7 +22,7 @@ rule varscan:
     input:
         tumor = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
         normal = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
-        intervalbed = lambda wildcards: "{dir}/{interval}/scattered.bed".format(dir=config["wgs_scatterdir"], interval = wildcards.interval)
+        intervalbed = lambda wildcards: "{dir}/{interval}/scattered.bed".format(dir = config["wgs_scatterdir"], interval = wildcards.interval)
     output:
         temp("results/varscan2/vs2-scatter/{pair_barcode}.{interval}.snp.vcf"),
         temp("results/varscan2/vs2-scatter/{pair_barcode}.{interval}.indel.vcf")

@@ -13,6 +13,7 @@ from python.PostgreSQLManifestHandler import PostgreSQLManifestHandler
 from python.JSONManifestHandler import JSONManifestHandler
 
 ## Connect to database
+## dbconf = dbconfig("/home/barthf/.odbc.ini", "VerhaakDB")
 dbconf = dbconfig(config["db"]["configfile"], config["db"]["configsection"])
 
 ## Instantiate manifest
