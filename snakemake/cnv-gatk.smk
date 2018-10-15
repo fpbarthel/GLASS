@@ -5,23 +5,23 @@
 
 rule collectreadcounts:
     input:
-        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
     output:
-        "results/cnv/readcounts/{batch}/{aliquot_id}.counts.hdf5"
+        "results/cnv/readcounts/{aliquot_barcode}.counts.hdf5"
     params:
         mem = CLUSTER_META["collectreadcounts"]["mem"]
     threads:
         CLUSTER_META["collectreadcounts"]["ppn"]
     log:
-        "logs/cnv/readcounts/{batch}/{aliquot_id}.log"
+        "logs/cnv/readcounts/{aliquot_barcode}.log"
     conda:
         "../envs/gatk4.yaml"
     benchmark:
-        "benchmarks/cnv/readcounts/{batch}/{aliquot_id}.txt"
+        "benchmarks/cnv/readcounts/{analysis_type}/{aliquot_barcode}.txt"
     message:
         "Collecting read counts\n"
-        "Batch: {wildcards.batch}\n"
-        "Sample: {wildcards.aliquot_id}"
+        "Analysis type: {wildcards.analysis_type}\n"
+        "Sample: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CollectReadCounts \
             -I {input} \
@@ -37,20 +37,20 @@ rule collectreadcounts:
 
 rule createcnvpon:
     input:
-        lambda wildcards: expand("results/cnv/readcounts/{batch}/{aliquot_id}.counts.hdf5", batch=wildcards.batch, aliquot_id=BATCH_TO_NORMAL[wildcards.batch]) 
+        lambda wildcards: expand("results/cnv/readcounts/{analysis_type}/{aliquot_barcode}.counts.hdf5", analysis_type = wildcards.analysis_type, aliquot_barcode = manifest.getPONAliquots(wildcards.analysis_type))
     output:
-        "results/cnv/createcnvpon/{batch}.pon.hdf5"
+        "results/cnv/createcnvpon/{analysis_type}.pon.hdf5"
     params:
         mem = CLUSTER_META["createcnvpon"]["mem"]
     threads:
         CLUSTER_META["createcnvpon"]["ppn"]
     log:
-        "logs/cnv/createcnvpon/{batch}.log"
+        "logs/cnv/createcnvpon/{analysis_type}.log"
     benchmark:
-        "benchmarks/cnv/createcnvpon/{batch}.txt"
+        "benchmarks/cnv/createcnvpon/{analysis_type}.txt"
     message:
         "Creating CNV panel of normals\n"
-        "Batch: {wildcards.batch}"
+        "Batch: {wildcards.analysis_type}"
     run:
         vcfs = " ".join(["-I " + s for s in input])
         shell("gatk --java-options -Xmx{params.mem}g CreateReadCountPanelOfNormals \
@@ -66,11 +66,11 @@ rule createcnvpon:
 
 rule denoisereadcounts:
     input:
-        sample = lambda wildcards: "results/cnv/readcounts/{batch}/{aliquot_id}.counts.hdf5".format(batch = CASES_DICT[SAMPLES_DICT[ALIQUOTS_DICT[wildcards.aliquot_id]["sample_id"]]["case_id"]]["project_id"], aliquot_id=wildcards.aliquot_id),
-        pon =  lambda wildcards: "results/cnv/createcnvpon/{batch}.pon.hdf5".format(batch = CASES_DICT[SAMPLES_DICT[ALIQUOTS_DICT[wildcards.aliquot_id]["sample_id"]]["case_id"]]["project_id"])
+        sample = lambda wildcards: "results/cnv/readcounts/{analysis_type}/{aliquot_barcode}.counts.hdf5".format(analysis_type = "WGS", aliquot_barcode = wildcards.aliquot_barcode),
+        pon =  lambda wildcards: "results/cnv/createcnvpon/{analysis_type}.pon.hdf5".format(analysis_type = "WGS")
     output:
-        standardized = "results/cnv/denoisereadcounts/{aliquot_id}.standardizedCR.tsv",
-        denoised = "results/cnv/denoisereadcounts/{aliquot_id}.denoisedCR.tsv"
+        standardized = "results/cnv/denoisereadcounts/{aliquot_barcode}.standardizedCR.tsv",
+        denoised = "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv"
     params:
         mem = CLUSTER_META["denoisereadcounts"]["mem"]
     threads:
@@ -78,12 +78,12 @@ rule denoisereadcounts:
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/cnv/denoisereadcounts/{aliquot_id}.log"
+        "logs/cnv/denoisereadcounts/{aliquot_barcode}.log"
     benchmark:
-        "benchmarks/cnv/denoisereadcounts/{aliquot_id}.txt"
+        "benchmarks/cnv/denoisereadcounts/{aliquot_barcode}.txt"
     message:
         "Denoising and standardizing read counts\n"
-        "Aliquot: {wildcards.aliquot_id}"
+        "Aliquot: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g DenoiseReadCounts \
             -I {input.sample} \
@@ -100,30 +100,30 @@ rule denoisereadcounts:
 
 rule plotcr:
     input:
-        standardized = "results/cnv/denoisereadcounts/{aliquot_id}.standardizedCR.tsv",
-        denoised = "results/cnv/denoisereadcounts/{aliquot_id}.denoisedCR.tsv"
+        standardized = "results/cnv/denoisereadcounts/{aliquot_barcode}.standardizedCR.tsv",
+        denoised = "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv"
     output:
-        "results/cnv/plotcr/{aliquot_id}/{aliquot_id}.denoised.png",
-        "results/cnv/plotcr/{aliquot_id}/{aliquot_id}.denoisedLimit4.png",
-        "results/cnv/plotcr/{aliquot_id}/{aliquot_id}.standardizedMAD.txt",
-        "results/cnv/plotcr/{aliquot_id}/{aliquot_id}.denoisedMAD.txt",
-        "results/cnv/plotcr/{aliquot_id}/{aliquot_id}.deltaMAD.txt",
-        "results/cnv/plotcr/{aliquot_id}/{aliquot_id}.scaledDeltaMAD.txt"
+        "results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png",
+        "results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoisedLimit4.png",
+        "results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.standardizedMAD.txt",
+        "results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoisedMAD.txt",
+        "results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.deltaMAD.txt",
+        "results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.scaledDeltaMAD.txt"
     params:
         mem = CLUSTER_META["plotcr"]["mem"],
-        outputdir = "results/cnv/plotcr/{aliquot_id}",
-        outputprefix = "{aliquot_id}"
+        outputdir = "results/cnv/plotcr/{aliquot_barcode}",
+        outputprefix = "{aliquot_barcode}"
     threads:
         CLUSTER_META["plotcr"]["ppn"]
     log:
-        "logs/cnv/plotcr/{aliquot_id}.log"
+        "logs/cnv/plotcr/{aliquot_barcode}.log"
     conda:
         "../envs/gatk4.yaml"
     benchmark:
-        "benchmarks/cnv/plotcr/{aliquot_id}.txt"
+        "benchmarks/cnv/plotcr/{aliquot_barcode}.txt"
     message:
         "Plot denoised and standardized read counts\n"
-        "Aliquot: {wildcards.aliquot_id}"
+        "Aliquot: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g PlotDenoisedCopyRatios \
             --standardized-copy-ratios {input.standardized} \
@@ -142,22 +142,22 @@ rule plotcr:
 
 rule collectalleliccounts:
     input:
-        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
     output:
-        "results/cnv/alleliccounts/{aliquot_id}.allelicCounts.tsv"
+        "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv"
     params:
         mem = CLUSTER_META["collectalleliccounts"]["mem"]
     threads:
         CLUSTER_META["collectalleliccounts"]["ppn"]
     log:
-        "logs/cnv/alleliccounts/{aliquot_id}.log"
+        "logs/cnv/alleliccounts/{aliquot_barcode}.log"
     conda:
         "../envs/gatk4.yaml"
     benchmark:
-        "benchmarks/cnv/alleliccounts/{aliquot_id}.txt"
+        "benchmarks/cnv/alleliccounts/{aliquot_barcode}.txt"
     message:
         "Collect allelic counts\n"
-        "Aliquot: {wildcards.aliquot_id}"
+        "Aliquot: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CollectAllelicCounts \
             -I {input} \
@@ -174,34 +174,34 @@ rule collectalleliccounts:
 
 rule modelsegments:
     input:
-        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_id}.denoisedCR.tsv".format(aliquot_id = manifest.getTumor(wildcards.pair_id)),
-        tumor_counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id = manifest.getTumor(wildcards.pair_id)),
-        normal_counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_id}.allelicCounts.tsv".format(aliquot_id = manifest.getNormal(wildcards.pair_id))
+        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+        tumor_counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+        normal_counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode))
     output:
-        "results/cnv/modelsegments/{pair_id}/{pair_id}.modelBegin.seg",
-        "results/cnv/modelsegments/{pair_id}/{pair_id}.modelFinal.seg",
-        "results/cnv/modelsegments/{pair_id}/{pair_id}.cr.seg",
-        "results/cnv/modelsegments/{pair_id}/{pair_id}.modelBegin.af.param",
-        "results/cnv/modelsegments/{pair_id}/{pair_id}.modelBegin.cr.param",
-        "results/cnv/modelsegments/{pair_id}/{pair_id}.modelFinal.af.param",
-        "results/cnv/modelsegments/{pair_id}/{pair_id}.modelFinal.cr.param",
-        "results/cnv/modelsegments/{pair_id}/{pair_id}.hets.normal.tsv",
-        "results/cnv/modelsegments/{pair_id}/{pair_id}.hets.tsv"
+        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelBegin.seg",
+        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelFinal.seg",
+        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.cr.seg",
+        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelBegin.af.param",
+        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelBegin.cr.param",
+        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelFinal.af.param",
+        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelFinal.cr.param",
+        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.hets.normal.tsv",
+        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.hets.tsv"
     params:
         mem = CLUSTER_META["modelsegments"]["mem"],
-        outputdir = "results/cnv/modelsegments/{pair_id}",
-        outputprefix = "{pair_id}"
+        outputdir = "results/cnv/modelsegments/{pair_barcode}",
+        outputprefix = "{pair_barcode}"
     threads:
         CLUSTER_META["modelsegments"]["ppn"]
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/cnv/modelsegments/{pair_id}.log"
+        "logs/cnv/modelsegments/{pair_barcode}.log"
     benchmark:
-        "benchmarks/cnv/modelsegments/{pair_id}.txt"
+        "benchmarks/cnv/modelsegments/{pair_barcode}.txt"
     message:
         "Model segments\n"
-        "Pair ID: {wildcards.pair_id}"
+        "Pair ID: {wildcards.pair_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g ModelSegments \
             --denoised-copy-ratios {input.tumor_denoised} \
@@ -219,9 +219,9 @@ rule modelsegments:
 
 rule callsegments:
     input:
-        "results/cnv/modelsegments/{pair_id}/{pair_id}.cr.seg"
+        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.cr.seg"
     output:
-        "results/cnv/callsegments/{pair_id}.called.seg"
+        "results/cnv/callsegments/{pair_barcode}.called.seg"
     params:
         mem = CLUSTER_META["callsegments"]["mem"]
     threads:
@@ -229,12 +229,12 @@ rule callsegments:
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/cnv/callsegments/{pair_id}.log"
+        "logs/cnv/callsegments/{pair_barcode}.log"
     benchmark:
-        "benchmarks/cnv/callsegments/{pair_id}.txt"
+        "benchmarks/cnv/callsegments/{pair_barcode}.txt"
     message:
         "Call segments\n"
-        "Pair ID: {wildcards.pair_id}"
+        "Pair ID: {wildcards.pair_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CallCopyRatioSegments \
             --input {input} \
@@ -249,26 +249,26 @@ rule callsegments:
 
 rule plotmodeledsegments:
     input:
-        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_id}.denoisedCR.tsv".format(aliquot_id = manifest.getTumor(wildcards.pair_id)),
-        tumor_counts = "results/cnv/modelsegments/{pair_id}/{pair_id}.hets.tsv",
-        tumor_segments = "results/cnv/modelsegments/{pair_id}/{pair_id}.modelFinal.seg"
+        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+        tumor_counts = "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.hets.tsv",
+        tumor_segments = "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelFinal.seg"
     output:
-        "results/cnv/plotmodeledsegments/{pair_id}/{pair_id}.modeled.png"
+        "results/cnv/plotmodeledsegments/{pair_barcode}/{pair_barcode}.modeled.png"
     params:
         mem = CLUSTER_META["plotmodeledsegments"]["mem"],
-        outputdir = "results/cnv/plotmodeledsegments/{pair_id}",
-        outputprefix = "{pair_id}"
+        outputdir = "results/cnv/plotmodeledsegments/{pair_barcode}",
+        outputprefix = "{pair_barcode}"
     threads:
         CLUSTER_META["plotmodeledsegments"]["ppn"]
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/cnv/plotmodeledsegments/{pair_id}.log"
+        "logs/cnv/plotmodeledsegments/{pair_barcode}.log"
     benchmark:
-        "benchmarks/cnv/plotmodeledsegments/{pair_id}.txt"
+        "benchmarks/cnv/plotmodeledsegments/{pair_barcode}.txt"
     message:
         "Plot modelled segments\n"
-        "Pair ID: {wildcards.pair_id}"
+        "Pair ID: {wildcards.pair_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g PlotModeledSegments \
             --denoised-copy-ratios {input.tumor_denoised} \
