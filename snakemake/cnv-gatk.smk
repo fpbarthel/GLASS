@@ -17,10 +17,9 @@ rule collectreadcounts:
     conda:
         "../envs/gatk4.yaml"
     benchmark:
-        "benchmarks/cnv/readcounts/{analysis_type}/{aliquot_barcode}.txt"
+        "benchmarks/cnv/readcounts/{aliquot_barcode}.txt"
     message:
         "Collecting read counts\n"
-        "Analysis type: {wildcards.analysis_type}\n"
         "Sample: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CollectReadCounts \
@@ -37,7 +36,7 @@ rule collectreadcounts:
 
 rule createcnvpon:
     input:
-        lambda wildcards: expand("results/cnv/readcounts/{analysis_type}/{aliquot_barcode}.counts.hdf5", analysis_type = wildcards.analysis_type, aliquot_barcode = manifest.getPONAliquots(wildcards.analysis_type))
+        lambda wildcards: expand("results/cnv/readcounts/{aliquot_barcode}.counts.hdf5", aliquot_barcode = manifest.getPONAliquots()) #wildcards.analysis_type))
     output:
         "results/cnv/createcnvpon/{analysis_type}.pon.hdf5"
     params:
@@ -50,6 +49,7 @@ rule createcnvpon:
         "benchmarks/cnv/createcnvpon/{analysis_type}.txt"
     message:
         "Creating CNV panel of normals\n"
+        "Analysis type: {wildcards.analysis_type}\n"
         "Batch: {wildcards.analysis_type}"
     run:
         vcfs = " ".join(["-I " + s for s in input])

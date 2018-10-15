@@ -9,6 +9,7 @@
 
 CONFIGFILE="conf/config.yaml"
 CLUSTRCONF="conf/cluster.json"
+NUM_JOBS=800
 OPTS="-p"
 RULEGRAPH=0
 DAG=0
@@ -23,6 +24,12 @@ do
 	    -t|--target)
 		[ -z "$2" ] && echo "No target specified" && exit 1
 	    TARGET="$2"
+	    shift # past argument
+	    shift # past value
+	    ;;
+	    -nj|--num-jobs)
+		[ -z "$2" ] && echo "No number of jobs specified" && exit 1
+	    NUM_JOBS=$2
 	    shift # past argument
 	    shift # past value
 	    ;;
@@ -78,6 +85,7 @@ echo "RULEGRAPH: ${RULEGRAPH}"
 echo "CONFIG: ${CONFIGFILE}"
 echo "CLUSTER-CONFIG: ${CLUSTRCONF}"
 echo "OPTS: ${OPTS}"
+echo "NUM_JOBS: ${NUM_JOBS}"
 echo "EXTRA OPTS: ${EXTRA_OPTS}"
 
 read -p "Continue? (y/n)" -n 1 -r
@@ -97,7 +105,7 @@ then
 	snakemake --configfile "${CONFIGFILE}" --dag | dot -Tpng > dag.png
 else
 	mkdir -p "${WORKDIR}/logs/drmaa"
-	snakemake ${OPTS} --jobs 800 -k --use-conda --latency-wait 120 --max-jobs-per-second 8 --config workdir="${WORKDIR}" --restart-times 1 --configfile "${CONFIGFILE}" --cluster-config "${CLUSTRCONF}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -q {cluster.queu} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e ${WORKDIR}/{cluster.stderr} -o ${WORKDIR}/{cluster.stdout}" $EXTRA_OPTS $TARGET
+	snakemake ${OPTS} --jobs ${NUM_JOBS} -k --use-conda --latency-wait 120 --max-jobs-per-second 8 --config workdir="${WORKDIR}" --restart-times 1 --configfile "${CONFIGFILE}" --cluster-config "${CLUSTRCONF}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -q {cluster.queu} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e ${WORKDIR}/{cluster.stderr} -o ${WORKDIR}/{cluster.stdout}" $EXTRA_OPTS $TARGET
 fi
 
 ## END ##

@@ -3,7 +3,7 @@
 
 ## Database settings
 db:
-  configfile: "/home/barthf/.odbc.ini"
+  configfile: "/fastscratch/verhaak-lab/.odbc.ini"
   configsection: "VerhaakDB"
 
 #### JSON files (as alternative to database)
