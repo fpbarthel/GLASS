@@ -176,13 +176,13 @@ class ManifestHandler:
         """
         Returns a tumor aliquot ID given a pair ID
         """
-        return [p["tumor_barcode"] for (barcode, p) in self.pairs if barcode == pair_barcode][0]
+        return [p["tumor_barcode"] for (barcode, p) in self.pairs.items() if barcode == pair_barcode][0]
 
     def getNormal(self, pair_id):
         """
         Returns a normal aliquot ID given a pair ID
         """
-        return [p["normal_barcode"] for (barcode, p) in self.pairs if barcode == pair_barcode][0]
+        return [p["normal_barcode"] for (barcode, p) in self.pairs.items() if barcode == pair_barcode][0]
 
     def getFiles(self):
         """

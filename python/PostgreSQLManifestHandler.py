@@ -4,6 +4,7 @@ Manifest handler
 """
 
 from python.ManifestHandler import ManifestHandler
+from python.glassfunc import build_dict
 import psycopg2
 import psycopg2.extras
         
