@@ -46,7 +46,7 @@ include: "snakemake/cnvnator.smk"
 include: "snakemake/lumpy.smk"
 include: "snakemake/delly.smk"
 include: "snakemake/manta.smk"
-# include: "snakemake/cnv-gatk.smk"
+include: "snakemake/cnv-gatk.smk"
 # include: "snakemake/vep.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
