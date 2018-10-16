@@ -2,6 +2,7 @@
 ManifestHandler
 """
 
+import os
 from python.glassfunc import locate
 
 SOURCE_FASTQ_TYPE = "FASTQ"
@@ -26,12 +27,17 @@ class ManifestHandler:
     selected_aliquots = set()
     selected_pairs = set()
     
-    def __init__(self, source_file_basepath, aligned_file_basepath):
+    def __init__(self, source_file_basepath, aligned_file_basepath, from_source):
         
         self.locateFiles(source_file_basepath, aligned_file_basepath)
         
-        self.selected_aliquots.update([f["aliquot_barcode"] for (file_name, f) in self.files.items() if len(f["file_path"]) > 0])
+        self.selected_aliquots = set()
+        if from_source:
+            self.selected_aliquots.update([f["aliquot_barcode"] for (file_name, f) in self.files.items() if len(f["file_path"]) > 0 and (f["file_format"] == SOURCE_BAM_TYPE or f["file_format"] == SOURCE_FASTQ_TYPE)])
+        else:
+            self.selected_aliquots.update([f["aliquot_barcode"] for (file_name, f) in self.files.items() if len(f["file_path"]) > 0 and f["file_format"] == ALIGNED_BAM_TYPE])
 
+        self.selected_pairs = set()
         for (pair_barcode, pair) in self.pairs.items():
             if(pair["tumor_barcode"] in self.selected_aliquots and pair["normal_barcode"] in self.selected_aliquots):
                 self.selected_pairs.add(pair_barcode)
@@ -83,7 +89,9 @@ class ManifestHandler:
         """
         for (file_name, file) in self.files.items():
             if file["file_format"] == SOURCE_FASTQ_TYPE or file["file_format"] == SOURCE_BAM_TYPE:
-                file["file_path"] = [f for f in locate(file_name, source_file_basepath)]
+                #file["file_path"] = [f for f in locate(file_name, source_file_basepath)]
+                if file["file_path"] is None or not os.path.isfile(file["file_path"]):
+                    file["file_path"] = []
             elif file["file_format"] == ALIGNED_BAM_TYPE:
                 file["file_path"] = [f for f in locate(file_name, aligned_file_basepath)]
     
@@ -183,6 +191,13 @@ class ManifestHandler:
         Returns a normal aliquot ID given a pair ID
         """
         return [p["normal_barcode"] for (barcode, p) in self.pairs.items() if barcode == pair_barcode][0]
+
+    def getMatchedNormal(self, aliquot_barcode):
+        """
+        Returns a matching normal aliquot ID given a tumor ID. Only the first match is returned. If no match, return None.
+        """
+        s = [p["normal_barcode"] for (barcode, p) in self.pairs.items() if p["tumor_barcode"] == aliquot_barcode]
+        return s[0] if len(s) > 0 else None
 
     def getFiles(self):
         """

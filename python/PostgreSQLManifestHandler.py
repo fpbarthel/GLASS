@@ -11,7 +11,7 @@ import psycopg2.extras
 class PostgreSQLManifestHandler(ManifestHandler):
     __conn = None
 
-    def __init__(self, user, password, database, host = "localhost", port = 5432, source_file_basepath = "data/", aligned_file_basepath = "results/align/bqsr"):
+    def __init__(self, user, password, database, host = "localhost", port = 5432, source_file_basepath = "data/", aligned_file_basepath = "results/align/bqsr", from_source = False):
         try:
             self.__conn = psycopg2.connect(host = host, port = port, user = user, password = password, database = database)
         except(Exception, psycopg2.DatabaseError) as error:
@@ -23,9 +23,8 @@ class PostgreSQLManifestHandler(ManifestHandler):
         self.initPairs()
         self.initFilesReadgroups()
             
-        ManifestHandler.__init__(self, source_file_basepath, aligned_file_basepath)
+        ManifestHandler.__init__(self, source_file_basepath, aligned_file_basepath, from_source)
 
-    def __del__(self):
         try:
             self.__conn.close()
         except(Exception, psycopg2.DatabaseError) as error:
@@ -60,7 +59,7 @@ class PostgreSQLManifestHandler(ManifestHandler):
             return res
 
     def initFiles(self):
-        q = "SELECT f.aliquot_barcode, f.file_name, f.file_format \
+        q = "SELECT f.aliquot_barcode, f.file_name, f.file_format, f.file_path \
              FROM analysis.files AS f;"
         
         res = self.query(q, cursor_factory = psycopg2.extras.RealDictCursor)
