@@ -173,8 +173,8 @@ rule collectalleliccounts:
 
 rule modelsegments:
     input:
-        denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv",
-        counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv"
+        denoised = "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv",
+        counts = "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv"
     output:
         "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelBegin.seg",
         "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.seg",
@@ -189,8 +189,7 @@ rule modelsegments:
         mem = CLUSTER_META["modelsegments"]["mem"],
         outputdir = "results/cnv/modelsegments/{aliquot_barcode}",
         outputprefix = "{aliquot_barcode}",
-        normal_counts = lambda wildcards: "results/cnv/alleliccounts/{normal_barcode}.allelicCounts.tsv".format(normal_barcode = manifest.getMatchingNormal(wildcards.aliquot_barcode)),
-        normal_counts_cmd = lambda wildcards: "--normal-allelic-counts {}".format(params['normal_counts']) if len(manifest.getMatchingNormal(wildcards.aliquot_barcode)) > 0 else ""
+        normal_counts_cmd = lambda wildcards: "--normal-allelic-counts results/cnv/alleliccounts/{}.allelicCounts.tsv".format(manifest.getMatchedNormal(wildcards.aliquot_barcode)) if manifest.getMatchedNormal(wildcards.aliquot_barcode) is not None else ""
     threads:
         CLUSTER_META["modelsegments"]["ppn"]
     conda:
@@ -302,15 +301,15 @@ rule combinetracks:
         "Combine tumor and normal segmentation\n"
         "Pair ID: {wildcards.pair_barcode}"
     shell:
-        "echo \"======= Germline Tagging\""
+        "echo \"======= Germline Tagging\";"
         "gatk --java-options -Xmx{params.mem}g TagGermlineEvents \
             --segments {input.tumor_called_seg} \
             --called-matched-normal-seg-file {input.normal_called_seg} \
             -O {output.germline_tagged_seg} \
             -R {config[reference_fasta]} \
-            > {log} 2>&1"
+            > {log} 2>&1;"
         
-        "echo \"======= Centromeres\""
+        "echo \"======= Centromeres\";"
         "gatk --java-options -Xmx{params.mem}g CombineSegmentBreakpoints \
             --segments {output.germline_tagged_seg} \
             --segments {config[cnv][centromere]} \
@@ -330,9 +329,9 @@ rule combinetracks:
             --columns-of-interest ID \
             -O {output.centromere_tagged_seg} \
             -R {config[reference_fasta]} \
-            >> {log} 2>&1"
+            >> {log} 2>&1;"
         
-        "echo \"======= GISTIC blacklist\""
+        "echo \"======= GISTIC blacklist\";"
         "gatk --java-options -Xmx{params.mem}g CombineSegmentBreakpoints \
             --segments {output.centromere_tagged_seg} \
             --segments {config[cnv][gistic]} \
@@ -352,7 +351,7 @@ rule combinetracks:
             --columns-of-interest ID \
             -O {output.final_seg} \
             -R {config[reference_fasta]} \
-            >> {log} 2>&1"
+            >> {log} 2>&1;"
 
 # rule prepare_acs:
 #     input:

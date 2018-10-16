@@ -224,6 +224,6 @@ class ManifestHandler:
         """
         Returns a list of FASTQ filenames given an aliquot barcode and RGID tag
         """
-        return [fr["file_name"] for fr in self.files_readgroups if fr["aliquot_barcode"] == aliquot_barcode and fr["readgroup_idtag"] == readgroup_idtag]
+        return [fr["file_path"] for fr in self.files_readgroups if fr["aliquot_barcode"] == aliquot_barcode and fr["readgroup_idtag"] == readgroup_idtag]
 
 ## END ##
