@@ -14,3 +14,4 @@ dependencies:
   - samblaster=0.1.24=h2d50403_1
   - samtools=1.7=1
   - svtyper=0.6.1=py27h24bf2e0_1
+  - cytoolz
