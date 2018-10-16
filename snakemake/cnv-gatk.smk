@@ -24,7 +24,7 @@ rule collectreadcounts:
     shell:
         "gatk --java-options -Xmx{params.mem}g CollectReadCounts \
             -I {input} \
-            -L {config[cnv_intervals]} \
+            -L {config[cnv][intervals]} \
             --interval-merging-rule OVERLAPPING_ONLY \
             -O {output} \
             > {log} 2>&1"
@@ -128,7 +128,7 @@ rule plotcr:
             --standardized-copy-ratios {input.standardized} \
             --denoised-copy-ratios {input.denoised} \
             --sequence-dictionary {config[reference_dict]} \
-            --minimum-contig-length 46709983 \
+            --minimum-contig-length {config[cnv][min_contig_len]} \
             --output {params.outputdir} \
             --output-prefix {params.outputprefix} \
             > {log} 2>&1"
@@ -173,39 +173,40 @@ rule collectalleliccounts:
 
 rule modelsegments:
     input:
-        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
-        tumor_counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
-        normal_counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode))
+        denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv",
+        counts = lambda wildcards: "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv"
     output:
-        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelBegin.seg",
-        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelFinal.seg",
-        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.cr.seg",
-        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelBegin.af.param",
-        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelBegin.cr.param",
-        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelFinal.af.param",
-        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelFinal.cr.param",
-        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.hets.normal.tsv",
-        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.hets.tsv"
+        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelBegin.seg",
+        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.seg",
+        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.cr.seg",
+        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelBegin.af.param",
+        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelBegin.cr.param",
+        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.af.param",
+        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.cr.param",
+        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.hets.normal.tsv",
+        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.hets.tsv"
     params:
         mem = CLUSTER_META["modelsegments"]["mem"],
-        outputdir = "results/cnv/modelsegments/{pair_barcode}",
-        outputprefix = "{pair_barcode}"
+        outputdir = "results/cnv/modelsegments/{aliquot_barcode}",
+        outputprefix = "{aliquot_barcode}",
+        normal_counts = lambda wildcards: "results/cnv/alleliccounts/{normal_barcode}.allelicCounts.tsv".format(normal_barcode = manifest.getMatchingNormal(wildcards.aliquot_barcode)),
+        normal_counts_cmd = lambda wildcards: "--normal-allelic-counts {}".format(params['normal_counts']) if len(manifest.getMatchingNormal(wildcards.aliquot_barcode)) > 0 else ""
     threads:
         CLUSTER_META["modelsegments"]["ppn"]
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/cnv/modelsegments/{pair_barcode}.log"
+        "logs/cnv/modelsegments/{aliquot_barcode}.log"
     benchmark:
-        "benchmarks/cnv/modelsegments/{pair_barcode}.txt"
+        "benchmarks/cnv/modelsegments/{aliquot_barcode}.txt"
     message:
         "Model segments\n"
-        "Pair ID: {wildcards.pair_barcode}"
+        "Aliquot barcode: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g ModelSegments \
-            --denoised-copy-ratios {input.tumor_denoised} \
-            --allelic-counts {input.tumor_counts} \
-            --normal-allelic-counts {input.normal_counts} \
+            --denoised-copy-ratios {input.denoised} \
+            --allelic-counts {input.counts} \
+            {params.normal_counts_cmd} \
             --output {params.outputdir} \
             --output-prefix {params.outputprefix} \
             > {log} 2>&1"
@@ -218,9 +219,9 @@ rule modelsegments:
 
 rule callsegments:
     input:
-        "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.cr.seg"
+        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.cr.seg"
     output:
-        "results/cnv/callsegments/{pair_barcode}.called.seg"
+        "results/cnv/callsegments/{aliquot_barcode}.called.seg"
     params:
         mem = CLUSTER_META["callsegments"]["mem"]
     threads:
@@ -228,12 +229,12 @@ rule callsegments:
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/cnv/callsegments/{pair_barcode}.log"
+        "logs/cnv/callsegments/{aliquot_barcode}.log"
     benchmark:
-        "benchmarks/cnv/callsegments/{pair_barcode}.txt"
+        "benchmarks/cnv/callsegments/{aliquot_barcode}.txt"
     message:
         "Call segments\n"
-        "Pair ID: {wildcards.pair_barcode}"
+        "Aliquot barcode: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CallCopyRatioSegments \
             --input {input} \
@@ -248,26 +249,26 @@ rule callsegments:
 
 rule plotmodeledsegments:
     input:
-        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
-        tumor_counts = "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.hets.tsv",
-        tumor_segments = "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelFinal.seg"
+        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv",
+        tumor_counts = "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.hets.tsv",
+        tumor_segments = "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.seg"
     output:
-        "results/cnv/plotmodeledsegments/{pair_barcode}/{pair_barcode}.modeled.png"
+        "results/cnv/plotmodeledsegments/{aliquot_barcode}/{aliquot_barcode}.modeled.png"
     params:
         mem = CLUSTER_META["plotmodeledsegments"]["mem"],
-        outputdir = "results/cnv/plotmodeledsegments/{pair_barcode}",
-        outputprefix = "{pair_barcode}"
+        outputdir = "results/cnv/plotmodeledsegments/{aliquot_barcode}",
+        outputprefix = "{aliquot_barcode}"
     threads:
         CLUSTER_META["plotmodeledsegments"]["ppn"]
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/cnv/plotmodeledsegments/{pair_barcode}.log"
+        "logs/cnv/plotmodeledsegments/{aliquot_barcode}.log"
     benchmark:
-        "benchmarks/cnv/plotmodeledsegments/{pair_barcode}.txt"
+        "benchmarks/cnv/plotmodeledsegments/{aliquot_barcode}.txt"
     message:
         "Plot modelled segments\n"
-        "Pair ID: {wildcards.pair_barcode}"
+        "Aliquot barcode: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g PlotModeledSegments \
             --denoised-copy-ratios {input.tumor_denoised} \
@@ -278,5 +279,168 @@ rule plotmodeledsegments:
             --output {params.outputdir} \
             --output-prefix {params.outputprefix} \
             > {log} 2>&1"
+
+rule combinetracks:
+    input:
+        tumor_called_seg = lambda wildcards: "results/cnv/callsegments/{aliquot_barcode}.called.seg".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+        normal_called_seg = lambda wildcards: "results/cnv/callsegments/{aliquot_barcode}.called.seg".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode))
+    output:
+        germline_tagged_seg = temp("results/cnv/combinetracks/{pair_barcode}.germline_tagged.seg"),
+        centromere_tagged_seg = temp("results/cnv/combinetracks/{pair_barcode}.centromere_tagged.seg"),
+        final_seg = "results/cnv/combinetracks/{pair_barcode}.final.seg"
+    params:
+        mem = CLUSTER_META["combinetracks"]["mem"],
+    threads:
+        CLUSTER_META["combinetracks"]["ppn"]
+    conda:
+        "../envs/gatk4.yaml"
+    log:
+        "logs/cnv/combinetracks/{pair_barcode}.log"
+    benchmark:
+        "benchmarks/cnv/combinetracks/{pair_barcode}.txt"
+    message:
+        "Combine tumor and normal segmentation\n"
+        "Pair ID: {wildcards.pair_barcode}"
+    shell:
+        "echo \"======= Germline Tagging\""
+        "gatk --java-options -Xmx{params.mem}g TagGermlineEvents \
+            --segments {input.tumor_called_seg} \
+            --called-matched-normal-seg-file {input.normal_called_seg} \
+            -O {output.germline_tagged_seg} \
+            -R {config[reference_fasta]} \
+            > {log} 2>&1"
+        
+        "echo \"======= Centromeres\""
+        "gatk --java-options -Xmx{params.mem}g CombineSegmentBreakpoints \
+            --segments {output.germline_tagged_seg} \
+            --segments {config[cnv][centromere]} \
+            --columns-of-interest NUM_POINTS_COPY_RATIO \
+            --columns-of-interest NUM_POINTS_ALLELE_FRACTION \
+            --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_10 \
+            --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_50 \
+            --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_90 \
+            --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_10 \
+            --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_50 \
+            --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_90 \
+            --columns-of-interest CALL \
+            --columns-of-interest NUM_POINTS_COPY_RATIO \
+            --columns-of-interest MEAN_LOG2_COPY_RATIO \
+            --columns-of-interest POSSIBLE_GERMLINE \
+            --columns-of-interest type \
+            --columns-of-interest ID \
+            -O {output.centromere_tagged_seg} \
+            -R {config[reference_fasta]} \
+            >> {log} 2>&1"
+        
+        "echo \"======= GISTIC blacklist\""
+        "gatk --java-options -Xmx{params.mem}g CombineSegmentBreakpoints \
+            --segments {output.centromere_tagged_seg} \
+            --segments {config[cnv][gistic]} \
+            --columns-of-interest NUM_POINTS_COPY_RATIO \
+            --columns-of-interest NUM_POINTS_ALLELE_FRACTION \
+            --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_10 \
+            --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_50 \
+            --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_90 \
+            --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_10 \
+            --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_50 \
+            --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_90 \
+            --columns-of-interest CALL \
+            --columns-of-interest NUM_POINTS_COPY_RATIO \
+            --columns-of-interest MEAN_LOG2_COPY_RATIO \
+            --columns-of-interest POSSIBLE_GERMLINE \
+            --columns-of-interest type \
+            --columns-of-interest ID \
+            -O {output.final_seg} \
+            -R {config[reference_fasta]} \
+            >> {log} 2>&1"
+
+# rule prepare_acs:
+#     input:
+#         called_seg = "results/cnv/combinetracks/{pair_barcode}.final.seg",
+#         modeled_seg = "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelFinal.seg" # "results/cnv/callsegments/{aliquot_barcode}.called.seg".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode))
+#     output:
+#         temp("results/cnv/prepare_acs/{pair_barcode}.prepare_acs.seg")
+#     params:
+#         mem = CLUSTER_META["prepare_acs"]["mem"],
+#     threads:
+#         CLUSTER_META["prepare_acs"]["ppn"]
+#     conda:
+#         "../envs/gatk4.yaml"
+#     log:
+#         "logs/cnv/prepare_acs/{pair_barcode}.log"
+#     benchmark:
+#         "benchmarks/cnv/prepare_acs/{pair_barcode}.txt"
+#     message:
+#         "Prepare ACS conversion by Merging GATK Model Seg and GATK Segment caller file\n"
+#         "Pair ID: {wildcards.pair_barcode}"
+#     shell:
+#         "echo \"======= Merging GATK Model Seg and GATK Segment caller file\""
+#         "gatk --java-options -Xmx{params.mem}g \
+#             CombineSegmentBreakpoints \
+#             --segments {input.called_seg} \
+#             --segments {input.modeled_seg} \
+#             --columns-of-interest NUM_POINTS_COPY_RATIO \
+#             --columns-of-interest NUM_POINTS_ALLELE_FRACTION \
+#             --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_10 \
+#             --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_50 \
+#             --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_90 \
+#             --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_10 \
+#             --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_50 \
+#             --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_90 \
+#             --columns-of-interest CALL \
+#             --columns-of-interest NUM_POINTS_COPY_RATIO \
+#             --columns-of-interest MEAN_LOG2_COPY_RATIO \
+#             --columns-of-interest POSSIBLE_GERMLINE \
+#             --columns-of-interest type \
+#             --columns-of-interest ID \
+#             -O {output} \
+#             -R {config[reference_fasta]} \
+#             > {log} 2>&1"
+
+# rule filter_tagged:
+#     input:
+#         "results/cnv/prepare_acs/{pair_barcode}.prepare_acs.seg"
+#     output:
+#         temp("results/cnv/filter_tagged/{pair_barcode}.pruned.seg")
+#     params:
+#         mem = CLUSTER_META["filter_tagged"]["mem"],
+#     threads:
+#         CLUSTER_META["filter_tagged"]["ppn"]
+#     conda:
+#         "../envs/gatk4.yaml"
+#     log:
+#         "logs/cnv/filter_tagged/{pair_barcode}.log"
+#     benchmark:
+#         "benchmarks/cnv/filter_tagged/{pair_barcode}.txt"
+#     message:
+#         "Prune tagged variants\n"
+#         "Pair ID: {wildcards.pair_barcode}"
+#     run:
+#         import pandas
+#         import os.path
+#         tumor_tagged_df = pandas.read_csv(input, delimiter="\t", comment="@")
+#         tumor_tagged_pruned_df = tumor_tagged_df[(tumor_tagged_df["POSSIBLE_GERMLINE"] == "0") & (tumor_tagged_df["type"] != "centromere") & (tumor_tagged_df["ID"].isna())]
+#         output_filename = output
+#         print(output_filename)
+#         tumor_tagged_pruned_df.to_csv(output_filename, sep="\t", index=False)
+
+# rule merge_annotation:
+#     input:
+#         "results/cnv/filter_tagged/{pair_barcode}.pruned.seg"
+#     output:
+#         ...
+#     params:
+#         mem = CLUSTER_META["merge_annotation"]["mem"],
+#     threads:
+#         CLUSTER_META["merge_annotation"]["ppn"]
+#     conda:
+#         "../envs/gatk4.yaml"
+#     log:
+#         "logs/cnv/merge_annotation/{pair_barcode}.log"
+#     benchmark:
+#         "benchmarks/cnv/merge_annotation/{pair_barcode}.txt"
+#     message:
+#         "Prune tagged variants\n"
+#         "Pair ID: {wildcards.pair_barcode}"
 
 ## END ##

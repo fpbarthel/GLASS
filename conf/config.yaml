@@ -34,6 +34,15 @@ mutect2:
   ## Calculate af-of-alleles: 1/(2*123136) = 0.00000406055 (6 sign. digits)
   af_of_alleles_not_in_resource: 0.00000406055
 
+## GATK CNV settings
+cnv:
+  min_contig_len: 46709983
+  ## CNV intervals
+  intervals:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.interval_list"
+  centromere: "/projects/verhaak-lab/verhaak_ref/gatk-cnv/somatic-b37_final_centromere_hg19.seg"
+  gistic:     "/projects/verhaak-lab/verhaak_ref/gatk-cnv/somatic-b37_CNV.hg19.bypos.v1.CR1_event_added.mod.seg"
+
+
 ## HTML dir
 # @sbamin helix ~/ has 50GB limit. multiqc and fastqc files may grow in size.
 html_dir:         "/home/barthf/ShinyApps/"
@@ -48,9 +57,6 @@ tempdir:          "/fastscratch/verhaak-lab/GLASS-WG/tmp"
 
 ## WGS scatter intervals
 wgs_scatterdir:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50"
-
-## CNV intervals
-cnv_intervals:    "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.interval_list"
 
 ## SV mask
 svmask_lumpy:     "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svmask_lumpy.bed"

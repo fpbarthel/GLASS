@@ -117,9 +117,11 @@ rule varscan2:
 
 rule cnv:
     input:
-        expand("results/cnv/callsegments/{pair_barcode}.called.seg", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/cnv/plotmodeledsegments/{pair_barcode}/{pair_barcode}.modeled.png", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png", aliquot_barcode = manifest.getSelectedAliquots())
+        expand("results/cnv/combinetracks/{pair_barcode}.final.seg", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/cnv/callsegments/{pair_barcode}.called.seg", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/cnv/plotmodeledsegments/{pair_barcode}/{pair_barcode}.modeled.png", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png", aliquot_barcode = manifest.getSelectedAliquots()),
+
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SV using Delly
