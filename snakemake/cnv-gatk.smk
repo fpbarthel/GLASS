@@ -49,8 +49,7 @@ rule createcnvpon:
         "benchmarks/cnv/createcnvpon/{analysis_type}.txt"
     message:
         "Creating CNV panel of normals\n"
-        "Analysis type: {wildcards.analysis_type}\n"
-        "Batch: {wildcards.analysis_type}"
+        "Analysis type: {wildcards.analysis_type}"
     run:
         vcfs = " ".join(["-I " + s for s in input])
         shell("gatk --java-options -Xmx{params.mem}g CreateReadCountPanelOfNormals \
@@ -66,7 +65,7 @@ rule createcnvpon:
 
 rule denoisereadcounts:
     input:
-        sample = lambda wildcards: "results/cnv/readcounts/{analysis_type}/{aliquot_barcode}.counts.hdf5".format(analysis_type = "WGS", aliquot_barcode = wildcards.aliquot_barcode),
+        sample = lambda wildcards: "results/cnv/readcounts/{aliquot_barcode}.counts.hdf5".format(aliquot_barcode = wildcards.aliquot_barcode),
         pon =  lambda wildcards: "results/cnv/createcnvpon/{analysis_type}.pon.hdf5".format(analysis_type = "WGS")
     output:
         standardized = "results/cnv/denoisereadcounts/{aliquot_barcode}.standardizedCR.tsv",
