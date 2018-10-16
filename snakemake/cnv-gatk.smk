@@ -289,7 +289,7 @@ rule combinetracks:
         centromere_tagged_seg = temp("results/cnv/combinetracks/{pair_barcode}.centromere_tagged.seg"),
         final_seg = "results/cnv/combinetracks/{pair_barcode}.final.seg"
     params:
-        mem = CLUSTER_META["combinetracks"]["mem"],
+        mem = CLUSTER_META["combinetracks"]["mem"]
     threads:
         CLUSTER_META["combinetracks"]["ppn"]
     conda:

@@ -120,7 +120,8 @@ class ManifestHandler:
         """
         Returns a BAM filename (str) given an aliquot barcode (str)
         """     
-        return [file_name for (file_name, f) in self.files.items() if f["aliquot_barcode"] == aliquot_barcode][0]
+        #return [file_name for (file_name, f) in self.files.items() if f["aliquot_barcode"] == aliquot_barcode][0]
+        return [f["file_path"] for (file_name, f) in self.files.items() if f["aliquot_barcode"] == aliquot_barcode][0]
 
     def getFileFormatByAliquot(self, aliquot_barcode):
         """

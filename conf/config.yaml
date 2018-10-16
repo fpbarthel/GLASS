@@ -1,10 +1,18 @@
 ## Snakemake configuration
 ## @Author Floris Barthel
 
+## Boolean indicating whether the starting point should be raw source files (eg. source BAM or FASTQ to be aligned) or aligned data (eg. realigned BAM files)
+from_source: 0
+
 ## Database settings
 db:
   configfile: "/fastscratch/verhaak-lab/.odbc.ini"
   configsection: "VerhaakDB"
+
+## Data paths
+data:
+  source_path: "/fastscratch/verhaak-lab/GLASS-WG/data"
+  realn_path: "/fastscratch/verhaak-lab/GLASS-WG/results/align/bqsr"
 
 #### JSON files (as alternative to database)
 json:
