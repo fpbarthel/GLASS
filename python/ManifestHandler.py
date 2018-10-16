@@ -144,8 +144,9 @@ class ManifestHandler:
     def getPONAliquots(self):
         """
         Returns a list of all aliquots with sample_type = 'NB'
+        Subset by selected aliquots only
         """
-        return [aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["sample_type"] == "NB"]
+        return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["sample_type"] == "NB"]) & set(self.getSelectedAliquots()))
     
     def getRGIDs(self, aliquot_barcode):
         """
