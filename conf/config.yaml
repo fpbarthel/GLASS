@@ -50,6 +50,8 @@ cnv:
   centromere: "/projects/verhaak-lab/verhaak_ref/gatk-cnv/somatic-b37_final_centromere_hg19.seg"
   gistic:     "/projects/verhaak-lab/verhaak_ref/gatk-cnv/somatic-b37_CNV.hg19.bypos.v1.CR1_event_added.mod.seg"
 
+  maf90_threshold: 0.485
+
 
 ## HTML dir
 # @sbamin helix ~/ has 50GB limit. multiqc and fastqc files may grow in size.
@@ -70,6 +72,9 @@ wgs_scatterdir:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/sca
 svmask_lumpy:     "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svmask_lumpy.bed"
 svmask_delly:     "/projects/barthf/GLASS-WG/data/ref/human.hg19.excl.tsv"
 svinclude_manta:  "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svinclude_manta.bed.gz"
+
+## Exome capture common regions
+common_exome_capture_bed: "/projects/verhaak-lab/verhaak_ref/exome-capture/Intersect_Exome_hg19.filtered.bed"
 
 ## CNVnator
 cnvnator_binsize: 1000
