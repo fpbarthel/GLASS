@@ -5,7 +5,7 @@ GLASS helper functions
 import os, fnmatch
 from configparser import ConfigParser
 
-def touch(fname, mode=0o666, dir_fd=None, **kwargs):
+def touch_file(fname, mode=0o666, dir_fd=None, **kwargs):
     """
     Touch function taken from stackoverflow
     Link: https://stackoverflow.com/questions/1158076/implement-touch-using-python

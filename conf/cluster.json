@@ -194,7 +194,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "12:00:00"
+        "walltime" : "24:00:00"
     },
     "extractdiscordant" :
     {

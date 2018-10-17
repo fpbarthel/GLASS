@@ -23,6 +23,8 @@
 ## maps to the new (sometiomes renamed) RGIDs
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+from python.glassfunc import touch_file
+
 rule revertsam:
     input:
         lambda wildcards: manifest.getSourceBAM(wildcards.aliquot_barcode)
@@ -59,9 +61,9 @@ rule revertsam:
 
         ## Create empty files ("touch") for readgroups not in this BAM file
         ## Workaround for issue documented here: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
-        other_rg_f = ["results/align/revertsam/{aliquot_barcode}/{aliquot_barcode}.{rg}.revertsam.bam".format(aliquot_barcode = wildcards["aliquot_barcode"], rg = rg) for rg in manifest.getRGIDsNotInAliquot(wildcards["aliquot_barcode"])]
+        other_rg_f = ["results/align/revertsam/{aliquot_barcode}/{aliquot_barcode}.{rg}.revertsam.bam".format(aliquot_barcode = wildcards["aliquot_barcode"], rg = rg) for rg in manifest.getRGIDsNotInAliquot(wildcards["aliquot_barcode"])] #manifest.getAllReadgroups(limit_bam = True)] #manifest.getRGIDsNotInAliquot(wildcards["aliquot_barcode"])]
         for f in other_rg_f:
-            touch(f)
+            touch_file(f)
 
         shell("gatk --java-options -Xmx{params.mem}g RevertSam \
             --INPUT={input} \

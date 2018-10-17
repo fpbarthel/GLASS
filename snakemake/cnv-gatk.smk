@@ -182,8 +182,7 @@ rule modelsegments:
         "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelBegin.af.param",
         "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelBegin.cr.param",
         "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.af.param",
-        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.cr.param",
-        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.hets.normal.tsv",
+        "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.cr.param", #"results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.hets.normal.tsv",
         "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.hets.tsv"
     params:
         mem = CLUSTER_META["modelsegments"]["mem"],
@@ -314,19 +313,10 @@ rule combinetracks:
             --segments {output.germline_tagged_seg} \
             --segments {config[cnv][centromere]} \
             --columns-of-interest NUM_POINTS_COPY_RATIO \
-            --columns-of-interest NUM_POINTS_ALLELE_FRACTION \
-            --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_10 \
-            --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_50 \
-            --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_90 \
-            --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_10 \
-            --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_50 \
-            --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_90 \
-            --columns-of-interest CALL \
-            --columns-of-interest NUM_POINTS_COPY_RATIO \
             --columns-of-interest MEAN_LOG2_COPY_RATIO \
+            --columns-of-interest CALL \
             --columns-of-interest POSSIBLE_GERMLINE \
             --columns-of-interest type \
-            --columns-of-interest ID \
             -O {output.centromere_tagged_seg} \
             -R {config[reference_fasta]} \
             >> {log} 2>&1;"
@@ -336,16 +326,8 @@ rule combinetracks:
             --segments {output.centromere_tagged_seg} \
             --segments {config[cnv][gistic]} \
             --columns-of-interest NUM_POINTS_COPY_RATIO \
-            --columns-of-interest NUM_POINTS_ALLELE_FRACTION \
-            --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_10 \
-            --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_50 \
-            --columns-of-interest LOG2_COPY_RATIO_POSTERIOR_90 \
-            --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_10 \
-            --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_50 \
-            --columns-of-interest MINOR_ALLELE_FRACTION_POSTERIOR_90 \
-            --columns-of-interest CALL \
-            --columns-of-interest NUM_POINTS_COPY_RATIO \
             --columns-of-interest MEAN_LOG2_COPY_RATIO \
+            --columns-of-interest CALL \
             --columns-of-interest POSSIBLE_GERMLINE \
             --columns-of-interest type \
             --columns-of-interest ID \
