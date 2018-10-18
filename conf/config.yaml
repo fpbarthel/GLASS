@@ -47,7 +47,7 @@ cnv:
   min_contig_len: 46709983
   ## CNV intervals
   intervals_wgs:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.interval_list"
-  intervals_wxs:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/Intersect_Exome_hg19.filtered.preprocess.interval_list"
+  intervals_wes:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/Intersect_Exome_hg19.filtered.preprocess.interval_list"
   centromere: "/projects/verhaak-lab/verhaak_ref/gatk-cnv/somatic-b37_final_centromere_hg19.seg"
   gistic:     "/projects/verhaak-lab/verhaak_ref/gatk-cnv/somatic-b37_CNV.hg19.bypos.v1.CR1_event_added.mod.seg"
 
