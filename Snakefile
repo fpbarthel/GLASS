@@ -119,7 +119,7 @@ rule varscan2:
 rule cnv:
     input:
         expand("results/cnv/combinetracks/{pair_barcode}.final.seg", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/cnv/acs_convert/{pair_barcode}.acs.seg", pair_barcode = manifest.getSelectedPairs())
+        expand("results/cnv/acs_convert/{pair_barcode}.acs.seg", pair_barcode = manifest.getSelectedPairs()),
         expand("results/cnv/gistic_convert/{pair_barcode}.gistic2.seg", pair_barcode = manifest.getSelectedPairs())
         #expand("results/cnv/callsegments/{pair_barcode}.called.seg", pair_barcode = manifest.getSelectedPairs()),
         #expand("results/cnv/plotmodeledsegments/{pair_barcode}/{pair_barcode}.modeled.png", pair_barcode = manifest.getSelectedPairs()),

@@ -251,13 +251,13 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00"
+        "walltime" : "2:00:00"
     },
     "combinetracks" :
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "2:00:00",
         "name" : "{rule}.{wildcards.pair_barcode}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
@@ -266,7 +266,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "2:00:00",
         "name" : "{rule}.{wildcards.pair_barcode}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
@@ -275,7 +275,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "2:00:00",
         "name" : "{rule}.{wildcards.pair_barcode}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
@@ -284,7 +284,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "2:00:00",
         "name" : "{rule}.{wildcards.pair_barcode}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
@@ -293,7 +293,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "2:00:00",
         "name" : "{rule}.{wildcards.pair_barcode}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
@@ -302,7 +302,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "2:00:00",
         "name" : "{rule}.{wildcards.pair_barcode}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
@@ -311,7 +311,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "2:00:00",
         "name" : "{rule}.{wildcards.pair_barcode}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"

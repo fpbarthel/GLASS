@@ -399,9 +399,9 @@ rule filter_tagged:
     run:
         import pandas
         import os.path
-        tumor_tagged_df = pandas.read_csv(input, delimiter="\t", comment="@")
-        tumor_tagged_pruned_df = tumor_tagged_df[(tumor_tagged_df["POSSIBLE_GERMLINE"] == "0") & (tumor_tagged_df["type"] != "centromere") & (tumor_tagged_df["ID"].isna())]
-        output_filename = output
+        tumor_tagged_df = pandas.read_csv(input[0], delimiter="\t", comment="@")
+        tumor_tagged_pruned_df = tumor_tagged_df[(tumor_tagged_df["POSSIBLE_GERMLINE"] == "0") & (tumor_tagged_df["type"] != "centromere") & (tumor_tagged_df["ID"].isnull())]
+        output_filename = output[0]
         print(output_filename)
         tumor_tagged_pruned_df.to_csv(output_filename, sep="\t", index=False)
 
@@ -440,7 +440,7 @@ rule merge_annotation:
 
 rule acs_convert:
     input:
-        af_param = "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.af.param",
+        af_param = lambda wildcards: "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.af.param".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
         merged_seg = "results/cnv/merge_annotation/{pair_barcode}.merged.seg"
     output:
         seg = "results/cnv/acs_convert/{pair_barcode}.acs.seg",
@@ -649,8 +649,8 @@ rule gistic_convert:
         "Pair ID: {wildcards.pair_barcode}"
     run:
         import csv
-        input_file = input
-        output_file = output
+        input_file = input[0]
+        output_file = output[0]
 
         """
         The column headers are:
@@ -669,7 +669,6 @@ rule gistic_convert:
                 int_ify_num_points = r["NUM_POINTS_COPY_RATIO_1"].replace(".0", "")
                 outrow = [r["SAMPLE"], r["CONTIG"], r["START"], r["END"], int_ify_num_points, r["MEAN_LOG2_COPY_RATIO"]]
                 print(outrow)
-        
-        tsvout.writerow(outrow)
+                tsvout.writerow(outrow)
 
 ## END ##
