@@ -201,6 +201,12 @@ class ManifestHandler:
         s = [p["normal_barcode"] for (barcode, p) in self.pairs.items() if p["tumor_barcode"] == aliquot_barcode]
         return s[0] if len(s) > 0 else None
 
+    def isExome(self, aliquot_barcode):
+        """
+        Test whether given aliquot is an exome
+        """
+        return self.aliquots[aliquot_barcode]["aliquot_analysis_type"] == "WES"
+
     def getFiles(self):
         """
         Returns a dictionary (keys = file_name) of dictionaries containing all files and aliquots

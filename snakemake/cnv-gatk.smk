@@ -9,7 +9,8 @@ rule collectreadcounts:
     output:
         "results/cnv/readcounts/{aliquot_barcode}.counts.hdf5"
     params:
-        mem = CLUSTER_META["collectreadcounts"]["mem"]
+        mem = CLUSTER_META["collectreadcounts"]["mem"],
+        intervals = lambda wildcards: config["cnv"]["intervals_wes"] if manifest.isExome(wildcards.aliquot_barcode) else config["cnv"]["intervals_wgs"]
     threads:
         CLUSTER_META["collectreadcounts"]["ppn"]
     log:
@@ -24,7 +25,7 @@ rule collectreadcounts:
     shell:
         "gatk --java-options -Xmx{params.mem}g CollectReadCounts \
             -I {input} \
-            -L {config[cnv][intervals]} \
+            -L {params.intervals} \
             --interval-merging-rule OVERLAPPING_ONLY \
             -O {output} \
             > {log} 2>&1"
@@ -671,4 +672,42 @@ rule gistic_convert:
                 print(outrow)
                 tsvout.writerow(outrow)
 
+rule runabsolute:
+    input:
+        seg = "results/cnv/acs_convert/{pair_barcode}.acs.seg",
+        skew = "results/cnv/acs_convert/{pair_barcode}.skew"
+    output:
+        res = "results/cnv/acs_convert/{pair_barcode}/{pair_barcode}.ABSOLUTE_mode.res.Rds",
+        tab = "results/cnv/acs_convert/{pair_barcode}/{pair_barcode}.ABSOLUTE_mode.tab.Rds",
+        rda = "results/cnv/acs_convert/{pair_barcode}/{pair_barcode}.ABSOLUTE.RData",
+        pdf = "results/cnv/acs_convert/{pair_barcode}/{pair_barcode}.ABSOLUTE_plot.pdf"
+    params:
+        outdir = "results/cnv/acs_convert/{pair_barcode}/"
+    threads:
+        CLUSTER_META["runabsolute"]["ppn"]
+    conda:
+        "../envs/absolute.yaml"
+    log:
+        "logs/cnv/runabsolute/{pair_barcode}.log"
+    benchmark:
+        "benchmarks/cnv/runabsolute/{pair_barcode}.txt"
+    message:
+        "Run ABSOLUTE 1.2 (patched)\n"
+        "Pair ID: {wildcards.pair_barcode}"
+    shell:"""
+        Rscript -e \
+            "if (!require("ABSOLUTE")) devtools::install_github("TheJacksonLaboratory/Broad-ABSOLUTE");
+             RunAbsolute({input.seg}, 
+             genome_build = 'hg19',
+             platform = 'Illumina_WES',
+             copy_num_type = 'allelic',
+             results.dir = {params.outdir},
+             sample.name = {wildcards.pair_barcode},
+             gender = NA,
+             output.fn.base = {wildcards.pair_barcode},
+             SSNV_skew = as.numeric(readLines({input.skew},warn=F)),
+             verbose = T,
+             max.as.seg.count = 10E10,
+             primary.disease='Glioma')
+    """
 ## END ##
