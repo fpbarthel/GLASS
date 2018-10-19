@@ -11,7 +11,7 @@ import psycopg2.extras
 class PostgreSQLManifestHandler(ManifestHandler):
     __conn = None
 
-    def __init__(self, user, password, database, host = "localhost", port = 5432, source_file_basepath = "data/", aligned_file_basepath = "results/align/bqsr", from_source = False):
+    def __init__(self, user, password, database, host = "localhost", port = 5432, source_file_basepath = "data/", aligned_file_basepath = "results/align/bqsr", from_source = False, by_cohort = None):
         try:
             self.__conn = psycopg2.connect(host = host, port = port, user = user, password = password, database = database)
         except(Exception, psycopg2.DatabaseError) as error:
@@ -23,7 +23,7 @@ class PostgreSQLManifestHandler(ManifestHandler):
         self.initPairs()
         self.initFilesReadgroups()
             
-        ManifestHandler.__init__(self, source_file_basepath, aligned_file_basepath, from_source)
+        ManifestHandler.__init__(self, source_file_basepath, aligned_file_basepath, from_source, by_cohort)
 
         try:
             self.__conn.close()
@@ -59,8 +59,11 @@ class PostgreSQLManifestHandler(ManifestHandler):
             return res
 
     def initFiles(self):
-        q = "SELECT f.aliquot_barcode, f.file_name, f.file_format, f.file_path \
-             FROM analysis.files AS f;"
+        q = "SELECT f.aliquot_barcode, f.file_name, f.file_format, f.file_path, cl.case_source \
+             FROM analysis.files AS f \
+                 INNER JOIN biospecimen.aliquots AS al ON al.aliquot_barcode = f.aliquot_barcode \
+                 INNER JOIN biospecimen.samples AS s ON al.sample_barcode = s.sample_barcode \
+                 INNER JOIN clinical.cases AS cl ON cl.case_barcode = s.case_barcode;"
         
         res = self.query(q, cursor_factory = psycopg2.extras.RealDictCursor)
 

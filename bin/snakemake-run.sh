@@ -15,6 +15,7 @@ RULEGRAPH=0
 DAG=0
 WORKDIR=`pwd`
 FROMSOURCE=0
+COHORT=""
 
 POSITIONAL=()
 while [[ $# -gt 0 ]]
@@ -51,6 +52,12 @@ do
 	    -cc|--cluster-conf)
 	    [ -z "$2" ] && echo "No cluster config specified" && exit 1
 	    CLUSTRCONF="$2"
+	    shift # past value
+	    shift # past argument
+	    ;;
+	    -c|--cohort)
+	    [ -z "$2" ] && echo "No cohort specified" && exit 1
+	    COHORT="$2"
 	    shift # past value
 	    shift # past argument
 	    ;;
@@ -93,6 +100,7 @@ echo "CLUSTER-CONFIG: ${CLUSTRCONF}"
 echo "OPTS: ${OPTS}"
 echo "NUM_JOBS: ${NUM_JOBS}"
 echo "FROMSOURCE: ${FROMSOURCE}"
+echo "COHORT: ${COHORT}"
 echo "EXTRA OPTS: ${EXTRA_OPTS}"
 
 read -p "Continue? (y/n)" -n 1 -r
@@ -112,7 +120,7 @@ then
 	snakemake --configfile "${CONFIGFILE}" --dag | dot -Tpng > dag.png
 else
 	mkdir -p "${WORKDIR}/logs/drmaa"
-	snakemake ${OPTS} --jobs ${NUM_JOBS} -k --use-conda --latency-wait 120 --max-jobs-per-second 8 --config workdir="${WORKDIR}" cluster_json="${CLUSTRCONF}" from_source="${FROMSOURCE}" --restart-times 1 --cluster-config "${CLUSTRCONF}" --configfile "${CONFIGFILE}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -q {cluster.queu} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e ${WORKDIR}/{cluster.stderr} -o ${WORKDIR}/{cluster.stdout}" $EXTRA_OPTS $TARGET
+	snakemake ${OPTS} --jobs ${NUM_JOBS} -k --use-conda --latency-wait 120 --max-jobs-per-second 8 --config workdir="${WORKDIR}" cluster_json="${CLUSTRCONF}" from_source="${FROMSOURCE}" cohort="${COHORT}" --restart-times 1 --cluster-config "${CLUSTRCONF}" --configfile "${CONFIGFILE}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -q {cluster.queu} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e ${WORKDIR}/{cluster.stderr} -o ${WORKDIR}/{cluster.stdout}" $EXTRA_OPTS $TARGET
 fi
 
 ## END ##
