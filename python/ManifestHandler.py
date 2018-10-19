@@ -27,15 +27,21 @@ class ManifestHandler:
     selected_aliquots = set()
     selected_pairs = set()
     
-    def __init__(self, source_file_basepath, aligned_file_basepath, from_source):
+    def __init__(self, source_file_basepath, aligned_file_basepath, from_source, by_cohort = None):
         
         self.locateFiles(source_file_basepath, aligned_file_basepath)
         
         self.selected_aliquots = set()
         if from_source:
-            self.selected_aliquots.update([f["aliquot_barcode"] for (file_name, f) in self.files.items() if len(f["file_path"]) > 0 and (f["file_format"] == SOURCE_BAM_TYPE or f["file_format"] == SOURCE_FASTQ_TYPE)])
+            if by_cohort is not None:
+                self.selected_aliquots.update([f["aliquot_barcode"] for (file_name, f) in self.files.items() if f["case_source"] == by_cohort and len(f["file_path"]) > 0 and (f["file_format"] == SOURCE_BAM_TYPE or f["file_format"] == SOURCE_FASTQ_TYPE)])
+            else:
+                self.selected_aliquots.update([f["aliquot_barcode"] for (file_name, f) in self.files.items() if len(f["file_path"]) > 0 and (f["file_format"] == SOURCE_BAM_TYPE or f["file_format"] == SOURCE_FASTQ_TYPE)])
         else:
-            self.selected_aliquots.update([f["aliquot_barcode"] for (file_name, f) in self.files.items() if len(f["file_path"]) > 0 and f["file_format"] == ALIGNED_BAM_TYPE])
+            if by_cohort is not None:
+                self.selected_aliquots.update([f["aliquot_barcode"] for (file_name, f) in self.files.items() if f["case_source"] == by_cohort and len(f["file_path"]) > 0 and f["file_format"] == ALIGNED_BAM_TYPE])
+            else:
+                self.selected_aliquots.update([f["aliquot_barcode"] for (file_name, f) in self.files.items() if len(f["file_path"]) > 0 and f["file_format"] == ALIGNED_BAM_TYPE])
 
         self.selected_pairs = set()
         for (pair_barcode, pair) in self.pairs.items():
