@@ -1,6 +1,6 @@
 #######################################################
 # Create manifest for MD Anderson samples (n = 120, GLASS)
-# Date: 2018.09.12
+# Date: 2018.09.28
 # Author: Kevin J.
 #######################################################
 # Local directory for github repo.
@@ -8,7 +8,9 @@ mybasedir = "/Users/johnsk/Documents/Life-History/GLASS-WG"
 setwd(mybasedir)
 
 # Files with information about fastq information and barcodes.
-# Actual fastq files are stored: /fastscratch/johnsk/GLASS-WG/mdacc/ or on tier2 (long-term).
+life_history_barcodes = "data/ref/glass_wg_aliquots_mapping_table.txt"
+life_history_filesize = "data/ref/mdacc_filesize.txt"
+life_history_md5 = "data/ref/mdacc_md5.txt"
 MDA_batch1_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch1_n14_20180405.tsv"
 MDA_batch2_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch2_n94_20180603.tsv"
 MDA_batch3_file_path = "data/sequencing-information/MDACC/file_list_C202SC18030593_batch2_n13_20180716.tsv"
@@ -23,21 +25,6 @@ mda_master_path = "data/clinical-data/MDACC/MDA-Clinical-Dataset/Master Log for 
 # "Re:RE: Novogene Project Report - Confirm -C202SC18030593-Davis-MDACC-156-libseq-hWGS-WOBI-NVUS2018022505[J1-C202SC18030593-1000]"
 novogene_sample_path = "data/sequencing-information/MDACC/Novogene_SIF_14.xlsx"
 
-# Completed life-history barcodes.
-life_history_barcodes = "data/ref/glass_wg_aliquots_mapping_table.txt"
-
-# Create extensions for samples.
-json_ext = "json"
-text_ext = "tsv"
-
-# Create output files for each metadata set.
-cases_file      = "data/manifest/mdacc/cases"
-samples_file    = "data/manifest/mdacc/samples"
-aliquots_file   = "data/manifest/mdacc/aliquots"
-readgroups_file = "data/manifest/mdacc/readgroups"
-files_file      = "data/manifest/mdacc/files"
-pairs_file      = "data/manifest/mdacc/pairs"
-
 #######################################################
 
 library(tidyverse)
@@ -48,8 +35,12 @@ library(listviewer)
 library(stringi)
 library(stringr)
 library(lubridate)
+library(DBI)
 
 #######################################################
+# Establish connection.
+con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
+
 # We need to generate the following fields required by the SNV snakemake pipeline:
 # aliquots, files, cases, samples, pairs, and readgroups.
 
@@ -57,13 +48,13 @@ library(lubridate)
 # Novogene has processed 120 samples. In our master sheet normal blood samples were not provided. We need them for barcodes.
 # Inspect both batch1/batch2/batch3 sequencing data for all blood/tumor data.
 mda_batch1_df <- read.table(MDA_batch1_file_path, col.names="relative_file_path", stringsAsFactors = F)
-mda_batch1_df$filename = sapply(strsplit(mda_batch1_df$relative_file_path, "/"), "[[", 3)
+mda_batch1_df$file_name = sapply(strsplit(mda_batch1_df$relative_file_path, "/"), "[[", 3)
 mda_batch2_df <- read.table(MDA_batch2_file_path, col.names="relative_file_path", stringsAsFactors = F)
-mda_batch2_df$filename = sapply(strsplit(mda_batch2_df$relative_file_path, "/"), "[[", 3)
+mda_batch2_df$file_name = sapply(strsplit(mda_batch2_df$relative_file_path, "/"), "[[", 3)
 mda_batch3_df <- read.table(MDA_batch3_file_path, col.names="relative_file_path", stringsAsFactors = F)
-mda_batch3_df$filename = sapply(strsplit(mda_batch3_df$relative_file_path, "/"), "[[", 3)
+mda_batch3_df$file_name = sapply(strsplit(mda_batch3_df$relative_file_path, "/"), "[[", 3)
 mda_batch4_df <- read.table(MDA_batch4_file_path, col.names="relative_file_path", stringsAsFactors = F)
-mda_batch4_df$filename = sapply(strsplit(mda_batch4_df$relative_file_path, "/"), "[[", 3)
+mda_batch4_df$file_name = sapply(strsplit(mda_batch4_df$relative_file_path, "/"), "[[", 3)
 
 # Replace the placeholder for pwd "./" from bash cmd: "find -name ".fq.gz" in parent directory of fastqs. 
 mda_batch1_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc", mda_batch1_df$relative_file_path)
@@ -71,11 +62,15 @@ mda_batch2_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc/C
 mda_batch3_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc/C202SC18030593_batch2_n13_20180716", mda_batch3_df$relative_file_path)
 mda_batch4_df$working_file_path <- gsub("^", "/fastscratch/GLASS-WG/data/mdacc/DT20180816", mda_batch4_df$relative_file_path)
 
+
 # Create an old sample.id for these subjects to be linked. No longer *necessary*, but kept in case it's helpful.
-mda_batch1_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch1_df$filename)
-mda_batch2_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch2_df$filename)
-mda_batch3_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch3_df$filename)
-mda_batch4_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch4_df$filename)
+mda_batch1_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch1_df$file_name)
+mda_batch2_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch2_df$file_name)
+mda_batch3_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch3_df$file_name)
+mda_batch4_df$old_sample_id <- gsub( "_USPD.*$", "", mda_batch4_df$file_name)
+
+# Combine these three sequencing data sets. There should be 604 files.
+mda_df <- bind_rows(mda_batch1_df, mda_batch2_df, mda_batch3_df, mda_batch4_df)
 
 # Combine these three sequencing data sets. There should be 604 files.
 mda_df <- bind_rows(mda_batch1_df, mda_batch2_df, mda_batch3_df, mda_batch4_df)
@@ -127,66 +122,64 @@ mda_all_samples_df <- bind_rows(mda_normal_blood_map, mda_tumor_sample_map)
 
 ### Aliquot ####
 life_history_ids = read.delim(life_history_barcodes, as.is=T)
-aliquots_master = life_history_ids %>% mutate(sample_id = substr(aliquot_id, 1, 15),
-                                              sample_type_code = substr(aliquot_id, 14, 15),
-                                              case_id = substr(aliquot_id, 1, 12),
-                                              aliquot_uuid = substr(aliquot_id, 25, 30),
-                                              analyte = substr(aliquot_id, 19, 19),
-                                              portion = substr(aliquot_id, 17, 18),
-                                              analysis_type = substr(aliquot_id, 21, 23)) %>%
-  filter(grepl("GLSS-MD", sample_id)) %>% 
-  filter(!grepl("MD-LP", sample_id))
+aliquots_master = life_history_ids %>% mutate(aliquot_barcode = aliquot_id,
+                                              sample_barcode = substr(aliquot_barcode, 1, 15),
+                                              sample_type = substr(aliquot_barcode, 14, 15),
+                                              case_barcode = substr(aliquot_barcode, 1, 12),
+                                              aliquot_uuid_short = substr(aliquot_barcode, 25, 30),
+                                              aliquot_analyte_type = substr(aliquot_barcode, 19, 19),
+                                              aliquot_portion = substr(aliquot_barcode, 17, 18),
+                                              aliquot_analysis_type = substr(aliquot_barcode, 21, 23),
+                                              aliquot_id_legacy = legacy_aliquot_id) %>%
+  select(-legacy_aliquot_id) %>% 
+  filter(grepl("GLSS-MD", sample_barcode)) %>% 
+  filter(!grepl("GLSS-MD-LP", sample_barcode))
 
 ### aliquots
 aliquots = aliquots_master %>% 
-  select(aliquot_id, legacy_aliquot_id, sample_id, case_id, aliquot_uuid, analyte, portion, analysis_type) %>% 
+  select(aliquot_barcode, aliquot_id_legacy, sample_barcode, aliquot_uuid_short,
+         aliquot_analyte_type, aliquot_analysis_type, aliquot_portion) %>% 
   distinct()
+
 
 ### Files ####
 # Generate *file* tsv containing: aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
 # From above ^: mda_df = bind_rows(mda_batch1_df, mda_batch2_df, mda_batch3_df, mda_batch4_df)
+mda_filesize = read_tsv(life_history_filesize, col_names=c("file_size", "file_name"))
+mda_md5 = read_tsv(life_history_md5, col_names=c("file_md5sum", "file_name"))
 
 # Retrieve the library, flowcell, and lane id from the filename.
 mda_df_meta  = mda_df %>% 
-  mutate(library_id = sub(".*_ *(.*?) *_H.*", "\\1", filename), 
-         flowcell_id = substr(filename, nchar(filename)-19, nchar(filename)-12),
-         lane_id = substr(filename, nchar(filename)-8, nchar(filename)-8))
+  mutate(library_id = sub(".*_ *(.*?) *_H.*", "\\1", file_name), 
+         flowcell_id = substr(file_name, nchar(file_name)-19, nchar(file_name)-12),
+         lane_id = substr(file_name, nchar(file_name)-8, nchar(file_name)-8)) %>% 
+  inner_join(mda_md5, by="file_name") %>% 
+  inner_join(mda_filesize, by="file_name") 
+
 
 # Create a new identifier on which to group mate pairs onto the same line (i.e., R1 and R2).
 mda_df_meta$read_group = paste(mda_df_meta$library_id, mda_df_meta$flowcell_id, mda_df_meta$lane_id, sep = '-')
 
 # Comma separated file_paths and file_names. "L#_1" and "L#_2" can be any order. Doesn't yet matter for Snakemake.
-merged_mda_files = mda_df_meta %>% 
-  select(-relative_file_path) %>% 
-  group_by(read_group) %>% 
-  mutate(file_path = paste(working_file_path, collapse=","), 
-         file_name = paste(filename, collapse=",")) %>% 
-  select(-filename, -working_file_path) %>% 
-  distinct()
+#merged_mda_files = mda_df_meta %>% 
+#  select(-relative_file_path) %>% 
+#  group_by(read_group) %>% 
+#  mutate(file_path = paste(working_file_path, collapse=","), 
+#         file_name = paste(filename, collapse=",")) %>% 
+#  select(-filename, -working_file_path) %>% 
+#  distinct()
 
 # Not all of the samples are separated by the same characters. Revise for consistency.
 # 1. Fixing  "G01_" >> GLASS_01_00".
-merged_mda_files$revised_id <- gsub("G01_", "GLASS_01_00", merged_mda_files$old_sample_id)
+mda_df_meta$revised_id <- gsub("G01_", "GLASS_01_00", mda_df_meta$old_sample_id)
 
 # Combine with the new files with the sample name provided by Novogene.
 # This action will remove the Yung sample.
-mda_map_df = merged_mda_files %>% 
+mda_map_df = mda_df_meta %>% 
+  mutate(file_format = "FASTQ") %>% 
   inner_join(novogene_linker_unique, by = c("library_id" = "Novogene.ID")) %>%  
-  inner_join(aliquots_master, by = c("*SampleName" = "legacy_aliquot_id")) %>%  
-  ungroup()
+  inner_join(aliquots_master, by = c("*SampleName" = "aliquot_id_legacy")) 
 
-# Generate uuids for each of the mdacc files.
-# Example from TCGA: 24c6f54a-e7a2-4148-8335-045e3c74096e
-set.seed(39)
-mda_map_df$file_uuid = paste(stri_rand_strings(dim(mda_map_df)[1], 8, "[a-z0-9]"),
-                            stri_rand_strings(dim(mda_map_df)[1], 4, "[a-z0-9]"),
-                            stri_rand_strings(dim(mda_map_df)[1], 4, "[a-z0-9]"),
-                            stri_rand_strings(dim(mda_map_df)[1], 4, "[a-z0-9]"),
-                            stri_rand_strings(dim(mda_map_df)[1], 12, "[a-z0-9]"),
-                            sep = "-")
-
-# Sanity check: make sure each is unique. Ought to be 300 at this point.
-n_distinct(mda_map_df$file_uuid)
 
 # We noticed that several fastq files are empty causing errors in Snakemake.
 empty_fastqs <- read.table("data/sequencing-information/MDACC/empty_fastqs_to_remove_from_json.txt", stringsAsFactors = F, skip = 1)
@@ -195,27 +188,20 @@ empty_fastqs$read_group <- substr(empty_fastqs$fastqname, nchar(empty_fastqs$fas
 
 # Stitched the files together as was done for the rest of the dataset.
 files_to_remove = empty_fastqs %>% 
-  group_by(read_group) %>% 
-  mutate(filename = paste(fastqname, collapse=","),
-         filename_flipped = paste(rev(fastqname), collapse=",")) %>% 
+  mutate(file_name = fastqname) %>% 
   select(-V1, -fastqname) %>% 
   distinct()
 
 # Since, the order of the paired fastqs was not ordered I needed to use either forward or reverse orientation.
-rows_to_remove <- which(mda_map_df$file_name%in%files_to_remove$filename==TRUE | mda_map_df$file_name%in%files_to_remove$filename_flipped==TRUE)
+rows_to_remove <- which(mda_map_df$file_name%in%files_to_remove$file_name==TRUE)
 
 # Remove the empty files. Should be 296 at this point.
 mda_map_df <- mda_map_df[-rows_to_remove, ]
 
 # Need to record the file_size and file_md5sum for these samples.
-mda_map_df = mda_map_df %>% mutate(file_size = "NA",
-                                 file_md5sum = "NA",
-                                 file_format = "FQ")
-
-# Order needs to be: # aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format.
-files = mda_map_df %>% select(aliquot_id, file_path, file_name, file_uuid, file_size, file_md5sum, file_format) %>% distinct()
-
-
+files = mda_map_df %>% 
+  select(aliquot_barcode, file_name, file_size, file_md5sum, file_format) %>%
+  distinct()
 
 
 ### Cases ####
@@ -231,63 +217,29 @@ mda_clinical <- mda_clinical_data %>%
 
 # Select only those relevant fields.
 cases = mda_clinical %>% 
-  mutate(age = Age.At.Diagnosis,
+  mutate(age = floor(Age.At.Diagnosis),
          sex = recode(Gender, "Male"="male", "Female"="female")) %>% 
   inner_join(mda_master, by ="MRN") %>% 
   inner_join(mda_map_df, by= c("Jax.Lib.Prep.Customer.Sample.Name"="*SampleName")) %>% 
   mutate(case_id = substring(aliquot_id, 1, 12), 
-         case_project = "GLSS-MD") %>% 
+         case_project = "GLSS",
+         case_source = substr(aliquot_id,6,7)) %>% 
   distinct(MRN, .keep_all = T) %>% 
-  select(case_id, case_project, age, sex) %>% 
+  select(case_project, case_barcode, case_source, case_age_diagnosis_years=age, case_sex=sex) %>% 
   distinct()
+
 
 
 
 ### Samples ####
 # Grab last two characrters of barcode.
 mda_map_df$sample_type = substring(mda_map_df$aliquot_id, 14, 15)
+
 # Recode variables to match Floris' fields.
-samples = mda_map_df %>% select(case_id, sample_id, sample_type) %>% distinct()
+samples = mda_map_df %>% 
+  select(case_barcode, sample_barcode, sample_type) %>% 
+  distinct()
 
-
-
-
-
-### Pairs ####
-p1 = samples %>% 
-  left_join(aliquots) %>%
-  select(sample_type, aliquot_id, case_id) %>%
-  filter(sample_type %in% c("TP", "NB")) %>% 
-  spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(TP, 14, 18), substr(NB, 14, 18), substr(TP, 21, 23))) %>%
-  select(case_id, pair_id, tumor_aliquot_id = TP, normal_aliquot_id = NB)
-
-p2 = samples %>% 
-  left_join(aliquots) %>%
-  select(sample_type, aliquot_id, case_id) %>%
-  filter(sample_type %in% c("R1", "NB")) %>%
-  spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(R1, 14, 18), substr(NB, 14, 18), substr(R1, 21, 23))) %>%
-  select(case_id, pair_id, tumor_aliquot_id = R1, normal_aliquot_id = NB)
-
-p3 = samples %>% 
-  left_join(aliquots) %>%
-  select(sample_type, aliquot_id, case_id) %>%
-  filter(sample_type %in% c("R2", "NB")) %>%
-  spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(R2, 14, 18), substr(NB, 14, 18), substr(R2, 21, 23))) %>%
-  select(case_id, pair_id, tumor_aliquot_id = R2, normal_aliquot_id = NB)
-
-p4 = samples %>% 
-  left_join(aliquots) %>%
-  select(sample_type, aliquot_id, case_id) %>%
-  filter(sample_type %in% c("R3", "NB")) %>%
-  spread(sample_type, aliquot_id) %>%
-  mutate(pair_id = sprintf("%s-%s-%s-%s", case_id, substr(R3, 14, 18), substr(NB, 14, 18), substr(R3, 21, 23))) %>%
-  select(case_id, pair_id, tumor_aliquot_id = R3, normal_aliquot_id = NB)
-
-# Note: May need to revise once we gather additional information from Kristin @ MD Anderson.
-pairs = rbind(p1, p2, p3, p4) %>% filter(complete.cases(tumor_aliquot_id, normal_aliquot_id))
 
 
 ### Readgroups ####
@@ -303,32 +255,25 @@ readgroup_df = mda_map_df %>%
        readgroup_id = paste0(substring(readgroup_platform_unit, 1, 5), substring(readgroup_platform_unit, nchar(readgroup_platform_unit)-1, nchar(readgroup_platform_unit)), "")) 
 
 # Finalize readgroup information in predefined order.
-readgroups = readgroup_df %>% select(file_uuid, aliquot_id, readgroup_id, readgroup_platform, readgroup_platform_unit, readgroup_library, readgroup_date, readgroup_center, readgroup_sample_id) %>% distinct()
+readgroups = readgroup_df %>% 
+  select(aliquot_barcode, readgroup_idtag=readgroup_id, readgroup_platform, readgroup_platform_unit, readgroup_library,
+         readgroup_center) %>% 
+  mutate(readgroup_sample_id = aliquot_barcode) %>% distinct()
 
+## Filemap
+files_readgroups = mda_map_df %>% 
+  mutate(readgroup_idtag = paste(substring(mda_map_df$flowcell_id, 1, 5), mda_map_df$lane_id, sep = "."), 
+         readgroup_sample_id = aliquot_barcode) %>% 
+  select(file_name, readgroup_idtag, readgroup_sample_id)
 
 ### OUTPUT ####
-# Output the json and .tsv files.
-print(sprintf("Exporting manifest as json files for snakemake use."))
-write(jsonlite::toJSON(aliquots, pretty = T), file = sprintf("%s.%s", aliquots_file, json_ext))
-write(jsonlite::toJSON(files, pretty = T), file = sprintf("%s.%s", files_file, json_ext))
-write(jsonlite::toJSON(cases, pretty = T), file = sprintf("%s.%s", cases_file, json_ext))
-write(jsonlite::toJSON(pairs, pretty = T), file = sprintf("%s.%s", pairs_file, json_ext))
-write(jsonlite::toJSON(readgroups, pretty = T), file = sprintf("%s.%s", readgroups_file, json_ext))
-write(jsonlite::toJSON(samples, pretty = T), file = sprintf("%s.%s", samples_file, json_ext))
-
-print(sprintf("Exporting manifest as tsv files for visualization ease."))
-write.table(aliquots, file = sprintf("%s.%s", aliquots_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
-write.table(files, file = sprintf("%s.%s", files_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
-write.table(cases, file = sprintf("%s.%s", cases_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
-write.table(pairs, file = sprintf("%s.%s", pairs_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
-write.table(readgroups, file = sprintf("%s.%s", readgroups_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
-write.table(samples, file = sprintf("%s.%s", samples_file, text_ext), sep="\t", row.names = F, col.names = T, quote = F)
-
-
-# Output RData object and timestamp along with package versions.
-mysession_info <- devtools::session_info()
-timetag = make.names(format(Sys.time(),"t%d_%b_%y_%H%M%S%Z"))
-save.image(file.path(sprintf("R/RData/mda-create-manifest_%s.RData", timetag)))
+## Write to database.
+dbWriteTable(con, Id(schema="clinical",table="cases"), cases, append=T)
+dbWriteTable(con, Id(schema="biospecimen",table="samples"), samples, append=T)
+dbWriteTable(con, Id(schema="biospecimen",table="aliquots"), aliquots, append=T)
+dbWriteTable(con, Id(schema="biospecimen",table="readgroups"), readgroups, append=T)
+dbWriteTable(con, Id(schema="analysis",table="files"), files, append=T)
+dbWriteTable(con, Id(schema="analysis",table="files_readgroups"), files_readgroups, append=T)
 
 
 
