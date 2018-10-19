@@ -368,8 +368,8 @@ rule filterorientation:
 
 rule vcf2maf:
     input:
-        tumor = lambda wildcards: "results/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
-        normal = lambda wildcards: "results/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
+        tumor = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+        normal = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
         vcf = "results/mutect2/final/{pair_barcode}.final.vcf"
     output:
         "results/mutect2/vcf2maf/{pair_barcode}.final.maf"

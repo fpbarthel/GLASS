@@ -103,7 +103,7 @@ vcf2maf:          "/projects/verhaak-lab/mskcc-vcf2maf-747a1bb/vcf2maf.pl"
 veppath:          "/projects/barthf/opt/ensembl-vep"
 
 ## VEP cache directory
-vepdata:          "/projects/barthf/opt/.vep"
+vepdata:          "/projects/verhaak-lab/verhaak_ref/vep/homo_sapiens" #"/projects/barthf/opt/.vep"
 
 
 seconds_between_progress_updates: 900
