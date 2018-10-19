@@ -339,7 +339,7 @@ rule combinetracks:
 rule prepare_acs:
     input:
         called_seg = "results/cnv/combinetracks/{pair_barcode}.final.seg",
-        modeled_seg = "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelFinal.seg" # "results/cnv/callsegments/{aliquot_barcode}.called.seg".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode))
+        modeled_seg = lambda wildcards: "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.seg".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)) # "results/cnv/modelsegments/{pair_barcode}/{pair_barcode}.modelFinal.seg" # 
     output:
         temp("results/cnv/prepare_acs/{pair_barcode}.prepare_acs.seg")
     params:
@@ -415,7 +415,7 @@ rule merge_annotation:
         mem = CLUSTER_META["merge_annotation"]["mem"]
     threads:
         CLUSTER_META["merge_annotation"]["ppn"]
-    #conda:
+    #conda: ## COMMENTED OUT BECAUSE USES GATK 4.0.10.1 which is not on conda
     #    "../envs/gatk4.yaml"
     log:
         "logs/cnv/merge_annotation/{pair_barcode}.log"
@@ -710,4 +710,5 @@ rule runabsolute:
              max.as.seg.count = 10E10,
              primary.disease='Glioma')
     """
+    
 ## END ##
