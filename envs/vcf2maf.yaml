@@ -1,0 +1,10 @@
+name: vcf2maf
+channels:
+  - bioconda
+  - r
+  - defaults
+  - conda-forge
+dependencies:
+  - ensembl-vep
+  - vcf2maf
+  - samtools

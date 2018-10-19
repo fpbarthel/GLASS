@@ -181,7 +181,7 @@
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
     },
-    "vep" :
+    "vcf2maf" :
     {
         "ppn" : 4,
         "mem" : 24,

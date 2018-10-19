@@ -362,4 +362,45 @@ rule filterorientation:
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             > {log} 2>&1"
 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Convert VF to maf
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule vcf2maf:
+    input:
+        tumor = lambda wildcards: "results/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+        normal = lambda wildcards: "results/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
+        vcf = "results/mutect2/final/{pair_barcode}.final.vcf"
+    output:
+        "results/mutect2/vcf2maf/{pair_barcode}.final.maf"
+    params:
+        mem = CLUSTER_META["vcf2maf"]["mem"],
+        tumor_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(manifest.getTumor(wildcards.pair_barcode)),
+        normal_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(manifest.getNormal(wildcards.pair_barcode))
+    threads:
+        CLUSTER_META["vcf2maf"]["ppn"]
+    conda:
+        "../envs/vcf2maf.yaml"
+    log:
+        "logs/mutect2/vcf2maf/{pair_barcode}.log"
+    benchmark:
+        "benchmarks/mutect2/vcf2maf/{pair_barcode}.txt"
+    message:
+        "Running VEP (variant annotation) on filtered Mutect2 calls and converting output to MAF\n"
+        "Pair: {wildcards.pair_barcode}"
+    shell:
+        "vcf2maf.pl \
+            --input-vcf {input.vcf} \
+            --output-maf {output} \
+            --vep-path {config[veppath]} \
+            --vep-data {config[vepdata]} \
+            --vep-forks 2 \
+            --ref-fasta {config[reference_fasta]} \
+            --filter-vcf {config[gnomad_vcf]} \
+            --tumor-id {params.tumor_sample_tag} \
+            --normal-id {params.normal_sample_tag} \
+            --species homo_sapiens \
+            --ncbi-build GRCh37 \
+            > {log} 2>&1" ## {config[vcf2maf]}
+
 ## END ##
