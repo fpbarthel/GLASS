@@ -675,7 +675,8 @@ rule gistic_convert:
 rule runabsolute:
     input:
         seg = "results/cnv/acs_convert/{pair_barcode}.acs.seg",
-        skew = "results/cnv/acs_convert/{pair_barcode}.skew"
+        skew = "results/cnv/acs_convert/{pair_barcode}.skew",
+        maf = "results/mutect2/vcf2maf/{pair_barcode}.final.maf"
     output:
         res = "results/cnv/acs_convert/{pair_barcode}/{pair_barcode}.ABSOLUTE_mode.res.Rds",
         tab = "results/cnv/acs_convert/{pair_barcode}/{pair_barcode}.ABSOLUTE_mode.tab.Rds",
@@ -696,16 +697,18 @@ rule runabsolute:
         "Pair ID: {wildcards.pair_barcode}"
     shell:"""
         Rscript -e \
-            "if (!require("ABSOLUTE")) devtools::install_github("TheJacksonLaboratory/Broad-ABSOLUTE");
+            "if (!require('ABSOLUTE')) devtools::install_github('TheJacksonLaboratory/Broad-ABSOLUTE');
              RunAbsolute({input.seg}, 
              genome_build = 'hg19',
              platform = 'Illumina_WES',
              copy_num_type = 'allelic',
-             results.dir = {params.outdir},
-             sample.name = {wildcards.pair_barcode},
+             results.dir = '{params.outdir}',
+             sample.name = '{wildcards.pair_barcode}',
              gender = NA,
-             output.fn.base = {wildcards.pair_barcode},
-             SSNV_skew = as.numeric(readLines({input.skew},warn=F)),
+             output.fn.base = '{wildcards.pair_barcode}',
+             maf.fn = '{input.maf}',
+             min.mut.af = 0.05,
+             SSNV_skew = as.numeric(readLines('{input.skew}',warn=F)),
              verbose = T,
              max.as.seg.count = 10E10,
              primary.disease='Glioma')

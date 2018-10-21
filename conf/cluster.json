@@ -194,7 +194,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "24:00:00"
+        "walltime" : "72:00:00"
     },
     "extractdiscordant" :
     {
@@ -513,7 +513,8 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "500:00:00",
+	"queu" : "long",
         "name" : "{rule}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
