@@ -16,9 +16,10 @@ from python.JSONManifestHandler import JSONManifestHandler
 ## dbconf = dbconfig("/home/barthf/.odbc.ini", "VerhaakDB")
 dbconf = dbconfig(config["db"]["configfile"], config["db"]["configsection"])
 
+#print("Cohort set to ", str(config["cohort"]))
 by_cohort = None
-if len(config["cohort"]) > 0:
-    by_cohort = config["cohort"]
+if len(str(config["cohort"])) > 0:
+    by_cohort = str(config["cohort"]).zfill(2)
 
 ## Instantiate manifest
 manifest = PostgreSQLManifestHandler(host = dbconf["servername"], port = dbconf["port"], user = dbconf["username"], password = dbconf["password"], database = dbconf["database"],
