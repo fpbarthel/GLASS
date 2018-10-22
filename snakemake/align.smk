@@ -45,7 +45,8 @@ rule revertsam:
         "Reverting sample back to unaligned BAM file, stripping any previous "
         "pre-processing and restoring original base quality scores. Output files are split "
         "by readgroup.\n"
-        "Sample: {wildcards.aliquot_barcode}"
+        "Sample: {wildcards.aliquot_barcode}\n"
+        "Input BAM: {input}"
     run:
         old_rg = manifest.getLegacyRGIDs(wildcards["aliquot_barcode"]) # if wildcards["aliquot_barcode"] in ALIQUOT_TO_LEGACY_RGID else ""
         new_rg = manifest.getRGIDs(wildcards["aliquot_barcode"])
@@ -147,11 +148,10 @@ rule fq2ubam:
         RGPL = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_platform"), ## Platform
         RGPU = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_platform_unit"), ## Platform unit
         RGLB = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_library"), ## Library
-        RGDT = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_date"), ## Date
+        RGDT = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_timestamp"), ## Date
         RGSM = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_sample_id"), ## Sample ID
         RGCN = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_center"), ## Center
-        mem = CLUSTER_META["fq2ubam"]["mem"],
-        walltime = CLUSTER_META["fq2ubam"]["walltime"]
+        mem = CLUSTER_META["fq2ubam"]["mem"]
     threads:
         CLUSTER_META["fq2ubam"]["ppn"]
     log:
@@ -176,6 +176,8 @@ rule fq2ubam:
             --SORT_ORDER=queryname \
             --TMP_DIR={config[tempdir]} \
             > {log} 2>&1"
+
+ruleorder: fq2ubam > bam2ubam
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Run FASTQC on uBAM

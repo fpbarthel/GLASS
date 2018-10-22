@@ -99,7 +99,7 @@ class PostgreSQLManifestHandler(ManifestHandler):
         self.pairs = build_dict(res, "pair_barcode")
         
     def initFilesReadgroups(self):
-        q = "SELECT fr.file_name, fr.readgroup_idtag, fr.readgroup_sample_id, rg.aliquot_barcode, f.file_format \
+        q = "SELECT fr.file_name, fr.readgroup_idtag, fr.readgroup_sample_id, rg.aliquot_barcode, f.file_format, f.file_path \
              FROM analysis.files_readgroups AS fr \
                  LEFT JOIN biospecimen.readgroups AS rg ON fr.readgroup_idtag = rg.readgroup_idtag AND fr.readgroup_sample_id = rg.readgroup_sample_id \
                  INNER JOIN analysis.files AS f ON fr.file_name = f.file_name \
