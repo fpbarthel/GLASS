@@ -108,12 +108,13 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00"
+        "walltime" : "6:00:00"
     },
     "mergepon" :
     {
         "ppn" : 2,
-        "mem" : 12
+        "mem" : 12,
+        "walltime" : "6:00:00"
     },
     "createpon" :
     {

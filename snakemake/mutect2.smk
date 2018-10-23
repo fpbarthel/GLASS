@@ -54,7 +54,7 @@ rule mergepon:
     input:
         lambda wildcards: expand("results/mutect2/callpon/{aliquot_barcode}/{aliquot_barcode}.{interval}.pon.vcf", aliquot_barcode = wildcards.aliquot_barcode, interval = WGS_SCATTERLIST)
     output:
-        temp("results/mutect2/mergepon/{aliquot_barcode}.pon.vcf")
+        "results/mutect2/mergepon/{aliquot_barcode}.pon.vcf"
     params:
         mem = CLUSTER_META["mergepon"]["mem"]
     threads:
