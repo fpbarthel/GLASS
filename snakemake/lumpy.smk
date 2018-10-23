@@ -4,7 +4,7 @@
 
 rule extractsplitter:
     input:
-        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
         unsorted = temp("results/lumpy/split/{aliquot_barcode}.realn.mdup.bqsr.splitters.unsorted.bam"),
         sorted = "results/lumpy/split/{aliquot_barcode}.realn.mdup.bqsr.splitters.sorted.bam"
@@ -41,7 +41,7 @@ rule extractsplitter:
 
 rule extractdiscordant:
     input:
-        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
         unsorted = temp("results/lumpy/discordant/{aliquot_barcode}.realn.mdup.bqsr.discordant.unsorted.bam"),
         sorted = "results/lumpy/discordant/{aliquot_barcode}.realn.mdup.bqsr.discordant.sorted.bam"
@@ -113,8 +113,8 @@ rule cnvnator_to_bedpe:
 
 rule lumpy_call:
     input:
-        tumor = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
-        normal = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
+        tumor = lambda wildcards: ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode))),
+        normal = lambda wildcards: ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode))),
         discordant_tumor = lambda wildcards: "results/lumpy/discordant/{aliquot_barcode}.realn.mdup.bqsr.discordant.sorted.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
         discordant_normal = lambda wildcards: "results/lumpy/discordant/{aliquot_barcode}.realn.mdup.bqsr.discordant.sorted.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
         split_tumor = lambda wildcards: "results/lumpy/split/{aliquot_barcode}.realn.mdup.bqsr.splitters.sorted.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
@@ -171,8 +171,8 @@ rule lumpy_call:
 
 rule svtyper_run:
     input:
-        tumor = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
-        normal = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
+        tumor = lambda wildcards: ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode))),
+        normal = lambda wildcards: ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode))),
         vcf = "results/lumpy/call/{pair_barcode}.dict.vcf"
     output:
         vcf = "results/lumpy/svtyper/{pair_barcode}.dict.svtyper.vcf",

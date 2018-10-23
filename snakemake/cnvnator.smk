@@ -11,7 +11,7 @@
 
 rule cnvnator_tree:
     input:
-        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
         protected("results/cnvnator/tree/{aliquot_barcode}.tree.root")
     params:

@@ -14,7 +14,8 @@ rule callpon:
         bam = "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam",
         intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir = config["wgs_scatterdir"], interval = wildcards.interval)
     output:
-        temp("results/mutect2/callpon/{aliquot_barcode}/{aliquot_barcode}.{interval}.pon.vcf")
+        vcf = temp("results/mutect2/callpon/{aliquot_barcode}/{aliquot_barcode}.{interval}.pon.vcf"),
+        idx = temp("results/mutect2/callpon/{aliquot_barcode}/{aliquot_barcode}.{interval}.pon.vcf.idx")
     params:
         mem = CLUSTER_META["callpon"]["mem"],
         readgroup_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(wildcards.aliquot_barcode)
@@ -37,7 +38,7 @@ rule callpon:
             -L {input.intervallist} \
             --tumor-sample {params.readgroup_sample_tag} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
-            -O {output} \
+            -O {output.vcf} \
             > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -54,9 +55,13 @@ rule mergepon:
     input:
         lambda wildcards: expand("results/mutect2/callpon/{aliquot_barcode}/{aliquot_barcode}.{interval}.pon.vcf", aliquot_barcode = wildcards.aliquot_barcode, interval = WGS_SCATTERLIST)
     output:
-        "results/mutect2/mergepon/{aliquot_barcode}.pon.vcf"
+        vcf = "results/mutect2/mergepon/{aliquot_barcode}.pon.vcf",
+        idx = "results/mutect2/mergepon/{aliquot_barcode}.pon.vcf.idx"
     params:
-        mem = CLUSTER_META["mergepon"]["mem"]
+        mem = CLUSTER_META["mergepon"]["mem"],
+        input_files = lambda _, input: " ".join(["-I " + s for s in input])
+    conda:
+        "../envs/gatk4.yaml"
     threads:
         CLUSTER_META["mergepon"]["ppn"]
     log:
@@ -66,12 +71,11 @@ rule mergepon:
     message:
         "Merging VCF files (PON)\n"
         "Aliquot: {wildcards.aliquot_barcode}"
-    run:
-        input_cat = " ".join(["-I " + s for s in input])
-        shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
-            {input_cat} \
-            -O {output} \
-            > {log} 2>&1")
+    shell:
+        "gatk --java-options -Xmx{params.mem}g MergeVcfs \
+            {params.input_files} \
+            -O {output.vcf} \
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## CreatePON
@@ -87,9 +91,13 @@ rule createpon:
     input:
         lambda wildcards: expand("results/mutect2/mergepon/{aliquot_barcode}.pon.vcf", aliquot_barcode = manifest.getPONAliquots())
     output:
-        protected("results/mutect2/pon/pon.vcf")
+        vcf = protected("results/mutect2/pon/pon.vcf"),
+        idx = protected("results/mutect2/pon/pon.vcf.idx")
     params:
-        mem = CLUSTER_META["createpon"]["mem"]
+        mem = CLUSTER_META["createpon"]["mem"],
+        vcfs = lambda _, input: " ".join(["--vcfs=" + s for s in input])
+    conda:
+        "../envs/gatk4.yaml"
     threads:
         CLUSTER_META["createpon"]["ppn"]
     log:
@@ -98,13 +106,12 @@ rule createpon:
         "benchmarks/mutect2/createpon/createpon.txt"
     message:
         "Creating panel of normals from multiple Mutect2 VCFs"
-    run:
-        vcfs = " ".join(["--vcfs=" + s for s in input])
-        shell("gatk --java-options -Xmx{params.mem}g CreateSomaticPanelOfNormals \
-            {vcfs} \
+    shell:
+        "gatk --java-options -Xmx{params.mem}g CreateSomaticPanelOfNormals \
+            {params.vcfs} \
             --duplicate-sample-strategy THROW_ERROR \
-            --output {output} \
-            > {log} 2>&1")
+            --output {output.vcf} \
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SNV
@@ -180,7 +187,10 @@ rule mergesnv:
     output:
         protected("results/mutect2/m2vcf/{pair_barcode}.vcf")
     params:
-        mem = CLUSTER_META["mergesnv"]["mem"]
+        mem = CLUSTER_META["mergesnv"]["mem"],
+        input_files = lambda _, input: " ".join(["-I " + s for s in input])
+    conda:
+        "../envs/gatk4.yaml"
     threads:
         CLUSTER_META["mergesnv"]["ppn"]
     log:
@@ -190,12 +200,11 @@ rule mergesnv:
     message:
         "Merging VCF files (M2)\n"
         "Pair: {wildcards.pair_barcode}"
-    run:
-        input_cat = " ".join(["-I " + s for s in input])
-        shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
-            {input_cat} \
+    shell:
+        "gatk --java-options -Xmx{params.mem}g MergeVcfs \
+            {params.input_files} \
             -O {output} \
-            > {log} 2>&1")
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Summarize read support for known variant sites
