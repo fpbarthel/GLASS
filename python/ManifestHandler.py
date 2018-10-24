@@ -94,12 +94,14 @@ class ManifestHandler:
         Locate FASTQ/BAM files
         """
         for (file_name, file) in self.files.items():
-            if file["file_format"] == SOURCE_FASTQ_TYPE or file["file_format"] == SOURCE_BAM_TYPE:
-                #file["file_path"] = [f for f in locate(file_name, source_file_basepath)]
-                if file["file_path"] is None or not os.path.isfile(file["file_path"]):
+            if file["file_path"] is None or not os.path.isfile(file["file_path"]):
                     file["file_path"] = []
-            elif file["file_format"] == ALIGNED_BAM_TYPE:
-                file["file_path"] = [f for f in locate(file_name, aligned_file_basepath)]
+            #if file["file_format"] == SOURCE_FASTQ_TYPE or file["file_format"] == SOURCE_BAM_TYPE:
+                #file["file_path"] = [f for f in locate(file_name, source_file_basepath)]
+            #    if file["file_path"] is None or not os.path.isfile(file["file_path"]):
+            #        file["file_path"] = []
+            #elif file["file_format"] == ALIGNED_BAM_TYPE:
+                #file["file_path"] = [f for f in locate(file_name, aligned_file_basepath)]
     
     def initFiles(self):
         raise NotImplementedError("ManifestHandler should not be implemented directly")
