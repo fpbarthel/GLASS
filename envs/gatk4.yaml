@@ -28,6 +28,7 @@ dependencies:
   - r-spatial=7.3_11=r3.3.2_0
   - r-survival=2.40_1=r3.3.2_0
   - r-optparse
+  - r-data.table
   # - bzip2=1.0.6=h14c3975_5
   # - ca-certificates=2018.03.07=0
   # - cairo=1.14.8=0

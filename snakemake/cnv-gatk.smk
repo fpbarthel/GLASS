@@ -69,7 +69,7 @@ rule createcnvpon:
 rule denoisereadcounts:
     input:
         sample = lambda wildcards: "results/cnv/readcounts/{aliquot_barcode}.counts.hdf5".format(aliquot_barcode = wildcards.aliquot_barcode),
-        pon =  lambda wildcards: "results/cnv/createcnvpon/{analysis_type}.pon.hdf5".format(analysis_type = "WGS")
+        pon =  lambda wildcards: "results/cnv/createcnvpon/{analysis_type}.pon.hdf5".format(analysis_type = ("WXS" if manifest.isExome(wildcards.aliquot_barcode) else "WGS"))
     output:
         standardized = "results/cnv/denoisereadcounts/{aliquot_barcode}.standardizedCR.tsv",
         denoised = "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv"
