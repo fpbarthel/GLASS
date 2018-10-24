@@ -5,7 +5,7 @@
 
 rule collectreadcounts:
     input:
-        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
         "results/cnv/readcounts/{aliquot_barcode}.counts.hdf5"
     params:
@@ -144,7 +144,7 @@ rule plotcr:
 
 rule collectalleliccounts:
     input:
-        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
         "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv"
     params:
@@ -678,7 +678,7 @@ rule runabsolute:
     input:
         seg = "results/cnv/acs_convert/{pair_barcode}.acs.seg",
         skew = "results/cnv/acs_convert/{pair_barcode}.skew",
-        maf = "results/mutect2/vcf2maf/{pair_barcode}.final.maf"
+        maf = ancient("results/mutect2/vcf2maf/{pair_barcode}.final.maf")
     output:
         res = "results/cnv/absolute/{pair_barcode}/{pair_barcode}.ABSOLUTE_mode.res.Rds",
         tab = "results/cnv/absolute/{pair_barcode}/{pair_barcode}.ABSOLUTE_mode.tab.Rds",
