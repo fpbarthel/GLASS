@@ -108,7 +108,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "6:00:00"
+        "walltime" : "24:00:00"
     },
     "mergepon" :
     {
@@ -178,6 +178,15 @@
         "ppn" : 2,
         "mem" : 12,
         "walltime" : "72:00:00",
+        "name" : "{rule}.{wildcards.pair_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
+    },
+    "selectvariants" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "12:00:00",
         "name" : "{rule}.{wildcards.pair_barcode}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"

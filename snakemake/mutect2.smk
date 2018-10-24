@@ -347,7 +347,7 @@ rule filterorientation:
         art = lambda wildcards: "results/mutect2/artifacts/{aliquot_barcode}.pre_adapter_detail_metrics.txt".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
         vcf = "results/mutect2/m2filter/{pair_barcode}.filtered.vcf"
     output:
-        "results/mutect2/final/{pair_barcode}.final.vcf"
+        "results/mutect2/filterorientation/{pair_barcode}.filterorientation.vcf"
     params:
         mem = CLUSTER_META["filterorientation"]["mem"]
     threads:
@@ -368,6 +368,36 @@ rule filterorientation:
             -V {input.vcf} \
             -P {input.art} \
             -O {output} \
+            --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
+            > {log} 2>&1"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Select variants
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule selectvariants:
+    input:
+        "results/mutect2/filterorientation/{pair_barcode}.filterorientation.vcf"
+    output:
+        "results/mutect2/final/{pair_barcode}.final.vcf"
+    params:
+        mem = CLUSTER_META["selectvariants"]["mem"]
+    threads:
+        CLUSTER_META["selectvariants"]["ppn"]
+    conda:
+        "../envs/gatk4.yaml"
+    log:
+        "logs/mutect2/selectvariants/{pair_barcode}.log"
+    benchmark:
+        "benchmarks/mutect2/selectvariants/{pair_barcode}.txt"
+    message:
+        "Select PASS calls\n"
+        "Pair: {wildcards.pair_barcode}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g SelectVariants \
+            -V {input} \
+            -O {output} \
+            --exclude-filtered true \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             > {log} 2>&1"
 
