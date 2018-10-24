@@ -156,7 +156,7 @@ rule delly:
 rule lumpy:
     input:
         expand("results/lumpy/svtyper/{pair_barcode}.dict.svtyper.vcf", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/lumpy/libstat/{pair_barcode}.libstat.pdf", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/lumpy/libstat/{pair_barcode}.libstat.pdf", pair_barcode = manifest.getSelectedPairs()),
         expand("results/lumpy/filter/{pair_barcode}.dict.svtyper.filtered.vcf", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
