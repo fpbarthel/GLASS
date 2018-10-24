@@ -212,7 +212,7 @@ class ManifestHandler:
         """
         Test whether given aliquot is an exome
         """
-        return self.aliquots[aliquot_barcode]["aliquot_analysis_type"] == "WES"
+        return self.aliquots[aliquot_barcode]["aliquot_analysis_type"] == "WXS"
 
     def getFiles(self):
         """

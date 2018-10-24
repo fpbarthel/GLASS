@@ -129,12 +129,18 @@ rule varscan2:
 ## Run snakemake with target 'svprepare'
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+
+
 rule cnv:
     input:
-        expand("results/cnv/absolute/{pair_barcode}/{pair_barcode}.ABSOLUTE_plot.pdf", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/cnv/combinetracks/{pair_barcode}.final.seg", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/cnv/acs_convert/{pair_barcode}.acs.seg", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/cnv/acs_convert/{pair_barcode}/{pair_barcode}.ABSOLUTE_plot.pdf", pair_barcode = manifest.getSelectedPairs())
+        #"results/cnv/createcnvpon/WXS.pon.hdf5"
+        expand("results/cnv/plotmodeledsegments/{aliquot_barcode}/{aliquot_barcode}.modeled.png", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/cnv/acs_convert/{pair_barcode}.acs.seg", pair_barcode = manifest.getSelectedPairs())
+        #expand("results/cnv/callsegments/{pair_barcode}.called.seg", pair_barcode = manifest.getSelectedPairs())
+        #expand("results/cnv/absolute/{pair_barcode}/{pair_barcode}.ABSOLUTE_plot.pdf", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/cnv/combinetracks/{pair_barcode}.final.seg", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/cnv/acs_convert/{pair_barcode}/{pair_barcode}.ABSOLUTE_plot.pdf", pair_barcode = manifest.getSelectedPairs())
         #expand("results/cnv/gistic_convert/{pair_barcode}.gistic2.seg", pair_barcode = manifest.getSelectedPairs()),
         #expand("results/cnv/callsegments/{pair_barcode}.called.seg", pair_barcode = manifest.getSelectedPairs()),
         #expand("results/cnv/plotmodeledsegments/{pair_barcode}/{pair_barcode}.modeled.png", pair_barcode = manifest.getSelectedPairs()),

@@ -41,23 +41,25 @@ rule createcnvpon:
     output:
         "results/cnv/createcnvpon/{analysis_type}.pon.hdf5"
     params:
-        mem = CLUSTER_META["createcnvpon"]["mem"]
+        mem = CLUSTER_META["createcnvpon"]["mem"],
+        input_files = lambda _, input: " ".join(["-I " + s for s in input])
     threads:
         CLUSTER_META["createcnvpon"]["ppn"]
     log:
         "logs/cnv/createcnvpon/{analysis_type}.log"
+    conda:
+        "../envs/gatk4.yaml"
     benchmark:
         "benchmarks/cnv/createcnvpon/{analysis_type}.txt"
     message:
         "Creating CNV panel of normals\n"
         "Analysis type: {wildcards.analysis_type}"
-    run:
-        vcfs = " ".join(["-I " + s for s in input])
-        shell("gatk --java-options -Xmx{params.mem}g CreateReadCountPanelOfNormals \
-                {vcfs} \
-                --minimum-interval-median-percentile 5.0 \
-                -O {output} \
-                > {log} 2>&1")
+    shell:
+        "gatk --java-options -Xmx{params.mem}g CreateReadCountPanelOfNormals \
+            {params.input_files} \
+            --minimum-interval-median-percentile 5.0 \
+            -O {output} \
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Denoise read counts
@@ -248,9 +250,9 @@ rule callsegments:
 
 rule plotmodeledsegments:
     input:
-        tumor_denoised = lambda wildcards: "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv",
-        tumor_counts = "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.hets.tsv",
-        tumor_segments = "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.seg"
+        denoisedCR = "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv",
+        hets = "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.hets.tsv",
+        segments = "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.seg"
     output:
         "results/cnv/plotmodeledsegments/{aliquot_barcode}/{aliquot_barcode}.modeled.png"
     params:
@@ -270,9 +272,9 @@ rule plotmodeledsegments:
         "Aliquot barcode: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g PlotModeledSegments \
-            --denoised-copy-ratios {input.tumor_denoised} \
-            --allelic-counts {input.tumor_counts} \
-            --segments {input.tumor_segments} \
+            --denoised-copy-ratios {input.denoisedCR} \
+            --allelic-counts {input.hets} \
+            --segments {input.segments} \
             --sequence-dictionary {config[reference_dict]} \
             --minimum-contig-length 46709983 \
             --output {params.outputdir} \
