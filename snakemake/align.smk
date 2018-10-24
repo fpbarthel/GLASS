@@ -27,7 +27,7 @@ from python.glassfunc import touch_file
 
 rule revertsam:
     input:
-        lambda wildcards: manifest.getSourceBAM(wildcards.aliquot_barcode)
+        lambda wildcards: ancient(manifest.getSourceBAM(wildcards.aliquot_barcode))
     output:
         map = "results/align/revertsam/{aliquot_barcode}/{aliquot_barcode}.output_map.txt",
         bams = temp(expand("results/align/revertsam/{{aliquot_barcode}}/{{aliquot_barcode}}.{rg}.revertsam.bam", rg = manifest.getAllReadgroups(limit_bam = True)))
@@ -94,7 +94,7 @@ rule revertsam:
 
 rule bam2ubam:
     input:
-        bam = lambda wildcards: manifest.getSourceBAM(wildcards.aliquot_barcode), ### Input BAM is not actually used, but needs to check if present to prioritize this rule over others
+        bam = lambda wildcards: ancient(manifest.getSourceBAM(wildcards.aliquot_barcode)), ### Input BAM is not actually used, but needs to check if present to prioritize this rule over others
         rgbam = "results/align/revertsam/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.revertsam.bam"
     output:
         temp("results/align/ubam/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.unaligned.bam")
@@ -139,8 +139,8 @@ rule bam2ubam:
 
 rule fq2ubam:
     input:
-        R1 = lambda wildcards: manifest.getFASTQ(wildcards.aliquot_barcode, wildcards.readgroup)[0],
-        R2 = lambda wildcards: manifest.getFASTQ(wildcards.aliquot_barcode, wildcards.readgroup)[1]
+        R1 = lambda wildcards: ancient(manifest.getFASTQ(wildcards.aliquot_barcode, wildcards.readgroup)[0]),
+        R2 = lambda wildcards: ancient(manifest.getFASTQ(wildcards.aliquot_barcode, wildcards.readgroup)[1])
     output:
         temp("results/align/ubam/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.unaligned.bam")
     params:
@@ -455,7 +455,7 @@ rule applybqsr:
 
 rule wgsmetrics:
     input:
-        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
         "results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt"
     params:
@@ -492,7 +492,7 @@ rule wgsmetrics:
 
 rule validatebam:
     input:
-        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
         "results/align/validatebam/{aliquot_barcode}.ValidateSamFile.txt"
     params:
