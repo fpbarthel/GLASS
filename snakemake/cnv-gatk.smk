@@ -403,7 +403,7 @@ rule filter_tagged:
         import pandas
         import os.path
         tumor_tagged_df = pandas.read_csv(input[0], delimiter="\t", comment="@")
-        tumor_tagged_pruned_df = tumor_tagged_df[(tumor_tagged_df["POSSIBLE_GERMLINE"] == "0") & (tumor_tagged_df["type"] != "centromere") & (tumor_tagged_df["ID"].isnull())]
+        tumor_tagged_pruned_df = tumor_tagged_df[(tumor_tagged_df["POSSIBLE_GERMLINE"] == 0) & (tumor_tagged_df["type"] != "centromere") & (tumor_tagged_df["ID"].isnull())]
         output_filename = output[0]
         print(output_filename)
         tumor_tagged_pruned_df.to_csv(output_filename, sep="\t", index=False)
@@ -585,8 +585,15 @@ rule igv_convert:
     input:
         "results/cnv/merge_annotation/{pair_barcode}.merged.seg"
     output:
-        tmp = temp("results/cnv/igv_convert/{pair_barcode}.igv.tmp"),
+        tmp1 = temp("results/cnv/igv_convert/{pair_barcode}.igv.tmp1"),
         tmp2 = temp("results/cnv/igv_convert/{pair_barcode}.igv.tmp2"),
+        tmp3 = temp("results/cnv/igv_convert/{pair_barcode}.igv.tmp3"),
+        tmp4 = temp("results/cnv/igv_convert/{pair_barcode}.igv.tmp4"),
+        tmp5 = temp("results/cnv/igv_convert/{pair_barcode}.igv.tmp5"),
+        tmp6 = temp("results/cnv/igv_convert/{pair_barcode}.igv.tmp6"),
+        tmp7 = temp("results/cnv/igv_convert/{pair_barcode}.igv.tmp7"),
+        tmp8 = temp("results/cnv/igv_convert/{pair_barcode}.igv.tmp8"),
+        tmp9 = temp("results/cnv/igv_convert/{pair_barcode}.igv.tmp9"),
         seg = "results/cnv/igv_convert/{pair_barcode}.igv.seg"
     params:
         comment_char = "@",
@@ -607,29 +614,29 @@ rule igv_convert:
         "Pair ID: {wildcards.pair_barcode}"
     shell:"""
         # Modified from original task written by Chip Stewart
-        grep -v "^"{params.comment_char} {input} > tmp.tsv
-        head -1 tmp.tsv > tmp.header.txt
-        cat tmp.header.txt | while IFS=$'\n\r' read -r line
+        grep -v "^"{params.comment_char} {input} > {output.tmp1}
+        head -1 {output.tmp1} > {output.tmp2}
+        cat {output.tmp2} | while IFS=$'\n\r' read -r line
         do
-                echo {params.field} > tmp.x.tsv
+                echo {params.field} > {output.tmp3}
         done
-        sed 1,1d tmp.tsv > tmp.rest.txt
+        sed 1,1d {output.tmp1} > {output.tmp4}
 
-        cat tmp.rest.txt | while IFS=$'\n\r' read -r line
+        cat {output.tmp4} | while IFS=$'\n\r' read -r line
         do
-            echo {params.value} >> tmp.x.tsv
+            echo {params.value} >> {output.tmp3}
         done
 
-        paste tmp.x.tsv tmp.tsv > {output.tmp}
-        head -1 {output.tmp} > tmp_header2.txt
+        paste {output.tmp3} {output.tmp1} > {output.tmp5}
+        head -1 {output.tmp5} > {output.tmp6}
 
-        tr "\t" "\n" < tmp_header2.txt | grep -n {params.segment_mean_col} | cut -f1 -d: > tmp_col_num
-        COL_NUM=`cat tmp_col_num`
+        tr "\t" "\n" < {output.tmp6} | grep -n {params.segment_mean_col} | cut -f1 -d: > {output.tmp7}
+        COL_NUM=`cat {output.tmp7}`
         echo $COL_NUM
 
-        cut -f$COL_NUM  {output.tmp} > col_data
-        cut --complement -f $COL_NUM {output.tmp} > {output.tmp2}
-        paste {output.tmp2} col_data > {output.seg}
+        cut -f$COL_NUM  {output.tmp5} > {output.tmp8}
+        cut --complement -f $COL_NUM {output.tmp} > {output.tmp9}
+        paste {output.tmp9} {output.tmp8} > {output.seg}
         """
 
 rule gistic_convert:
