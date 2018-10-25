@@ -200,6 +200,15 @@
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
     },
+    "consensusvcf" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.out",
+        "stderr" : "logs/drmaa/{rule}.err"
+    },
     "extractsplitter" :
     {
         "ppn" : 2,

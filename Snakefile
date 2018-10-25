@@ -101,8 +101,8 @@ rule qc:
 
 rule mutect2:
     input:
-        expand("results/mutect2/vcf2maf/{pair_barcode}.final.maf", pair_barcode = manifest.getSelectedPairs()),
-    	expand("results/mutect2/final/{pair_barcode}.final.vcf", pair_barcode = manifest.getSelectedPairs())
+        expand("results/mutect2/vcf2maf/{pair_barcode}.final.maf", pair_barcode = manifest.getSelectedPairs())#,
+    	#expand("results/mutect2/final/{pair_barcode}.final.vcf", pair_barcode = manifest.getSelectedPairs())
 
 rule preparem2pon:
     input:
