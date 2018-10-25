@@ -70,7 +70,7 @@ class PostgreSQLManifestHandler(ManifestHandler):
         self.files = build_dict(res, "file_name")
     
     def initAliquots(self):    
-        q = "SELECT al.aliquot_barcode, al.aliquot_analysis_type, s.sample_barcode, s.case_barcode, s.sample_type, cl.case_project \
+        q = "SELECT al.aliquot_barcode, al.aliquot_analysis_type, al.aliquot_batch, s.sample_barcode, s.case_barcode, s.sample_type, cl.case_project \
              FROM biospecimen.aliquots AS al \
                  INNER JOIN biospecimen.samples AS s ON al.sample_barcode = s.sample_barcode \
                  INNER JOIN clinical.cases AS cl ON cl.case_barcode = s.case_barcode;"

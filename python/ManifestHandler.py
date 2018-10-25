@@ -150,6 +150,12 @@ class ManifestHandler:
         """
         return [aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["case_project"] == case_project]
 
+    def getAliquotsByBatch(self, aliquot_batch):
+        """
+        Returns a list of aliquots given a batch
+        """
+        return [aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["aliquot_batch"] == aliquot_batch]
+
     def getPONAliquots(self):
         """
         Returns a list of all aliquots with sample_type = 'NB'
@@ -215,6 +221,12 @@ class ManifestHandler:
         Test whether given aliquot is an exome
         """
         return self.aliquots[aliquot_barcode]["aliquot_analysis_type"] == "WXS"
+
+    def getBatch(self, aliquot_barcode):
+        """
+        Returns batch of given aliquot
+        """
+        return self.aliquots[aliquot_barcode]["aliquot_batch"]
 
     def getFiles(self):
         """

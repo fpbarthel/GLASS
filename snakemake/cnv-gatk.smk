@@ -31,29 +31,61 @@ rule collectreadcounts:
             > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Collect Allelic Counts
+## Counts reference and alternative alleles at common germline variant sites
+## See: https://gatkforums.broadinstitute.org/dsde/discussion/11683/
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule collectalleliccounts:
+    input:
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
+    output:
+        "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv"
+    params:
+        mem = CLUSTER_META["collectalleliccounts"]["mem"]
+    threads:
+        CLUSTER_META["collectalleliccounts"]["ppn"]
+    log:
+        "logs/cnv/alleliccounts/{aliquot_barcode}.log"
+    conda:
+        "../envs/gatk4.yaml"
+    benchmark:
+        "benchmarks/cnv/alleliccounts/{aliquot_barcode}.txt"
+    message:
+        "Collect allelic counts\n"
+        "Aliquot: {wildcards.aliquot_barcode}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g CollectAllelicCounts \
+            -I {input} \
+            -L {config[cnv_common_snp]} \
+            -R {config[reference_fasta]} \
+            -O {output} \
+            > {log} 2>&1"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Create CNV panel of normals
 ## See: https://software.broadinstitute.org/gatk/documentation/article?id=11682
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule createcnvpon:
     input:
-        lambda wildcards: expand("results/cnv/readcounts/{aliquot_barcode}.counts.hdf5", aliquot_barcode = manifest.getPONAliquots()) #wildcards.analysis_type))
+        lambda wildcards: expand("results/cnv/readcounts/{aliquot_barcode}.counts.hdf5", aliquot_barcode = manifest.getAliquotsByBatch(wildcards.aliquot_batch)) #wildcards.analysis_type))
     output:
-        "results/cnv/createcnvpon/{analysis_type}.pon.hdf5"
+        "results/cnv/createcnvpon/{aliquot_batch}.pon.hdf5"
     params:
         mem = CLUSTER_META["createcnvpon"]["mem"],
         input_files = lambda _, input: " ".join(["-I " + s for s in input])
     threads:
         CLUSTER_META["createcnvpon"]["ppn"]
     log:
-        "logs/cnv/createcnvpon/{analysis_type}.log"
+        "logs/cnv/createcnvpon/{aliquot_batch}.log"
     conda:
         "../envs/gatk4.yaml"
     benchmark:
-        "benchmarks/cnv/createcnvpon/{analysis_type}.txt"
+        "benchmarks/cnv/createcnvpon/{aliquot_batch}.txt"
     message:
         "Creating CNV panel of normals\n"
-        "Analysis type: {wildcards.analysis_type}"
+        "Batch: {wildcards.aliquot_batch}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CreateReadCountPanelOfNormals \
             {params.input_files} \
@@ -69,7 +101,7 @@ rule createcnvpon:
 rule denoisereadcounts:
     input:
         sample = lambda wildcards: "results/cnv/readcounts/{aliquot_barcode}.counts.hdf5".format(aliquot_barcode = wildcards.aliquot_barcode),
-        pon =  lambda wildcards: "results/cnv/createcnvpon/{analysis_type}.pon.hdf5".format(analysis_type = ("WXS" if manifest.isExome(wildcards.aliquot_barcode) else "WGS"))
+        pon =  lambda wildcards: "results/cnv/createcnvpon/{aliquot_batch}.pon.hdf5".format(aliquot_batch = manifest.getBatch(wildcards.aliquot_barcode))
     output:
         standardized = "results/cnv/denoisereadcounts/{aliquot_barcode}.standardizedCR.tsv",
         denoised = "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv"
@@ -134,38 +166,6 @@ rule plotcr:
             --minimum-contig-length {config[cnv][min_contig_len]} \
             --output {params.outputdir} \
             --output-prefix {params.outputprefix} \
-            > {log} 2>&1"
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Collect Allelic Counts
-## Counts reference and alternative alleles at common germline variant sites
-## See: https://gatkforums.broadinstitute.org/dsde/discussion/11683/
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule collectalleliccounts:
-    input:
-        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
-    output:
-        "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv"
-    params:
-        mem = CLUSTER_META["collectalleliccounts"]["mem"]
-    threads:
-        CLUSTER_META["collectalleliccounts"]["ppn"]
-    log:
-        "logs/cnv/alleliccounts/{aliquot_barcode}.log"
-    conda:
-        "../envs/gatk4.yaml"
-    benchmark:
-        "benchmarks/cnv/alleliccounts/{aliquot_barcode}.txt"
-    message:
-        "Collect allelic counts\n"
-        "Aliquot: {wildcards.aliquot_barcode}"
-    shell:
-        "gatk --java-options -Xmx{params.mem}g CollectAllelicCounts \
-            -I {input} \
-            -L {config[cnv_common_snp]} \
-            -R {config[reference_fasta]} \
-            -O {output} \
             > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
