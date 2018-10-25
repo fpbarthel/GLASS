@@ -635,7 +635,7 @@ rule igv_convert:
         echo $COL_NUM
 
         cut -f$COL_NUM  {output.tmp5} > {output.tmp8}
-        cut --complement -f $COL_NUM {output.tmp} > {output.tmp9}
+        cut --complement -f $COL_NUM {output.tmp5} > {output.tmp9}
         paste {output.tmp9} {output.tmp8} > {output.seg}
         """
 
