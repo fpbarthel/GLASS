@@ -69,7 +69,7 @@ rule collectalleliccounts:
 
 rule createcnvpon:
     input:
-        lambda wildcards: expand("results/cnv/readcounts/{aliquot_barcode}.counts.hdf5", aliquot_barcode = manifest.getAliquotsByBatch(wildcards.aliquot_batch)) #wildcards.analysis_type))
+        lambda wildcards: expand("results/cnv/readcounts/{aliquot_barcode}.counts.hdf5", aliquot_barcode = manifest.getPONAliquotsByBatch(wildcards.aliquot_batch)) #wildcards.analysis_type))
     output:
         "results/cnv/createcnvpon/{aliquot_batch}.pon.hdf5"
     params:

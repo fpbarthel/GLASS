@@ -150,11 +150,11 @@ class ManifestHandler:
         """
         return [aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["case_project"] == case_project]
 
-    def getAliquotsByBatch(self, aliquot_batch):
+    def getPONAliquotsByBatch(self, aliquot_batch):
         """
         Returns a list of aliquots given a batch
         """
-        return [aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["aliquot_batch"] == aliquot_batch]
+        return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["aliquot_batch"] == aliquot_batch and  al["sample_type"] in ["NB","NM"]]) & set(self.getSelectedAliquots()))
 
     def getPONAliquots(self):
         """
