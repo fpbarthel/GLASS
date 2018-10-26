@@ -47,16 +47,18 @@ if(config["from_source"]):
     include: "snakemake/download.smk"
     include: "snakemake/align.smk"
 
-include: "snakemake/haplotype-map.smk"
-include: "snakemake/fingerprinting.smk"
-include: "snakemake/telseq.smk"
-include: "snakemake/mutect2.smk"
-include: "snakemake/varscan2.smk"
-include: "snakemake/cnvnator.smk"
-include: "snakemake/lumpy.smk"
-include: "snakemake/delly.smk"
-include: "snakemake/manta.smk"
-include: "snakemake/cnv-gatk.smk"
+include: "snakemake/mutect2-post.smk"
+
+# include: "snakemake/haplotype-map.smk"
+# include: "snakemake/fingerprinting.smk"
+# include: "snakemake/telseq.smk"
+# include: "snakemake/mutect2.smk"
+# include: "snakemake/varscan2.smk"
+# include: "snakemake/cnvnator.smk"
+# include: "snakemake/lumpy.smk"
+# include: "snakemake/delly.smk"
+# include: "snakemake/manta.smk"
+# include: "snakemake/cnv-gatk.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Haplotype map creation rule
@@ -103,6 +105,10 @@ rule mutect2:
     input:
         expand("results/mutect2/vcf2maf/{pair_barcode}.final.maf", pair_barcode = manifest.getSelectedPairs())#,
     	#expand("results/mutect2/final/{pair_barcode}.final.vcf", pair_barcode = manifest.getSelectedPairs())
+
+rule genotypemutect:
+	input:
+		expand("results/mutect2/freebayes/{aliquot_barcode}.gt.vcf", aliquot_barcode = manifest.getSelectedAliquots())
 
 rule preparem2pon:
     input:
