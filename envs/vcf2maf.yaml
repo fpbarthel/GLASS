@@ -8,3 +8,5 @@ dependencies:
   - ensembl-vep
   - vcf2maf
   - samtools
+  - bcftools
+  - tabix

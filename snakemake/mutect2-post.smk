@@ -2,35 +2,76 @@
 ## Select variants
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule selectvariants:
-    input:
-        ancient("results/mutect2/filterorientation/{pair_barcode}.filterorientation.vcf")
-    output:
-        vcf = "results/mutect2/final/{pair_barcode}.final.vcf",
-        geno = "results/mutect2/final/{pair_barcode}.final.dropgeno.vcf.gz",
-        tbi = "results/mutect2/final/{pair_barcode}.final.dropgeno.vcf.gz.tbi"
-    params:
-        mem = CLUSTER_META["selectvariants"]["mem"]
-    threads:
-        CLUSTER_META["selectvariants"]["ppn"]
-    conda:
-        "../envs/gatk4.yaml"
-    log:
-        "logs/mutect2/selectvariants/{pair_barcode}.log"
-    benchmark:
-        "benchmarks/mutect2/selectvariants/{pair_barcode}.txt"
-    message:
-        "Select PASS calls\n"
-        "Pair: {wildcards.pair_barcode}"
-    shell:
-        "gatk --java-options -Xmx{params.mem}g SelectVariants \
-            -V {input} \
-            -O {output.vcf} \
-            --exclude-filtered true \
-            --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
-            > {log} 2>&1;"
-        "bcftools view -Oz -G -o {output.geno} {output.vcf} >> {log} 2>&1;"
-        "bcftools index -t {output.geno} >> {log} 2>&1;"
+# rule selectvariants:
+#     input:
+#         ancient("results/mutect2/filterorientation/{pair_barcode}.filterorientation.vcf")
+#     output:
+#         vcf = "results/mutect2/final/{pair_barcode}.final.vcf",
+#         geno = "results/mutect2/final/{pair_barcode}.final.dropgeno.vcf.gz",
+#         tbi = "results/mutect2/final/{pair_barcode}.final.dropgeno.vcf.gz.tbi"
+#     params:
+#         mem = CLUSTER_META["selectvariants"]["mem"]
+#     threads:
+#         CLUSTER_META["selectvariants"]["ppn"]
+#     conda:
+#         "../envs/gatk4.yaml"
+#     log:
+#         "logs/mutect2/selectvariants/{pair_barcode}.log"
+#     benchmark:
+#         "benchmarks/mutect2/selectvariants/{pair_barcode}.txt"
+#     message:
+#         "Select PASS calls\n"
+#         "Pair: {wildcards.pair_barcode}"
+#     shell:
+#         "gatk --java-options -Xmx{params.mem}g SelectVariants \
+#             -V {input} \
+#             -O {output.vcf} \
+#             --exclude-filtered true \
+#             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
+#             > {log} 2>&1;"
+#         "bcftools view -Oz -G -o {output.geno} {output.vcf} >> {log} 2>&1;"
+#         "bcftools index -t {output.geno} >> {log} 2>&1;"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Convert VF to maf
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+# rule vcf2maf:
+#     input:
+#         tumor = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+#         normal = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
+#         vcf = "results/mutect2/final/{pair_barcode}.final.vcf"
+#     output:
+#         "results/mutect2/vcf2maf/{pair_barcode}.final.maf"
+#     params:
+#         mem = CLUSTER_META["vcf2maf"]["mem"],
+#         tumor_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(manifest.getTumor(wildcards.pair_barcode)),
+#         normal_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(manifest.getNormal(wildcards.pair_barcode))
+#     threads:
+#         CLUSTER_META["vcf2maf"]["ppn"]
+#     conda:
+#         "../envs/vcf2maf.yaml"
+#     log:
+#         "logs/mutect2/vcf2maf/{pair_barcode}.log"
+#     benchmark:
+#         "benchmarks/mutect2/vcf2maf/{pair_barcode}.txt"
+#     message:
+#         "Running VEP (variant annotation) on filtered Mutect2 calls and converting output to MAF\n"
+#         "Pair: {wildcards.pair_barcode}"
+#     shell:
+#         "vcf2maf.pl \
+#             --input-vcf {input.vcf} \
+#             --output-maf {output} \
+#             --vep-path {config[veppath]} \
+#             --vep-data {config[vepdata]} \
+#             --vep-forks 2 \
+#             --ref-fasta {config[reference_fasta]} \
+#             --filter-vcf {config[gnomad_vcf]} \
+#             --tumor-id {params.tumor_sample_tag} \
+#             --normal-id {params.normal_sample_tag} \
+#             --species homo_sapiens \
+#             --ncbi-build GRCh37 \
+#             > {log} 2>&1" ## {config[vcf2maf]}
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Merge consensus variant set
@@ -38,17 +79,17 @@ rule selectvariants:
 
 rule consensusvcf:
     input:
-        ancient(expand("results/mutect2/final/{pair_barcode}.final.dropgeno.vcf.gz", pair_barcode = manifest.getSelectedPairs()))
+        vcfs = expand("results/mutect2/final/{pair_barcode}.final.dropgeno.vcf.gz", pair_barcode = manifest.getSelectedPairs()),
+        tbis = expand("results/mutect2/final/{pair_barcode}.final.dropgeno.vcf.gz.tbi", pair_barcode = manifest.getSelectedPairs())
     output:
         vcf = "results/mutect2/consensusvcf/consensus.vcf.gz",
-        tbi = "results/mutect2/consensusvcf/consensus.vcf.gz.tbi",
-        targets = "results/mutect2/consensusvcf/consensus.bed"
+        tbi = "results/mutect2/consensusvcf/consensus.vcf.gz.tbi"
     params:
         mem = CLUSTER_META["consensusvcf"]["mem"]
     threads:
         CLUSTER_META["consensusvcf"]["ppn"]
-    conda:
-        "../envs/gatk4.yaml"
+    #conda:
+    #    "../envs/vcf2maf.yaml"
     log:
         "logs/mutect2/consensusvcf/consensusvcf.log"
     benchmark:
@@ -56,52 +97,9 @@ rule consensusvcf:
     message:
         "Merge consensus variants"
     shell:
+        "module load bcftools;"
         "bcftools merge -Oz -o {output.vcf} -m none {input} > {log} 2>&1;"
         "bcftools index -t {output.vcf} >> {log} 2>&1;"
-        "zcat {output.vcf} | \
-            awk '{{OFS=\"\t\"; if (!/^#/){{print $1,$2-1,$2,$4\"/\"$5,\"+\"}}}}' \
-            > {output.targets} 2>> {log}"
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Convert VF to maf
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule vcf2maf:
-    input:
-        tumor = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
-        normal = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
-        vcf = "results/mutect2/final/{pair_barcode}.final.vcf"
-    output:
-        "results/mutect2/vcf2maf/{pair_barcode}.final.maf"
-    params:
-        mem = CLUSTER_META["vcf2maf"]["mem"],
-        tumor_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(manifest.getTumor(wildcards.pair_barcode)),
-        normal_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(manifest.getNormal(wildcards.pair_barcode))
-    threads:
-        CLUSTER_META["vcf2maf"]["ppn"]
-    conda:
-        "../envs/vcf2maf.yaml"
-    log:
-        "logs/mutect2/vcf2maf/{pair_barcode}.log"
-    benchmark:
-        "benchmarks/mutect2/vcf2maf/{pair_barcode}.txt"
-    message:
-        "Running VEP (variant annotation) on filtered Mutect2 calls and converting output to MAF\n"
-        "Pair: {wildcards.pair_barcode}"
-    shell:
-        "vcf2maf.pl \
-            --input-vcf {input.vcf} \
-            --output-maf {output} \
-            --vep-path {config[veppath]} \
-            --vep-data {config[vepdata]} \
-            --vep-forks 2 \
-            --ref-fasta {config[reference_fasta]} \
-            --filter-vcf {config[gnomad_vcf]} \
-            --tumor-id {params.tumor_sample_tag} \
-            --normal-id {params.normal_sample_tag} \
-            --species homo_sapiens \
-            --ncbi-build GRCh37 \
-            > {log} 2>&1" ## {config[vcf2maf]}
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Annotate consensus variant set
@@ -109,15 +107,17 @@ rule vcf2maf:
 
 rule annoconsensusvcf:
     input:
-        "results/mutect2/consensusvcf/consensus.vcf.gz"
+        vcf = "results/mutect2/consensusvcf/consensus.vcf.gz"
     output:
-        "results/mutect2/annoconsensusvcf/consensus.tsv"
+        vcf_uncompressed = temp("results/mutect2/consensusvcf/consensus.uncompressed.vcf"),
+        vcf_reformatted = temp("results/mutect2/consensusvcf/consensus.reformatted.vcf"),
+        maf = "results/mutect2/annoconsensusvcf/consensus.maf"
     params:
         mem = CLUSTER_META["annoconsensusvcf"]["mem"]
     threads:
         CLUSTER_META["annoconsensusvcf"]["ppn"]
     conda:
-        "../envs/gatk4.yaml"
+        "../envs/vcf2maf.yaml"
     log:
         "logs/mutect2/annoconsensusvcf/annoconsensusvcf.log"
     benchmark:
@@ -125,16 +125,30 @@ rule annoconsensusvcf:
     message:
         "Annotate consensus variants using VEP"
     shell:
-        "/projects/barthf/opt/ensembl-vep/vep -i {input} -o {output} \
-            --dir {config[vepdata]} \
-            --cache \
-            --assembly GRCh37 \
-            --fork 4 \
-            --variant_class\
-            --symbol \
-            --offline \
-            --tab \
+        "bcftools view \
+            -Ov \
+            -o {output.vcf_uncompressed} {input.vcf} \
             > {log} 2>&1;"
+
+        "vcf2vcf.pl \
+            --input-vcf {output.vcf_uncompressed} \
+            --output-vcf {output.vcf_reformatted} \
+            --ref-fasta {config[reference_fasta]} \
+            >> {log} 2>&1;"
+        
+        "vcf2maf.pl \
+            --input-vcf {output.vcf_reformatted} \
+            --output-maf {output.maf} \
+            --vep-path {config[veppath]} \
+            --vep-data {config[vepdata]} \
+            --vep-forks 8 \
+            --ref-fasta {config[reference_fasta]} \
+            --filter-vcf {config[gnomad_vcf]} \
+            --tumor-id TUMOR \
+            --normal-id NORMAL \
+            --species homo_sapiens \
+            --ncbi-build GRCh37 \
+            >> {log} 2>&1" 
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Genotype sample using consensus variant list
@@ -143,31 +157,54 @@ rule annoconsensusvcf:
 rule genotypesample:
     input:
         bam = ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"),
-        vcf = "results/mutect2/consensusvcf/consensus.vcf.gz",
-        targets = "results/mutect2/consensusvcf/consensus.bed"
+        vcf = "results/mutect2/consensusvcf/consensus.vcf.gz"
     output:
-        vcf = "results/mutect2/freebayes/{aliquot_barcode}.gt.vcf"
-        trigger = temp("results/mutect2/freebayes/{aliquot_barcode}.done")
+        vcf_uncompressed = temp("results/mutect2/genotypes/{aliquot_barcode}.consensus.uncompressed.vcf"),
+        vcf = protected("results/mutect2/genotypes/{aliquot_barcode}.vcf"),
+        maf = protected("results/mutect2/genotypes/{aliquot_barcode}.maf"),
+        trigger = temp("results/mutect2/genotypes/{aliquot_barcode}.done")
     params:
-        mem = CLUSTER_META["genotypesample"]["mem"]
+        mem = CLUSTER_META["genotypesample"]["mem"],
+        readgroup_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(wildcards.aliquot_barcode)
     threads:
         CLUSTER_META["genotypesample"]["ppn"]
     conda:
-        "../envs/freebayes.yaml"
+        "../envs/vcf2maf.yaml"
     log:
         "logs/mutect2/genotypesample/{aliquot_barcode}.log"
     benchmark:
         "benchmarks/mutect2/genotypesample/{aliquot_barcode}.txt"
     message:
-        "Genotype consensus calls using freebayes\n"
+        "Genotype consensus calls\n"
         "Aliquot: {wildcards.aliquot_barcode}"
     shell:
-        "freebayes \
-            -f {config[reference_fasta]} \
-            -t {input.targets} \
-            -l \
-            -@ {input.vcf} {input.bam} \
-            > {output.vcf} 2> {log};"
+        "bcftools view \
+            -Ov \
+            -o {output.vcf_uncompressed} {input.vcf} \
+            > {log} 2>&1;"
+
+        "vcf2vcf.pl \
+            --input-vcf {output.vcf_uncompressed} \
+            --output-vcf {output.vcf} \
+            --tumor-bam {input.bam} \
+            --vcf-tumor-id {params.readgroup_sample_tag} \
+            --ref-fasta {config[reference_fasta]} \
+            >> {log} 2>&1;"
+
+        "vcf2maf.pl \
+            --input-vcf {output.vcf} \
+            --output-maf {output.maf} \
+            --vep-path {config[veppath]} \
+            --vep-data {config[vepdata]} \
+            --vep-forks {threads} \
+            --ref-fasta {config[reference_fasta]} \
+            --filter-vcf {config[gnomad_vcf]} \
+            --tumor-id {params.readgroup_sample_tag} \
+            --normal-id NORMAL \
+            --species homo_sapiens \
+            --ncbi-build GRCh37 \
+            >> {log} 2>&1" 
+
         "touch {output.trigger}"
         
-## END ##
+# ## END ##

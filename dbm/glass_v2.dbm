@@ -1,0 +1,739 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CAUTION: Do not modify this file unless you know what you are doing.
+         Unexpected results may occur if the code is changed deliberately.
+-->
+<dbmodel pgmodeler-ver="0.9.2-alpha" last-position="0,2" last-zoom="1"
+	 default-schema="public" default-owner="postgres">
+<role name="verhaak-read"
+      login="true"
+      encrypted="true"
+      password="********">
+</role>
+
+<role name="verhaak-lab"
+      login="true"
+      encrypted="true"
+      password="********">
+</role>
+
+<role name="svc-verhaak"
+      superuser="true"
+      createdb="true"
+      replication="true"
+      createrole="true"
+      inherit="true"
+      login="true"
+      bypassrls="true"
+      encrypted="true"
+      password="********"
+      sql-disabled="true">
+</role>
+
+<database name="glass" encoding="UTF8" lc-collate="en_US.UTF-8" lc-ctype="en_US.UTF-8" is-template="false" allow-conns="true">
+	<role name="&quot;verhaak-lab&quot;"/>
+	<tablespace name="pg_default"/>
+</database>
+
+<schema name="public" rect-visible="true" fill-color="#e1e1e1" sql-disabled="true">
+</schema>
+
+<schema name="biospecimen" rect-visible="true" fill-color="#bfaf75">
+	<role name="&quot;verhaak-lab&quot;"/>
+</schema>
+
+<schema name="analysis" rect-visible="true" fill-color="#bb192e">
+	<role name="&quot;verhaak-lab&quot;"/>
+</schema>
+
+<schema name="clinical" rect-visible="true" fill-color="#5dbc7a">
+	<role name="&quot;verhaak-lab&quot;"/>
+</schema>
+
+<extension name="uuid-ossp" cur-version="1.1">
+	<schema name="public"/>
+</extension>
+
+<table name="samples">
+	<schema name="biospecimen"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="500" y="780"/>
+	<column name="sample_id" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="case_barcode" not-null="true">
+		<type name="character" length="12"/>
+	</column>
+	<column name="sample_barcode" not-null="true">
+		<type name="character" length="15"/>
+	</column>
+	<column name="sample_type" not-null="true">
+		<type name="character" length="2"/>
+	</column>
+	<constraint name="samples_pk" type="pk-constr" table="biospecimen.samples">
+		<columns names="sample_id" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="barcode_uq" type="uq-constr" table="biospecimen.samples">
+		<columns names="sample_barcode" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="barcode_ck" type="ck-constr" table="biospecimen.samples">
+			<expression><![CDATA[(sample_barcode ~ (((case_barcode)::text || '-'::text) || (sample_type)::text))]]></expression>
+	</constraint>
+</table>
+
+<table name="aliquots">
+	<schema name="biospecimen"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="780" y="780"/>
+	<column name="aliquot_id" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="aliquot_barcode" not-null="true">
+		<type name="character" length="30"/>
+	</column>
+	<column name="aliquot_id_legacy">
+		<type name="character varying" length="255"/>
+	</column>
+	<column name="sample_barcode" not-null="true">
+		<type name="character" length="15"/>
+	</column>
+	<column name="aliquot_uuid_short" not-null="true">
+		<type name="character" length="6"/>
+	</column>
+	<column name="aliquot_analyte_type" not-null="true">
+		<type name="character" length="1"/>
+	</column>
+	<column name="aliquot_analysis_type" not-null="true">
+		<type name="character" length="3"/>
+	</column>
+	<column name="aliquot_portion" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="aliquot_batch">
+		<type name="character" length="11"/>
+	</column>
+	<constraint name="aliquots_pk" type="pk-constr" table="biospecimen.aliquots">
+		<columns names="aliquot_id" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="barcode_uq_1" type="uq-constr" table="biospecimen.aliquots">
+		<columns names="aliquot_barcode" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="barcode_ck" type="ck-constr" table="biospecimen.aliquots">
+			<expression><![CDATA[(aliquot_barcode ~ ((((((((sample_barcode)::text || '-'::text) || "right"(('00'::text || ((aliquot_portion)::character varying(2))::text), 2)) || (aliquot_analyte_type)::text) || '-'::text) || (aliquot_analysis_type)::text) || '-'::text) || (aliquot_uuid_short)::text))]]></expression>
+	</constraint>
+</table>
+
+<table name="files">
+	<schema name="analysis"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="260" y="400"/>
+	<column name="file_id" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="aliquot_barcode" not-null="true">
+		<type name="character" length="30"/>
+	</column>
+	<column name="file_name" not-null="true">
+		<type name="character varying" length="255"/>
+	</column>
+	<column name="file_size" not-null="true">
+		<type name="bigint" length="0"/>
+	</column>
+	<column name="file_md5sum" not-null="true">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="file_format" not-null="true">
+		<type name="character varying" length="12"/>
+	</column>
+	<column name="file_path">
+		<type name="character varying" length="255"/>
+	</column>
+	<constraint name="files_pk" type="pk-constr" table="analysis.files">
+		<columns names="file_id" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="file_name_uq" type="uq-constr" table="analysis.files">
+		<columns names="file_name" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="readgroups">
+	<schema name="biospecimen"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="1080" y="780"/>
+	<column name="readgroup_id" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="aliquot_barcode" not-null="true">
+		<type name="character" length="30"/>
+	</column>
+	<column name="readgroup_idtag" not-null="true">
+		<type name="character" length="7"/>
+	</column>
+	<column name="readgroup_idtag_legacy">
+		<type name="character varying" length="255"/>
+	</column>
+	<column name="readgroup_platform" not-null="true">
+		<type name="character varying" length="16"/>
+	</column>
+	<column name="readgroup_platform_unit" not-null="true">
+		<type name="character varying" length="255"/>
+	</column>
+	<column name="readgroup_library" not-null="true">
+		<type name="character varying" length="32"/>
+	</column>
+	<column name="readgroup_center">
+		<type name="character varying" length="32"/>
+	</column>
+	<column name="readgroup_sample_id" not-null="true">
+		<type name="character" length="30"/>
+	</column>
+	<column name="readgroup_timestamp">
+		<type name="timestamp" length="0"/>
+	</column>
+	<constraint name="readgroups_pk" type="pk-constr" table="biospecimen.readgroups">
+		<columns names="readgroup_id" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="readgroup_uq" type="uq-constr" table="biospecimen.readgroups">
+		<columns names="readgroup_sample_id,readgroup_idtag" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="rgid_ck" type="ck-constr" no-inherit="true" table="biospecimen.readgroups">
+			<expression><![CDATA[(readgroup_idtag ~ '[A-Z0-9]{5}\.[0-9]{1}'::text)]]></expression>
+	</constraint>
+</table>
+
+<usertype name="sex" configuration="enumeration">
+	<schema name="clinical"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<enumeration values="male,female"/>
+</usertype>
+
+<usertype name="vital_status" configuration="enumeration">
+	<schema name="clinical"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<enumeration values="alive,dead"/>
+</usertype>
+
+<index name="fk_idx_1" table="biospecimen.readgroups"
+	 concurrent="false" unique="false" fast-update="false" buffering="false"
+	 index-type="btree" factor="90">
+		<idxelement use-sorting="false">
+			<column name="aliquot_barcode"/>
+		</idxelement>
+</index>
+
+<index name="fk_idx" table="analysis.files"
+	 concurrent="false" unique="false" fast-update="false" buffering="false"
+	 index-type="btree" factor="90">
+		<idxelement use-sorting="false">
+			<column name="aliquot_barcode"/>
+		</idxelement>
+</index>
+
+<index name="fk_idx" table="biospecimen.samples"
+	 concurrent="false" unique="false" fast-update="false" buffering="false"
+	 index-type="btree" factor="90">
+		<idxelement use-sorting="false">
+			<column name="case_barcode"/>
+		</idxelement>
+</index>
+
+<index name="fk_idx_2" table="biospecimen.aliquots"
+	 concurrent="false" unique="false" fast-update="false" buffering="false"
+	 index-type="btree" factor="90">
+		<idxelement use-sorting="false">
+			<column name="sample_barcode"/>
+		</idxelement>
+</index>
+
+<table name="cases">
+	<schema name="clinical"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="1340" y="280"/>
+	<column name="case_id" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="case_barcode" not-null="true">
+		<type name="character" length="12"/>
+	</column>
+	<column name="case_project" not-null="true">
+		<type name="character" length="4"/>
+	</column>
+	<column name="case_source" not-null="true">
+		<type name="character" length="2"/>
+	</column>
+	<column name="case_sex">
+		<type name="clinical.sex" length="0"/>
+	</column>
+	<column name="case_age_diagnosis_years">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="case_vital_status">
+		<type name="clinical.vital_status" length="0"/>
+	</column>
+	<column name="case_days_to_death_or_censor">
+		<type name="bigint" length="0"/>
+	</column>
+	<constraint name="cases_pk" type="pk-constr" table="clinical.cases">
+		<columns names="case_id" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="barcode_uq" type="uq-constr" table="clinical.cases">
+		<columns names="case_barcode" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="barcode_ck" type="ck-constr" table="clinical.cases">
+			<expression><![CDATA[(case_barcode ~ ((((case_project)::text || '-'::text) || (case_source)::text) || '-[A-Z0-9]{4}'::text))]]></expression>
+	</constraint>
+	<constraint name="age_ck" type="ck-constr" table="clinical.cases">
+			<expression><![CDATA[(case_age_diagnosis_years > 0)]]></expression>
+	</constraint>
+	<constraint name="censor_ck" type="ck-constr" table="clinical.cases">
+			<expression><![CDATA[(case_days_to_death_or_censor > 0)]]></expression>
+	</constraint>
+</table>
+
+<table name="sample_types">
+	<schema name="biospecimen"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="1420" y="780"/>
+	<column name="sample_type" not-null="true">
+		<type name="character" length="2"/>
+	</column>
+	<column name="sample_type_description">
+		<type name="character varying" length="255"/>
+	</column>
+	<constraint name="sample_types_pk" type="pk-constr" table="biospecimen.sample_types">
+		<columns names="sample_type" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="analyte_types">
+	<schema name="biospecimen"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="1720" y="780"/>
+	<column name="analyte_type" not-null="true">
+		<type name="character" length="1"/>
+	</column>
+	<column name="analyte_type_description">
+		<type name="character varying" length="255"/>
+	</column>
+	<constraint name="analyte_types_pk" type="pk-constr" table="biospecimen.analyte_types">
+		<columns names="analyte_type" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="analysis_types">
+	<schema name="biospecimen"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="500" y="1020"/>
+	<column name="analysis_type" not-null="true">
+		<type name="character" length="3"/>
+	</column>
+	<column name="analysis_type_description" not-null="true">
+		<type name="character varying" length="255"/>
+	</column>
+	<constraint name="analysis_types_pk" type="pk-constr" table="biospecimen.analysis_types">
+		<columns names="analysis_type" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="case_sources">
+	<schema name="clinical"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="1700" y="280"/>
+	<column name="case_source" not-null="true">
+		<type name="character" length="2"/>
+	</column>
+	<column name="case_source_description" not-null="true">
+		<type name="character varying" length="255"/>
+	</column>
+	<constraint name="case_sources_pk" type="pk-constr" table="clinical.case_sources">
+		<columns names="case_source" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="case_projects">
+	<schema name="clinical"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="2020" y="280"/>
+	<column name="case_project" not-null="true">
+		<type name="character" length="4"/>
+	</column>
+	<column name="case_project_description" not-null="true">
+		<type name="character varying" length="255"/>
+	</column>
+	<constraint name="case_projects_pk" type="pk-constr" table="clinical.case_projects">
+		<columns names="case_project" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="file_formats">
+	<schema name="analysis"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="580" y="400"/>
+	<column name="file_format" not-null="true">
+		<type name="character varying" length="12"/>
+	</column>
+	<column name="file_format_description">
+		<type name="character varying" length="255"/>
+	</column>
+	<constraint name="file_formats_pk" type="pk-constr" table="analysis.file_formats">
+		<columns names="file_format" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="files_readgroups">
+	<schema name="analysis"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="900" y="400"/>
+	<column name="file_name" not-null="true">
+		<type name="character varying" length="255"/>
+	</column>
+	<column name="readgroup_idtag" not-null="true">
+		<type name="character" length="7"/>
+	</column>
+	<column name="readgroup_sample_id" not-null="true">
+		<type name="character" length="30"/>
+	</column>
+</table>
+
+<view name="pairs">
+	<schema name="analysis"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="980" y="340"/>
+	<reference>
+		<expression><![CDATA[ SELECT ("substring"((a1.aliquot_barcode)::text, 1, 18) || "substring"((a2.aliquot_barcode)::text, 13, 11)) AS pair_barcode,
+    a1.aliquot_barcode AS tumor_barcode,
+    a2.aliquot_barcode AS normal_barcode
+   FROM (((biospecimen.aliquots a1
+     JOIN biospecimen.samples s1 ON ((a1.sample_barcode = s1.sample_barcode)))
+     JOIN biospecimen.samples s2 ON ((s1.case_barcode = s2.case_barcode)))
+     JOIN biospecimen.aliquots a2 ON (((a2.sample_barcode = s2.sample_barcode) AND (a2.aliquot_analysis_type = a1.aliquot_analysis_type))))
+  WHERE (((s2.sample_type = 'NB'::bpchar) AND (s1.sample_type <> 'NB'::bpchar)) OR ((s2.sample_type = 'NM'::bpchar) AND (s1.sample_type <> 'NM'::bpchar)));]]></expression>
+	</reference>
+</view>
+
+<extension name="tablefunc" cur-version="1.0">
+	<schema name="public"/>
+	<comment><![CDATA[functions that manipulate whole tables, including crosstab]]></comment>
+</extension>
+
+<view name="roeltable">
+	<schema name="analysis"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="980" y="280"/>
+	<reference>
+		<expression><![CDATA[ SELECT crosstab.case_source_description,
+    crosstab.case_project,
+    crosstab.aliquot_analysis_type,
+    crosstab."Primary",
+    crosstab."1st Recurrence",
+    crosstab."2nd Recurrence",
+    crosstab."3rd Recurrence",
+    crosstab."4th Recurrence"
+   FROM crosstab('
+	SELECT case_source_description, case_project, aliquot_analysis_type, sample_type, COUNT( DISTINCT ca.case_barcode )
+	FROM biospecimen.aliquots AS al
+	INNER JOIN biospecimen.samples AS sa ON sa.sample_barcode = al.sample_barcode
+	INNER JOIN clinical.cases AS ca ON ca.case_barcode = sa.case_barcode
+	INNER JOIN clinical.case_sources AS cs ON ca.case_source = cs.case_source
+	WHERE sa.sample_type IN (''TP'', ''R1'', ''R2'', ''R3'', ''R4'')
+	GROUP BY case_source_description, case_project, aliquot_analysis_type, sample_type
+	ORDER BY 2,3,1
+	'::text, '
+	SELECT sample_type FROM biospecimen.sample_types WHERE sample_type IN (''TP'', ''R1'', ''R2'', ''R3'', ''R4'')
+	'::text) crosstab(case_source_description character varying, case_project character(4), aliquot_analysis_type character(3), "Primary" integer, "1st Recurrence" integer, "2nd Recurrence" integer, "3rd Recurrence" integer, "4th Recurrence" integer);]]></expression>
+	</reference>
+</view>
+
+<table name="snvs">
+	<schema name="analysis"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="320" y="60"/>
+	<column name="snv_id" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="chrom" not-null="true">
+		<type name="char" length="2"/>
+	</column>
+	<column name="pos" not-null="true">
+		<type name="bigint" length="0"/>
+	</column>
+	<column name="ref" not-null="true">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="alt" not-null="true">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="gene_id">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="gene_symbol">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="consequence">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="cdna_position">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="cds_position">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="protein_position">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="amino_acids">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="codons">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="impact">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="distance">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="strand">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="variant_class">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="hgvs_g">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="hgvs_p">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="polyphen">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="sift">
+		<type name="varchar" length="255"/>
+	</column>
+	<constraint name="snvs_pk" type="pk-constr" table="analysis.snvs">
+		<columns names="snv_id" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<index name="pos_ind" table="analysis.snvs"
+	 concurrent="false" unique="false" fast-update="false" buffering="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="false">
+			<column name="chrom"/>
+		</idxelement>
+		<idxelement use-sorting="true" nulls-first="false" asc-order="true">
+			<column name="pos"/>
+		</idxelement>
+</index>
+
+<index name="gene_ind" table="analysis.snvs"
+	 concurrent="false" unique="false" fast-update="false" buffering="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="false">
+			<column name="gene_symbol"/>
+		</idxelement>
+</index>
+
+<table name="snvgenotypes">
+	<schema name="analysis"/>
+	<role name="&quot;verhaak-lab&quot;"/>
+	<position x="680" y="120"/>
+	<column name="snv_id" not-null="true">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="aliquot_barcode" not-null="true">
+		<type name="char" length="30"/>
+	</column>
+	<column name="genotype" not-null="true">
+		<type name="char" length="3"/>
+	</column>
+	<column name="read_depth" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="ref_count" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="alt_count" not-null="true">
+		<type name="smallint" length="0"/>
+	</column>
+</table>
+
+<index name="lookup_ind" table="analysis.snvgenotypes"
+	 concurrent="false" unique="false" fast-update="false" buffering="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="false">
+			<column name="snv_id"/>
+		</idxelement>
+		<idxelement use-sorting="true" nulls-first="false" asc-order="true">
+			<column name="aliquot_barcode"/>
+		</idxelement>
+</index>
+
+<constraint name="cases_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="clinical.cases" table="biospecimen.samples">
+	<columns names="case_barcode" ref-type="src-columns"/>
+	<columns names="case_barcode" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="sample_type_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="RESTRICT" del-action="RESTRICT" ref-table="biospecimen.sample_types" table="biospecimen.samples">
+	<columns names="sample_type" ref-type="src-columns"/>
+	<columns names="sample_type" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="samples_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="biospecimen.samples" table="biospecimen.aliquots">
+	<columns names="sample_barcode" ref-type="src-columns"/>
+	<columns names="sample_barcode" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="analyte_type_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="RESTRICT" del-action="RESTRICT" ref-table="biospecimen.analyte_types" table="biospecimen.aliquots">
+	<columns names="aliquot_analyte_type" ref-type="src-columns"/>
+	<columns names="analyte_type" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="analysis_type_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="RESTRICT" del-action="RESTRICT" ref-table="biospecimen.analysis_types" table="biospecimen.aliquots">
+	<columns names="aliquot_analysis_type" ref-type="src-columns"/>
+	<columns names="analysis_type" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="files_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="biospecimen.aliquots" table="analysis.files">
+	<columns names="aliquot_barcode" ref-type="src-columns"/>
+	<columns names="aliquot_barcode" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="format_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="RESTRICT" del-action="RESTRICT" ref-table="analysis.file_formats" table="analysis.files">
+	<columns names="file_format" ref-type="src-columns"/>
+	<columns names="file_format" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="aliquot_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="biospecimen.aliquots" table="biospecimen.readgroups">
+	<columns names="aliquot_barcode" ref-type="src-columns"/>
+	<columns names="aliquot_barcode" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="project_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="RESTRICT" del-action="RESTRICT" ref-table="clinical.case_projects" table="clinical.cases">
+	<columns names="case_project" ref-type="src-columns"/>
+	<columns names="case_project" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="source_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="RESTRICT" del-action="RESTRICT" ref-table="clinical.case_sources" table="clinical.cases">
+	<columns names="case_source" ref-type="src-columns"/>
+	<columns names="case_source" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="files_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="analysis.files" table="analysis.files_readgroups">
+	<columns names="file_name" ref-type="src-columns"/>
+	<columns names="file_name" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="readgroups_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="CASCADE" del-action="CASCADE" ref-table="biospecimen.readgroups" table="analysis.files_readgroups">
+	<columns names="readgroup_idtag,readgroup_sample_id" ref-type="src-columns"/>
+	<columns names="readgroup_idtag,readgroup_sample_id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="snv_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="analysis.snvs" table="analysis.snvgenotypes">
+	<columns names="snv_id" ref-type="src-columns"/>
+	<columns names="snv_id" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="aliquot_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="biospecimen.aliquots" table="analysis.snvgenotypes">
+	<columns names="aliquot_barcode" ref-type="src-columns"/>
+	<columns names="aliquot_barcode" ref-type="dst-columns"/>
+</constraint>
+
+<relationship name="rel_samples_cases" type="relfk"
+	 custom-color="#d9d14e"
+	 src-table="biospecimen.samples"
+	 dst-table="clinical.cases" reference-fk="cases_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_samples_sample_types" type="relfk"
+	 custom-color="#e058a3"
+	 src-table="biospecimen.samples"
+	 dst-table="biospecimen.sample_types" reference-fk="sample_type_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_aliquots_samples" type="relfk"
+	 custom-color="#2f215e"
+	 src-table="biospecimen.aliquots"
+	 dst-table="biospecimen.samples" reference-fk="samples_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_aliquots_analyte_types" type="relfk"
+	 custom-color="#a7cd61"
+	 src-table="biospecimen.aliquots"
+	 dst-table="biospecimen.analyte_types" reference-fk="analyte_type_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_aliquots_analysis_types" type="relfk"
+	 custom-color="#209619"
+	 src-table="biospecimen.aliquots"
+	 dst-table="biospecimen.analysis_types" reference-fk="analysis_type_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_files_aliquots" type="relfk"
+	 custom-color="#3729ba"
+	 src-table="analysis.files"
+	 dst-table="biospecimen.aliquots" reference-fk="files_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_files_file_formats" type="relfk"
+	 custom-color="#74c95f"
+	 src-table="analysis.files"
+	 dst-table="analysis.file_formats" reference-fk="format_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_readgroups_aliquots" type="relfk"
+	 custom-color="#c5dc6d"
+	 src-table="biospecimen.readgroups"
+	 dst-table="biospecimen.aliquots" reference-fk="aliquot_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_cases_case_projects" type="relfk"
+	 custom-color="#da09dd"
+	 src-table="clinical.cases"
+	 dst-table="clinical.case_projects" reference-fk="project_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_cases_case_sources" type="relfk"
+	 custom-color="#16a5a3"
+	 src-table="clinical.cases"
+	 dst-table="clinical.case_sources" reference-fk="source_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_files_readgroups_files" type="relfk"
+	 custom-color="#694f77"
+	 src-table="analysis.files_readgroups"
+	 dst-table="analysis.files" reference-fk="files_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_files_readgroups_readgroups" type="relfk"
+	 custom-color="#077536"
+	 src-table="analysis.files_readgroups"
+	 dst-table="biospecimen.readgroups" reference-fk="readgroups_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_snvgenotypes_snvs" type="relfk"
+	 src-table="analysis.snvgenotypes"
+	 dst-table="analysis.snvs" reference-fk="snv_fk"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_snvgenotypes_aliquots" type="relfk"
+	 src-table="analysis.snvgenotypes"
+	 dst-table="biospecimen.aliquots" reference-fk="aliquot_fk"
+	 src-required="false" dst-required="false"/>
+
+</dbmodel>
