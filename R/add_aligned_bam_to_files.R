@@ -4,8 +4,8 @@ library(odbc)
 library(DBI)
 con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
 
-bamfiles = list.files("/Volumes/Helix-CommonScratch/GLASS-WG/results/align/bqsr/", pattern = "bam$", full.names = T)
-md5files = list.files("/Volumes/Helix-CommonScratch/GLASS-WG/results/align/bqsr/", pattern = "md5$", full.names = T)
+bamfiles = list.files("/fastscratch/verhaak-lab/GLASS-C7/results/align/bqsr/", pattern = "bam$", full.names = T)
+md5files = list.files("/fastscratch/verhaak-lab/GLASS-C7/results/align/bqsr/", pattern = "md5$", full.names = T)
 filesizes = sapply(bamfiles, function(f) file.info(f)$size)
 filemd5s  = sapply(md5files, function(f) readLines(f, warn=F))
 
