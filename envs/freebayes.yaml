@@ -8,6 +8,7 @@ dependencies:
   - htslib=1.8=1
   - libdeflate=1.0=h470a237_0
   - parallel=20160622=1
+  - bcftools
 #   - perl-threaded=5.22.0=13
 #   - bzip2=1.0.6=h470a237_2
 #   - ca-certificates=2018.8.24=ha4d7672_0

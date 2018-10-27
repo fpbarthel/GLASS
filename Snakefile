@@ -110,6 +110,10 @@ rule genotypemutect:
 	input:
 		expand("results/mutect2/genotypes/{aliquot_barcode}.vcf", aliquot_barcode = manifest.getSelectedAliquots())
 
+rule genotypefreebayes:
+    input:
+        expand("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz", aliquot_barcode = manifest.getSelectedAliquots())
+
 rule preparem2pon:
     input:
         expand("results/mutect2/mergepon/{aliquot_barcode}.pon.vcf", aliquot_barcode = manifest.getPONAliquots())

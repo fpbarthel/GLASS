@@ -206,5 +206,50 @@ rule genotypesample:
             >> {log} 2>&1" 
 
         "touch {output.trigger}"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Genotype sample using freebayes
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule freebayes:
+    input:
+        bam = ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"),
+        vcf = "results/mutect2/consensusvcf/consensus.vcf.gz",
+        targets = "results/mutect2/consensusvcf/consensus.bed"
+    output:
+        vcf = temp("results/mutect2/freebayes/{aliquot_barcode}.vcf"),
+        vcfgz = protected("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz"),
+        tbi = protected("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz.tbi")
+    params:
+        mem = CLUSTER_META["freebayes"]["mem"]
+    threads:
+        CLUSTER_META["freebayes"]["ppn"]
+    conda:
+        "../envs/freebayes.yaml"
+    log:
+        "logs/mutect2/freebayes/{aliquot_barcode}.log"
+    benchmark:
+        "benchmarks/mutect2/freebayes/{aliquot_barcode}.txt"
+    message:
+        "Genotype consensus calls using freebayes\n"
+        "Aliquot: {wildcards.aliquot_barcode}"
+    shell:
+        "freebayes \
+            -f {config[reference_fasta]} \
+            -t {input.targets} \
+            -l \
+            -@ {input.vcf} \
+            {input.bam} \
+            > {output.vcf} 2> {log};"
         
+        "bcftools view \
+            -Oz \
+            -o {output.vcfgz} {output.vcf} \
+            >> {log} 2>&1;"
+        
+        "bcftools index \
+            -t \
+            {output.vcfgz} \
+            >> {log} 2>&1;"
+
 # ## END ##

@@ -224,6 +224,12 @@
         "mem" : 24,
         "walltime" : "72:00:00"
     },
+    "freebayes" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "48:00:00"
+    },
     "extractsplitter" :
     {
         "ppn" : 2,

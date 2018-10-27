@@ -3,7 +3,7 @@
 CAUTION: Do not modify this file unless you know what you are doing.
          Unexpected results may occur if the code is changed deliberately.
 -->
-<dbmodel pgmodeler-ver="0.9.2-alpha" last-position="0,2" last-zoom="1"
+<dbmodel pgmodeler-ver="0.9.2-alpha" last-position="0,1" last-zoom="1"
 	 default-schema="public" default-owner="postgres">
 <role name="verhaak-read"
       login="true"
@@ -454,14 +454,17 @@ CAUTION: Do not modify this file unless you know what you are doing.
 	<column name="chrom" not-null="true">
 		<type name="char" length="2"/>
 	</column>
-	<column name="pos" not-null="true">
+	<column name="start" not-null="true">
+		<type name="bigint" length="0"/>
+	</column>
+	<column name="end" not-null="true">
 		<type name="bigint" length="0"/>
 	</column>
 	<column name="ref" not-null="true">
-		<type name="varchar" length="255"/>
+		<type name="varchar" length="510"/>
 	</column>
 	<column name="alt" not-null="true">
-		<type name="varchar" length="255"/>
+		<type name="varchar" length="510"/>
 	</column>
 	<column name="gene_id">
 		<type name="varchar" length="255"/>
@@ -469,17 +472,20 @@ CAUTION: Do not modify this file unless you know what you are doing.
 	<column name="gene_symbol">
 		<type name="varchar" length="255"/>
 	</column>
-	<column name="consequence">
+	<column name="variant_classification">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="variant_type">
 		<type name="varchar" length="255"/>
 	</column>
 	<column name="cdna_position">
-		<type name="smallint" length="0"/>
+		<type name="varchar" length="255"/>
 	</column>
 	<column name="cds_position">
-		<type name="smallint" length="0"/>
+		<type name="varchar" length="255"/>
 	</column>
 	<column name="protein_position">
-		<type name="smallint" length="0"/>
+		<type name="varchar" length="255"/>
 	</column>
 	<column name="amino_acids">
 		<type name="varchar" length="255"/>
@@ -487,19 +493,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 	<column name="codons">
 		<type name="varchar" length="255"/>
 	</column>
-	<column name="impact">
-		<type name="varchar" length="255"/>
-	</column>
-	<column name="distance">
-		<type name="smallint" length="0"/>
-	</column>
-	<column name="strand">
-		<type name="smallint" length="0"/>
-	</column>
-	<column name="variant_class">
-		<type name="varchar" length="255"/>
-	</column>
-	<column name="hgvs_g">
+	<column name="hgvs_c">
 		<type name="varchar" length="255"/>
 	</column>
 	<column name="hgvs_p">
@@ -523,7 +517,10 @@ CAUTION: Do not modify this file unless you know what you are doing.
 			<column name="chrom"/>
 		</idxelement>
 		<idxelement use-sorting="true" nulls-first="false" asc-order="true">
-			<column name="pos"/>
+			<column name="start"/>
+		</idxelement>
+		<idxelement use-sorting="false">
+			<column name="&quot;end&quot;"/>
 		</idxelement>
 </index>
 
