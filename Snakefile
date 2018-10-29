@@ -112,7 +112,7 @@ rule genotypemutect:
 
 rule genotypefreebayes:
     input:
-        expand("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz", aliquot_barcode = manifest.getSelectedAliquots())
+        expand("results/mutect2/freebayes/{aliquot_barcode}.vcf", aliquot_barcode = manifest.getSelectedAliquots())
 
 rule preparem2pon:
     input:

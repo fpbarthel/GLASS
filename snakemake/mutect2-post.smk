@@ -88,8 +88,8 @@ rule consensusvcf:
         mem = CLUSTER_META["consensusvcf"]["mem"]
     threads:
         CLUSTER_META["consensusvcf"]["ppn"]
-    #conda:
-    #    "../envs/vcf2maf.yaml"
+    conda:
+        "../envs/vcf2maf.yaml"
     log:
         "logs/mutect2/consensusvcf/consensusvcf.log"
     benchmark:
@@ -97,9 +97,14 @@ rule consensusvcf:
     message:
         "Merge consensus variants"
     shell:
-        "module load bcftools;"
-        "bcftools merge -Oz -o {output.vcf} -m none {input} > {log} 2>&1;"
-        "bcftools index -t {output.vcf} >> {log} 2>&1;"
+        #"module load bcftools;"
+        "bcftools merge \
+            -Oz -o {output.vcf} \
+            -m none {input} \
+            > {log} 2>&1;"
+        "bcftools index \
+            -t {output.vcf} \
+            >> {log} 2>&1;"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Annotate consensus variant set
@@ -107,7 +112,7 @@ rule consensusvcf:
 
 rule annoconsensusvcf:
     input:
-        vcf = "results/mutect2/consensusvcf/consensus.vcf.gz"
+        vcf = "results/mutect2/consensusvcf/consensus.norm.vcf.gz"
     output:
         vcf_uncompressed = temp("results/mutect2/consensusvcf/consensus.uncompressed.vcf"),
         vcf_reformatted = temp("results/mutect2/consensusvcf/consensus.reformatted.vcf"),
@@ -154,58 +159,58 @@ rule annoconsensusvcf:
 ## Genotype sample using consensus variant list
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule genotypesample:
-    input:
-        bam = ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"),
-        vcf = "results/mutect2/consensusvcf/consensus.vcf.gz"
-    output:
-        vcf_uncompressed = temp("results/mutect2/genotypes/{aliquot_barcode}.consensus.uncompressed.vcf"),
-        vcf = protected("results/mutect2/genotypes/{aliquot_barcode}.vcf"),
-        maf = protected("results/mutect2/genotypes/{aliquot_barcode}.maf"),
-        trigger = temp("results/mutect2/genotypes/{aliquot_barcode}.done")
-    params:
-        mem = CLUSTER_META["genotypesample"]["mem"],
-        readgroup_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(wildcards.aliquot_barcode)
-    threads:
-        CLUSTER_META["genotypesample"]["ppn"]
-    conda:
-        "../envs/vcf2maf.yaml"
-    log:
-        "logs/mutect2/genotypesample/{aliquot_barcode}.log"
-    benchmark:
-        "benchmarks/mutect2/genotypesample/{aliquot_barcode}.txt"
-    message:
-        "Genotype consensus calls\n"
-        "Aliquot: {wildcards.aliquot_barcode}"
-    shell:
-        "bcftools view \
-            -Ov \
-            -o {output.vcf_uncompressed} {input.vcf} \
-            > {log} 2>&1;"
+# rule genotypesample:
+#     input:
+#         bam = ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"),
+#         vcf = "results/mutect2/consensusvcf/consensus.norm.vcf.gz"
+#     output:
+#         vcf_uncompressed = temp("results/mutect2/genotypes/{aliquot_barcode}.consensus.uncompressed.vcf"),
+#         vcf = protected("results/mutect2/genotypes/{aliquot_barcode}.vcf"),
+#         maf = protected("results/mutect2/genotypes/{aliquot_barcode}.maf"),
+#         trigger = temp("results/mutect2/genotypes/{aliquot_barcode}.done")
+#     params:
+#         mem = CLUSTER_META["genotypesample"]["mem"],
+#         readgroup_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(wildcards.aliquot_barcode)
+#     threads:
+#         CLUSTER_META["genotypesample"]["ppn"]
+#     conda:
+#         "../envs/vcf2maf.yaml"
+#     log:
+#         "logs/mutect2/genotypesample/{aliquot_barcode}.log"
+#     benchmark:
+#         "benchmarks/mutect2/genotypesample/{aliquot_barcode}.txt"
+#     message:
+#         "Genotype consensus calls\n"
+#         "Aliquot: {wildcards.aliquot_barcode}"
+#     shell:
+#         "bcftools view \
+#             -Ov \
+#             -o {output.vcf_uncompressed} {input.vcf} \
+#             > {log} 2>&1;"
 
-        "vcf2vcf.pl \
-            --input-vcf {output.vcf_uncompressed} \
-            --output-vcf {output.vcf} \
-            --tumor-bam {input.bam} \
-            --vcf-tumor-id {params.readgroup_sample_tag} \
-            --ref-fasta {config[reference_fasta]} \
-            >> {log} 2>&1;"
+#         "vcf2vcf.pl \
+#             --input-vcf {output.vcf_uncompressed} \
+#             --output-vcf {output.vcf} \
+#             --tumor-bam {input.bam} \
+#             --vcf-tumor-id {params.readgroup_sample_tag} \
+#             --ref-fasta {config[reference_fasta]} \
+#             >> {log} 2>&1;"
 
-        "vcf2maf.pl \
-            --input-vcf {output.vcf} \
-            --output-maf {output.maf} \
-            --vep-path {config[veppath]} \
-            --vep-data {config[vepdata]} \
-            --vep-forks {threads} \
-            --ref-fasta {config[reference_fasta]} \
-            --filter-vcf {config[gnomad_vcf]} \
-            --tumor-id {params.readgroup_sample_tag} \
-            --normal-id NORMAL \
-            --species homo_sapiens \
-            --ncbi-build GRCh37 \
-            >> {log} 2>&1" 
+#         "vcf2maf.pl \
+#             --input-vcf {output.vcf} \
+#             --output-maf {output.maf} \
+#             --vep-path {config[veppath]} \
+#             --vep-data {config[vepdata]} \
+#             --vep-forks {threads} \
+#             --ref-fasta {config[reference_fasta]} \
+#             --filter-vcf {config[gnomad_vcf]} \
+#             --tumor-id {params.readgroup_sample_tag} \
+#             --normal-id NORMAL \
+#             --species homo_sapiens \
+#             --ncbi-build GRCh37 \
+#             >> {log} 2>&1" 
 
-        "touch {output.trigger}"
+#         "touch {output.trigger}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Genotype sample using freebayes
@@ -214,12 +219,14 @@ rule genotypesample:
 rule freebayes:
     input:
         bam = ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"),
-        vcf = "results/mutect2/consensusvcf/consensus.vcf.gz",
-        targets = "results/mutect2/consensusvcf/consensus.bed"
+        vcf = "results/mutect2/consensusvcf/consensus.norm.vcf.gz",
+        targets = "results/mutect2/consensusvcf/consensus.norm.bed"
     output:
-        vcf = temp("results/mutect2/freebayes/{aliquot_barcode}.vcf"),
-        vcfgz = protected("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz"),
-        tbi = protected("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz.tbi")
+        vcf = protected("results/mutect2/freebayes/{aliquot_barcode}.vcf"),
+        #vcf_unsorted = temp("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz"),
+        #vcfgz = protected("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz"),
+        #tbi = protected("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz.tbi"),
+        trigger = temp("results/mutect2/genotypes/{aliquot_barcode}.done")
     params:
         mem = CLUSTER_META["freebayes"]["mem"]
     threads:
@@ -241,15 +248,44 @@ rule freebayes:
             -@ {input.vcf} \
             {input.bam} \
             > {output.vcf} 2> {log};"
+
+        # "bcftools view \
+        #     -Oz \
+        #     {output.vcf} | \
+        #  bcftools norm \
+        #     -Oz \
+        #     -m- \
+        #     -r {config[reference_fasta]} \
+        #     -o {output.vcfgz} \
+        #     > {log} 2>&1;"
+
+        # "bcftools sort \
+        #  	-Oz \
+        #     -o {output.vcfgz} \
+        #     > {log} 2>&1;"
         
-        "bcftools view \
-            -Oz \
-            -o {output.vcfgz} {output.vcf} \
-            >> {log} 2>&1;"
+        # "bcftools index \
+        #  	-t \
+        #     -o {output.tbi} \
+        #     > {log} 2>&1;"
         
-        "bcftools index \
-            -t \
-            {output.vcfgz} \
-            >> {log} 2>&1;"
+        "touch {output.trigger}"
+
+        
+
+       # "bcftools view \
+       #     -Oz \
+       #     -o {output.vcf_unsorted} {output.vcf} \
+       #     >> {log} 2>&1;"
+
+        # "bcftools sort \
+        #     -Oz \
+        #     -o {output.vcfgz} {output.vcf_unsorted} \
+        #     >> {log} 2>&1;"
+        
+        # "bcftools index \
+        #     -t \
+        #     {output.vcfgz} \
+        #     >> {log} 2>&1;"
 
 # ## END ##
