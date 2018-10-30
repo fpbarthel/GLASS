@@ -77,19 +77,28 @@
 ## Merge consensus variant set
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+# rule testme:
+#     conda:
+#         "../envs/freebayes.yaml"
+#     shell:
+#         "echo done"
+
 rule consensusvcf:
     input:
         vcfs = expand("results/mutect2/final/{pair_barcode}.final.dropgeno.vcf.gz", pair_barcode = manifest.getSelectedPairs()),
         tbis = expand("results/mutect2/final/{pair_barcode}.final.dropgeno.vcf.gz.tbi", pair_barcode = manifest.getSelectedPairs())
     output:
-        vcf = "results/mutect2/consensusvcf/consensus.vcf.gz",
-        tbi = "results/mutect2/consensusvcf/consensus.vcf.gz.tbi"
+        merged = "results/mutect2/consensusvcf/consensus.vcf.gz",
+        normalized = "results/mutect2/consensusvcf/consensus.normalized.vcf.gz",
+        final = "results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz",
+        tbi = "results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz.tbi",
+        bed = "results/mutect2/consensusvcf/consensus.normalized.sorted.bed"
     params:
         mem = CLUSTER_META["consensusvcf"]["mem"]
     threads:
         CLUSTER_META["consensusvcf"]["ppn"]
     conda:
-        "../envs/vcf2maf.yaml"
+        "../envs/freebayes.yaml"
     log:
         "logs/mutect2/consensusvcf/consensusvcf.log"
     benchmark:
@@ -97,14 +106,49 @@ rule consensusvcf:
     message:
         "Merge consensus variants"
     shell:
-        #"module load bcftools;"
         "bcftools merge \
-            -Oz -o {output.vcf} \
-            -m none {input} \
-            > {log} 2>&1;"
+            -m none {input.vcfs} \
+            -Oz \
+            -o {output.merged} \
+            2>> {log};"
+        
+        "bcftools norm \
+            -f {config[reference_fasta]} \
+            --check-ref ws \
+            -m-both \
+            {output.merged} | \
+         vt decompose_blocksub - | \
+         bcftools norm -d all | \
+         bcftools view \
+            -Oz \
+            -o {output.normalized} \
+            2>> {log};"
+       
+        "bcftools sort \
+            -Oz \
+            -o {output.final} \
+            {output.normalized} \
+            2>> {log};"
+        
         "bcftools index \
-            -t {output.vcf} \
-            >> {log} 2>&1;"
+            -t {output.final} \
+            2>> {log};"
+
+        "zcat {output.final} | awk '{{OFS=\"\t\"; \
+            if (!/^#/ && (length($4) > 1 || length($5) > 1))\
+            {{ print $1,$2-sqrt((length($4)-length($5))^2)-1,$2+sqrt((length($4)-length($5))^2)+1,$4\"/\"$5,\"+\" }} \
+            else if (!/^#/) \
+            {{ print $1,$2-1,$2,$4\"/\"$5,\"+\" }} \
+            }}' > {output.bed} 2>> {log};"
+
+
+        #     "bcftools merge \
+        #     -Oz -o {output.vcf} \
+        #     -m none {input} \
+        #     > {log} 2>&1;"
+        # "bcftools index \
+        #     -t {output.vcf} \
+        #     >> {log} 2>&1;"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Annotate consensus variant set
@@ -112,11 +156,11 @@ rule consensusvcf:
 
 rule annoconsensusvcf:
     input:
-        vcf = "results/mutect2/consensusvcf/consensus.norm.vcf.gz"
+        vcf = "results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz"
     output:
-        vcf_uncompressed = temp("results/mutect2/consensusvcf/consensus.uncompressed.vcf"),
-        vcf_reformatted = temp("results/mutect2/consensusvcf/consensus.reformatted.vcf"),
-        maf = "results/mutect2/annoconsensusvcf/consensus.maf"
+        vcf_uncompressed = temp("results/mutect2/annoconsensusvcf/consensus.normalized.sorted.uncompressed.vcf"),
+        vcf_reformatted = temp("results/mutect2/annoconsensusvcf/consensus.normalized.sorted.vcf"),
+        maf = "results/mutect2/annoconsensusvcf/consensus.normalized.sorted.maf"
     params:
         mem = CLUSTER_META["annoconsensusvcf"]["mem"]
     threads:
@@ -219,15 +263,15 @@ rule annoconsensusvcf:
 rule freebayes:
     input:
         bam = ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"),
-        vcf = "results/mutect2/consensusvcf/consensus.norm.vcf.gz",
-        targets = "results/mutect2/consensusvcf/consensus.norm.bed"
+        vcf = "results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz",
+        targets = "results/mutect2/consensusvcf/consensus.normalized.sorted.bed"
     output:
-        vcf = protected("results/mutect2/freebayes/{aliquot_barcode}.vcf"),
-        #vcf_unsorted = temp("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz"),
-        #vcfgz = protected("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz"),
-        #tbi = protected("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz.tbi"),
-        trigger = temp("results/mutect2/genotypes/{aliquot_barcode}.done")
+        vcfgz = protected("results/mutect2/freebayes/{aliquot_barcode}.vcf.gz"),
+        normalized = temp("results/mutect2/freebayes/{aliquot_barcode}.normalized.vcf.gz"),
+        final = protected("results/mutect2/freebayes/{aliquot_barcode}.normalized.sorted.vcf.gz"),
+        tbi = protected("results/mutect2/freebayes/{aliquot_barcode}.normalized.sorted.vcf.gz.tbi")
     params:
+        vcf = "results/mutect2/freebayes/{aliquot_barcode}.vcf",
         mem = CLUSTER_META["freebayes"]["mem"]
     threads:
         CLUSTER_META["freebayes"]["ppn"]
@@ -247,45 +291,30 @@ rule freebayes:
             -l \
             -@ {input.vcf} \
             {input.bam} \
-            > {output.vcf} 2> {log};"
+            > {params.vcf} 2> {log};"
 
-        # "bcftools view \
-        #     -Oz \
-        #     {output.vcf} | \
-        #  bcftools norm \
-        #     -Oz \
-        #     -m- \
-        #     -r {config[reference_fasta]} \
-        #     -o {output.vcfgz} \
-        #     > {log} 2>&1;"
+        "bgzip {params.vcf} 2>> {log};"
 
-        # "bcftools sort \
-        #  	-Oz \
-        #     -o {output.vcfgz} \
-        #     > {log} 2>&1;"
+        "bcftools norm \
+            -f {config[reference_fasta]} \
+            --check-ref ws \
+            -m-both \
+            {output.vcfgz} | \
+         vt decompose_blocksub - | \
+         bcftools norm -d all | \
+         bcftools view \
+            -Oz \
+            -o {output.normalized} \
+            2>> {log};"
+       
+        "bcftools sort \
+            -Oz \
+            -o {output.final} \
+            {output.normalized} \
+            2>> {log};"
         
-        # "bcftools index \
-        #  	-t \
-        #     -o {output.tbi} \
-        #     > {log} 2>&1;"
-        
-        "touch {output.trigger}"
-
-        
-
-       # "bcftools view \
-       #     -Oz \
-       #     -o {output.vcf_unsorted} {output.vcf} \
-       #     >> {log} 2>&1;"
-
-        # "bcftools sort \
-        #     -Oz \
-        #     -o {output.vcfgz} {output.vcf_unsorted} \
-        #     >> {log} 2>&1;"
-        
-        # "bcftools index \
-        #     -t \
-        #     {output.vcfgz} \
-        #     >> {log} 2>&1;"
+        "bcftools index \
+            -t {output.final} \
+            2>> {log};"
 
 # ## END ##

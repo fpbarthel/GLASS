@@ -1,11 +1,18 @@
 
-sample = "GLSS-MD-0138-R1-01D-WXS-JT1ZPW"
-pair = "GLSS-MD-0138-R1-01-NB-01D-WXS"
+library(VariantAnnotation)
 
-fbf = sprintf("results/mutect2/freebayes/%s.vcf.gz", sample)
+sample = "GLSS-SF-0081-TP-01D-WXS-RFB24P"
+pair = "GLSS-SF-0081-TP-01-NB-01D-WXS"
+
+fbf = sprintf("results/mutect2/freebayes/%s.normalized.sorted.vcf.gz", sample)
 mtf = sprintf("results/mutect2/final/%s.final.vcf", pair)
+csf = "results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz"
 
 mt = readVcf(mtf, "hg19")
 fb = readVcf(fbf, "hg19")
+cs = readVcf(csf, "hg19")
 
-test = findOverlaps(fb, mt, type = "equal")
+hits = findOverlaps(rowRanges(fb), rowRanges(cs), type = "equal", select = "first")
+idx = which(!is.na(map))
+
+rowRanges(fb)$hits = hits
