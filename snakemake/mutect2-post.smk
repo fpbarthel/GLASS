@@ -317,4 +317,52 @@ rule freebayes:
             -t {output.final} \
             2>> {log};"
 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## M2-post
+## Use bcftools to post-process mutect final VCF
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule mutect2postprocess:
+    input:
+        vcf = "results/mutect2/final/{pair_barcode}.final.vcf"
+    output:
+        normalized = temp("results/mutect2/m2post/{pair_barcode}.normalized.vcf.gz"),
+        final = protected("results/mutect2/m2post/{pair_barcode}.normalized.sorted.vcf.gz"),
+        tbi = protected("results/mutect2/m2post/{pair_barcode}.normalized.sorted.vcf.gz.tbi")
+    params:
+        mem = CLUSTER_META["mutect2postprocess"]["mem"]
+    threads:
+        CLUSTER_META["mutect2postprocess"]["ppn"]
+    conda:
+        "../envs/freebayes.yaml"
+    log:
+        "logs/mutect2/mutect2postprocess/{pair_barcode}.log"
+    benchmark:
+        "benchmarks/mutect2/mutect2postprocess/{pair_barcode}.txt"
+    message:
+        "Post-process Mutect2 calls using bcftools\n"
+        "Pair barcode: {wildcards.pair_barcode}"
+    shell:
+        "bcftools norm \
+            -f {config[reference_fasta]} \
+            --check-ref ws \
+            -m-both \
+            {input.vcf} | \
+         vt decompose_blocksub - | \
+         bcftools norm -d all | \
+         bcftools view \
+            -Oz \
+            -o {output.normalized} \
+            2>> {log};"
+       
+        "bcftools sort \
+            -Oz \
+            -o {output.final} \
+            {output.normalized} \
+            2>> {log};"
+        
+        "bcftools index \
+            -t {output.final} \
+            2>> {log};"
+
 # ## END ##

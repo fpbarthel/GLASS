@@ -106,9 +106,9 @@ rule mutect2:
         expand("results/mutect2/vcf2maf/{pair_barcode}.final.maf", pair_barcode = manifest.getSelectedPairs())#,
     	#expand("results/mutect2/final/{pair_barcode}.final.vcf", pair_barcode = manifest.getSelectedPairs())
 
-rule genotypemutect:
+rule mutect2post:
 	input:
-		expand("results/mutect2/genotypes/{aliquot_barcode}.vcf", aliquot_barcode = manifest.getSelectedAliquots())
+		expand("results/mutect2/m2post/{pair_barcode}.normalized.sorted.vcf.gz", pair_barcode = manifest.getSelectedPairs())
 
 rule genotypefreebayes:
     input:

@@ -230,6 +230,15 @@
         "mem" : 6,
         "walltime" : "48:00:00"
     },
+    "mutect2postprocess" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "2:00:00",
+        "name" : "{rule}.{wildcards.pair_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
+    },
     "extractsplitter" :
     {
         "ppn" : 2,
