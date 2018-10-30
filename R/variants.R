@@ -13,8 +13,8 @@ library(DBI)
 
 setwd('/fastscratch/verhaak-lab/GLASS-WG/')
 
-vcf = readVcf("results/mutect2/consensusvcf/consensus.reformatted.vep.vcf", "hg19")
-maf = read.delim("results/mutect2/annoconsensusvcf/consensus.maf", as.is = T, comment.char = '#')
+vcf = readVcf("results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz", "hg19")
+maf = read.delim("results/mutect2/annoconsensusvcf/consensus.normalized.sorted.maf", as.is = T, comment.char = '#')
 
 
 df = data.frame(chrom = seqnames(vcf),
@@ -36,6 +36,15 @@ df = data.frame(chrom = seqnames(vcf),
                 polyphen = maf$PolyPhen,
                 sift = maf$SIFT,
                 stringsAsFactors = F)
+
+.libPaths('/home/barthf/R/x86_64-pc-linux-gnu-library/3.3')
+
+idx = duplicated(df)
+# > table(idx)
+# idx
+#   FALSE    TRUE 
+# 2687020      27 
+df = df[-idx,]
 
 con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
 dbWriteTable(con, Id(schema="analysis",table="snvs"), df, append=T)

@@ -13,3 +13,6 @@ files_add = data.frame(aliquot_barcode = gsub(".realn.mdup.bqsr.bam", "", basena
                        
 
 dbWriteTable(con, Id(schema="analysis",table="files"), files_add, append=T)
+
+tmp = dbReadTable(con, Id(schema="biospecimen",table="aliquots"))
+write.csv(tmp, file = "aliquots.csv")
