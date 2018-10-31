@@ -216,6 +216,13 @@ class ManifestHandler:
         s = [p["normal_barcode"] for (barcode, p) in self.pairs.items() if p["tumor_barcode"] == aliquot_barcode]
         return s[0] if len(s) > 0 else None
 
+    def getFirstPair(self, aliquot_barcode):
+        """
+        Returns a matching pair ID given an aliquot ID. Only the first match is returned. If no match, return None.
+        """
+        s = [barcode for (barcode, p) in self.pairs.items() if p["tumor_barcode"] == aliquot_barcode]
+        return s[0] if len(s) > 0 else None
+
     def isExome(self, aliquot_barcode):
         """
         Test whether given aliquot is an exome
