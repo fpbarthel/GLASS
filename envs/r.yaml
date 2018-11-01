@@ -6,6 +6,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - r-base=3.4.1
   - bioconductor-variantannotation 
   - r-tidyverse
   #- r-odbc
