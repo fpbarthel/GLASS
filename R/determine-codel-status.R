@@ -53,7 +53,7 @@ glass_cn = glass_cn %>%
   select(-CONTIG)
 
 ## Inspect the averages, min, and max for how the algorithm called copy number changes. Interestingly, it appears that there must be some sample-specific normalization
-# as the there are negative values for `0` as well as very high `+` values.
+# as the there are negative values for `0` as well as very high `+` values. These may be classified somehow as artifacts.
 glass_cn %>% 
   group_by(CALL) %>% 
   summarise(min_call = min(MEAN_LOG2_COPY_RATIO),
@@ -96,7 +96,7 @@ chr19q_calls_restrict <- chr19q_calls_restrict[width(chr19q_calls_restrict) != 0
 ## Combine the ranges:
 chr1p_19q_calls_restrict <- c(chr1p_calls_restrict, chr19q_calls_restrict)
          
-# Use cut-off of 0.13 and -.13 for calling deletion or amplification.
+# Use cut-off thresholds of log2(1.1) and log2(0.9) for calling deletion or amplification.
 chr1p_19q_calls_subject <- data.frame(seqnames=seqnames(chr1p_19q_calls_restrict),
                  starts=start(chr1p_19q_calls_restrict)-1,
                  ends=end(chr1p_19q_calls_restrict),
@@ -110,7 +110,7 @@ chr1p_19q_calls_subject <- data.frame(seqnames=seqnames(chr1p_19q_calls_restrict
 glass_1p19q_status = chr1p_19q_calls_subject %>%  
   group_by(seqnames, sample_id) %>% 
   summarise(weighted_log2 = sum(widths*mean_log2_copy_ratio)/sum(widths)) %>% 
-  mutate(chr_call = ifelse(weighted_log2<=-0.13, "deletion", "intact")) %>% 
+  mutate(chr_call = ifelse(weighted_log2<=log2(0.9), "deletion", "intact")) %>% 
   select(-weighted_log2) %>% 
   spread(seqnames, chr_call) %>% 
   mutate(codel_status = ifelse(chr1=="deletion" & chr19=="deletion", "codel", "noncodel"))
