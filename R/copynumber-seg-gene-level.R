@@ -64,7 +64,7 @@ glass_cn_gr = makeGRangesFromDataFrame(glass_cn,
 #          'MDM2', 'PARK2', 'FGFR2', 'IRS2', 'PTPRD', 'MLH1' , 'MSH2', 'MSH6', 'PMS2', 'ERBB2', 'ARF', 'MDM2', 'TP53', 'CDKN2B', 'BRAF', 
 #          'HIF1', 'YKL40', 'ELDT1', 'ATM', 'ATRCTLA4', 'PD1', 'H3F3A', 'DAXX', 'PARP', 'PTEN', 'STAT3')
 
-genedf = openxlsx::read.xlsx("data/ref/glioma_driver_genes.xlsx")
+genedf = openxlsx::read.xlsx("/Volumes/fastscratch/verhaak-lab/GLASS-WG/data/ref/glioma_driver_genes.xlsx")
 genes = genedf$gene
 
 ## Define gene metadata.
@@ -84,7 +84,8 @@ tx2gene = AnnotationDbi::select(txdb, tx$tx_name, "GENEID", "TXNAME") %>%
 
 ## Reduce to one row per gene.
 gene_meta = tx2gene %>% mutate(gene = SYMBOL) %>% 
-  filter(complete.cases(gene,chr), gene %in% genes) %>% 
+  filter(complete.cases(gene, chr), gene %in% genes) %>% 
+  mutate(chr = recode(chr, "X"="23")) %>% 
   mutate(chr = as.numeric(chr)) %>%
   group_by(gene, chr) %>% 
   summarize(start = min(start), end = max(end), strand = paste(unique(strand), collapse = "/")) %>% 
@@ -165,15 +166,12 @@ meta = cnsamples %>%
          plot_id = substr(sample_id, 1, 15),
          cohort_id = substr(sample_id, 6, 7))
 
-# Floris provided a driver gene table.
-drivergenes = openxlsx::read.xlsx('/Users/johnsk/Documents/glioma_driver_genes OLD.xlsx')
-
 # In a diploid genome, a single-copy gain in a perfectly pure, homogeneous sample has a copy ratio of 3/2. 
 # In log2 scale, this is log2(3/2) = 0.585, and a single-copy loss is log2(1/2) = -1.0.
 genecnv_gatk = eventcnv %>% 
   as.data.frame() %>% 
   gather('sample_id', 'gatk_calls', -gene) %>%
-  left_join(drivergenes, by="gene") %>%
+  left_join(genedf, by="gene") %>%
   filter(complete.cases(pathway)) %>%
   mutate(CNV = factor(ifelse(effect == 'amplification' & gatk_calls == 'amplification', "+1", ifelse(effect == 'deletion' & gatk_calls == 'deletion', "-1", "0")), levels = c("-1", "0", "+1"))) %>%  
   left_join(meta, by="sample_id") %>% 
@@ -182,7 +180,7 @@ genecnv_gatk = eventcnv %>%
 genecnv_ratio = eventcnv2 %>% 
   as.data.frame() %>% 
   gather('sample_id', 'log2_ratio', -gene) %>%
-  left_join(drivergenes, by="gene") %>%
+  left_join(genedf, by="gene") %>%
   filter(complete.cases(pathway)) %>%
   mutate(CNV = factor(ifelse(effect == 'amplification' & log2_ratio > 0.3, "+1", ifelse(effect == 'deletion' & log2_ratio < -.3, "-1", "0")), levels = c("-1", "0", "+1"))) %>%  
   left_join(meta, by="sample_id") %>% 
@@ -192,8 +190,8 @@ genecnv_ratio = eventcnv2 %>%
 ##### Plot Gene CNV - gatk status
 
 # genecnv = genecnv %>% filter(gene != "RB1")
-genecnv_gatk$pathway = factor(genecnv_gatk$pathway, levels = c("Apoptosis", "Cell cycle", "PI3K-RTK-MAPK"), labels = c("Apoptosis", "Cell cycle", "PI3K-\nRTK-MAPK"))
-genecnv_ratio$pathway = factor(genecnv_ratio$pathway, levels = c("Apoptosis", "Cell cycle", "PI3K-RTK-MAPK"), labels = c("Apoptosis", "Cell cycle", "PI3K-\nRTK-MAPK"))
+genecnv_gatk$pathway = factor(genecnv_gatk$pathway, levels = c("Apoptosis", "Cell cycle", "PI3K-RTK-MAPK", "Telomere Maintenance", "Other"), labels = c("Apoptosis", "Cell cycle", "PI3K-\nRTK-MAPK", "Telomere", "Other"))
+genecnv_ratio$pathway = factor(genecnv_ratio$pathway, levels = c("Apoptosis", "Cell cycle", "PI3K-RTK-MAPK", "Telomere Maintenance", "Other"), labels = c("Apoptosis", "Cell cycle", "PI3K-\nRTK-MAPK", "Telomere", "Other"))
 
 p_gatk = ggplot() + 
   geom_tile(data = genecnv_gatk, aes(x = plot_id, y = gene, fill = CNV)) +
