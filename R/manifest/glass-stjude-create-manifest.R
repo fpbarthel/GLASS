@@ -5,37 +5,37 @@
 ######    Creation of this manifest reflects the data as of: **10.19.2018**   ###########
 #######################################################
 # Local directory for github repo.
-mybasedir = "/projects/barthf/GLASS-WG/"
+mybasedir = "/fastscratch/verhaak-lab/GLASS-WG/"
 setwd(mybasedir)
 
 #######################################################
 
 # Necessary packages:
 library(tidyverse)
-library(DBI)
+#library(DBI)
 
 #######################################################
 # Establish connection with Floris' database.
-con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
+#con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
 
-md5sums = read.delim("/projects/verhaak-lab/kimh_LUCY_STEAD_LEEDS/wes/fqs/md5s_jax.txt", as.is = T, header = F, sep=" ") %>%
+md5sums = read.delim("data/ref/stjude_md5.txt", as.is = T, header = F, sep=" ") %>%
   select(file_name = V3, file_md5sum = V1) %>% mutate(file_name=gsub("./", "", file_name))
 
 # We need to generate the following fields required by the SNV snakemake pipeline:
 ### Aliquots ####
-glass_lu_barcodes = "data/ref/glass_wxs_LU_barcodes.txt"
-glass_lu_ids = read.delim(glass_lu_barcodes, as.is=T)
+stjude_barcodes = "data/ref/stjude_wgs_barcodes.txt"
+stjude_ids = read.delim("data/ref/stjude_wgs_barcodes.txt", as.is=T)
 
 # Perform a test run where we are only interested in the Columbia wxs samples.
-aliquots_master = glass_lu_ids %>% mutate(sample_barcode = substr(aliquot_barcode, 1, 15),
+aliquots_master = stjude_ids %>% mutate(sample_barcode = substr(aliquot_barcode, 1, 15),
                                               sample_type = substr(aliquot_barcode, 14, 15),
                                               case_barcode = substr(aliquot_barcode, 1, 12),
                                               aliquot_uuid_short = substr(aliquot_barcode, 25, 30),
                                               aliquot_analyte_type = substr(aliquot_barcode, 19, 19),
                                               aliquot_portion = substr(aliquot_barcode, 17, 18),
                                               aliquot_analysis_type = substr(aliquot_barcode, 21, 23),
-                                              aliquot_id_legacy = ifelse(aliquot_name=="C1Rec", "C1Rec1", aliquot_name)) %>%
-  select(-aliquot_name) 
+                                              aliquot_id_legacy = legacy_aliquot_id) %>%
+  select(-file_path)
 
 ### aliquots
 aliquots = aliquots_master %>% 
@@ -43,12 +43,12 @@ aliquots = aliquots_master %>%
          aliquot_analyte_type, aliquot_analysis_type, aliquot_portion) %>% 
   distinct()
 
-fqfiles = list.files('/projects/verhaak-lab/kimh_LUCY_STEAD_LEEDS/wes/fqs', pattern = ".fastq.gz$", full.names = T)
-files = data.frame(aliquot_id_legacy = gsub("(\\w*)_R[1-2]{1}.fastq.gz","\\1",basename(fqfiles)),
-                   file_name = basename(fqfiles),
-                   file_path = fqfiles,
-                   file_size = file.info(fqfiles)$size,
-                   file_format = "FASTQ",
+bamfiles = list.files('/fastscratch/johnsk/st_jude_data', pattern = "WholeGenome.bam$", full.names = T)
+files = data.frame(aliquot_id_legacy = gsub("(\\w*_[A-Z]{1}).WholeGenome.bam","\\1",basename(bamfiles)),
+                   file_name = basename(bamfiles),
+                   file_path = bamfiles,
+                   file_size = file.info(bamfiles)$size,
+                   file_format = "uBAM",
                    stringsAsFactors = F)
 
 files = files %>%

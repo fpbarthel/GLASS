@@ -3,7 +3,7 @@
 CAUTION: Do not modify this file unless you know what you are doing.
          Unexpected results may occur if the code is changed deliberately.
 -->
-<dbmodel pgmodeler-ver="0.9.2-alpha" last-position="0,0" last-zoom="1"
+<dbmodel pgmodeler-ver="0.9.2-alpha" last-position="0,158" last-zoom="1"
 	 default-schema="public" default-owner="postgres">
 <role name="verhaak-read"
       login="true"
@@ -38,15 +38,15 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <schema name="public" rect-visible="true" fill-color="#e1e1e1" sql-disabled="true">
 </schema>
 
-<schema name="biospecimen" rect-visible="true" fill-color="#354991">
+<schema name="biospecimen" rect-visible="true" fill-color="#ac0475">
 	<role name="&quot;verhaak-lab&quot;"/>
 </schema>
 
-<schema name="analysis" rect-visible="true" fill-color="#49cd73">
+<schema name="analysis" rect-visible="true" fill-color="#cd9f55">
 	<role name="&quot;verhaak-lab&quot;"/>
 </schema>
 
-<schema name="clinical" rect-visible="true" fill-color="#05b52c">
+<schema name="clinical" rect-visible="true" fill-color="#d0da5c">
 	<role name="&quot;verhaak-lab&quot;"/>
 </schema>
 
@@ -126,7 +126,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <table name="files">
 	<schema name="analysis"/>
 	<role name="&quot;verhaak-lab&quot;"/>
-	<position x="160" y="780"/>
+	<position x="160" y="700"/>
 	<column name="file_id" not-null="true" default-value="uuid_generate_v4()">
 		<type name="uuid" length="0"/>
 	</column>
@@ -248,7 +248,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <table name="cases">
 	<schema name="clinical"/>
 	<role name="&quot;verhaak-lab&quot;"/>
-	<position x="900" y="480"/>
+	<position x="3280" y="60"/>
 	<column name="case_id" not-null="true" default-value="uuid_generate_v4()">
 		<type name="uuid" length="0"/>
 	</column>
@@ -338,7 +338,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <table name="case_sources">
 	<schema name="clinical"/>
 	<role name="&quot;verhaak-lab&quot;"/>
-	<position x="1240" y="480"/>
+	<position x="3620" y="60"/>
 	<column name="case_source" not-null="true">
 		<type name="character" length="2"/>
 	</column>
@@ -353,7 +353,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <table name="case_projects">
 	<schema name="clinical"/>
 	<role name="&quot;verhaak-lab&quot;"/>
-	<position x="1580" y="480"/>
+	<position x="3960" y="60"/>
 	<column name="case_project" not-null="true">
 		<type name="character" length="4"/>
 	</column>
@@ -368,7 +368,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <table name="file_formats">
 	<schema name="analysis"/>
 	<role name="&quot;verhaak-lab&quot;"/>
-	<position x="480" y="780"/>
+	<position x="480" y="700"/>
 	<column name="file_format" not-null="true">
 		<type name="character varying" length="12"/>
 	</column>
@@ -383,7 +383,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <table name="files_readgroups">
 	<schema name="analysis"/>
 	<role name="&quot;verhaak-lab&quot;"/>
-	<position x="800" y="780"/>
+	<position x="800" y="700"/>
 	<column name="file_name" not-null="true">
 		<type name="character varying" length="255"/>
 	</column>
@@ -398,7 +398,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <view name="pairs">
 	<schema name="analysis"/>
 	<role name="&quot;verhaak-lab&quot;"/>
-	<position x="1500" y="780"/>
+	<position x="160" y="1020"/>
 	<reference>
 		<expression><![CDATA[ SELECT ("substring"((a1.aliquot_barcode)::text, 1, 18) || "substring"((a2.aliquot_barcode)::text, 13, 11)) AS pair_barcode,
     a1.aliquot_barcode AS tumor_barcode,
@@ -419,7 +419,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <view name="roeltable">
 	<schema name="analysis"/>
 	<role name="&quot;verhaak-lab&quot;"/>
-	<position x="160" y="1100"/>
+	<position x="360" y="1020"/>
 	<reference>
 		<expression><![CDATA[ SELECT crosstab.case_source_description,
     crosstab.case_project,
@@ -447,10 +447,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 <table name="snvs">
 	<schema name="analysis"/>
 	<role name="&quot;verhaak-lab&quot;"/>
-	<position x="1160" y="780"/>
-	<column name="snv_id" not-null="true" default-value="uuid_generate_v4()">
-		<type name="uuid" length="0"/>
-	</column>
+	<position x="1160" y="700"/>
 	<column name="chrom" not-null="true">
 		<type name="character" length="2"/>
 	</column>
@@ -506,41 +503,16 @@ CAUTION: Do not modify this file unless you know what you are doing.
 		<type name="character varying" length="255"/>
 	</column>
 	<constraint name="snvs_pk" type="pk-constr" table="analysis.snvs">
-		<columns names="snv_id" ref-type="src-columns"/>
-	</constraint>
-	<constraint name="snvs_uq" type="uq-constr" table="analysis.snvs">
 		<columns names="chrom,start,end,alt" ref-type="src-columns"/>
 	</constraint>
 </table>
 
-<index name="gene_ind" table="analysis.snvs"
-	 concurrent="false" unique="false" fast-update="false" buffering="false"
-	 index-type="btree" factor="90">
-		<idxelement use-sorting="false">
-			<column name="gene_symbol"/>
-		</idxelement>
-</index>
-
-<index name="pos_ind" table="analysis.snvs"
-	 concurrent="false" unique="false" fast-update="false" buffering="false"
-	 index-type="btree" factor="90">
-		<idxelement use-sorting="false">
-			<column name="chrom"/>
-		</idxelement>
-		<idxelement use-sorting="false">
-			<column name="start"/>
-		</idxelement>
-		<idxelement use-sorting="false">
-			<column name="&quot;end&quot;"/>
-		</idxelement>
-</index>
-
 <table name="snv_genotypes">
 	<schema name="analysis"/>
 	<role name="&quot;verhaak-lab&quot;"/>
-	<position x="760" y="980"/>
+	<position x="1500" y="700"/>
 	<column name="aliquot_barcode" not-null="true">
-		<type name="char" length="30"/>
+		<type name="character" length="30"/>
 	</column>
 	<column name="chrom" not-null="true">
 		<type name="character" length="2"/>
@@ -555,26 +527,67 @@ CAUTION: Do not modify this file unless you know what you are doing.
 		<type name="character varying" length="510"/>
 	</column>
 	<column name="genotype">
-		<type name="char" length="3"/>
+		<type name="character" length="3"/>
 	</column>
 	<column name="read_depth">
-		<type name="smallint" length="0"/>
+		<type name="integer" length="0"/>
 	</column>
 	<column name="ref_count">
-		<type name="smallint" length="0"/>
+		<type name="integer" length="0"/>
 	</column>
 	<column name="alt_count">
-		<type name="smallint" length="0"/>
+		<type name="integer" length="0"/>
 	</column>
 	<column name="called">
-		<type name="bool" length="0"/>
+		<type name="boolean" length="0"/>
 	</column>
-	<constraint name="genotype_uq" type="uq-constr" table="analysis.snv_genotypes">
+	<constraint name="genotype_pk" type="pk-constr" table="analysis.snv_genotypes">
 		<columns names="aliquot_barcode,chrom,start,end,alt" ref-type="src-columns"/>
 	</constraint>
 </table>
 
-<index name="aliquot_ind" table="analysis.snv_genotypes"
+<index name="snv_ind" table="analysis.snvs"
+	 concurrent="false" unique="false" fast-update="false" buffering="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="false">
+			<column name="chrom"/>
+		</idxelement>
+		<idxelement use-sorting="true" nulls-first="false" asc-order="true">
+			<column name="start"/>
+		</idxelement>
+		<idxelement use-sorting="true" nulls-first="false" asc-order="true">
+			<column name="&quot;end&quot;"/>
+		</idxelement>
+		<idxelement use-sorting="true" nulls-first="false" asc-order="true">
+			<column name="alt"/>
+		</idxelement>
+</index>
+
+<index name="gene_ind" table="analysis.snvs"
+	 concurrent="false" unique="false" fast-update="false" buffering="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="false">
+			<column name="gene_symbol"/>
+		</idxelement>
+</index>
+
+<index name="var_class_ind" table="analysis.snvs"
+	 concurrent="false" unique="false" fast-update="false" buffering="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="false">
+			<column name="variant_classification"/>
+		</idxelement>
+</index>
+
+<index name="var_type_ind" table="analysis.snvs"
+	 concurrent="false" unique="false" fast-update="false" buffering="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="false">
+			<column name="variant_type"/>
+		</idxelement>
+</index>
+
+<index name="genotype_aliquot_ind" table="analysis.snv_genotypes"
 	 concurrent="false" unique="false" fast-update="false" buffering="false"
 	 index-type="btree" factor="0">
 		<idxelement use-sorting="false">
@@ -582,7 +595,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 		</idxelement>
 </index>
 
-<index name="gtpos_ind" table="analysis.snv_genotypes"
+<index name="genotype_pos_ind" table="analysis.snv_genotypes"
 	 concurrent="false" unique="false" fast-update="false" buffering="false"
 	 index-type="btree" factor="0">
 		<idxelement use-sorting="false">
@@ -685,80 +698,80 @@ CAUTION: Do not modify this file unless you know what you are doing.
 	<columns names="aliquot_barcode" ref-type="dst-columns"/>
 </constraint>
 
-<constraint name="snv_fk" type="fk-constr" comparison-type="MATCH FULL"
-	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="analysis.snvs" table="analysis.snv_genotypes">
+<constraint name="snvs_fk" type="fk-constr" comparison-type="MATCH FULL"
+	 upd-action="RESTRICT" del-action="RESTRICT" ref-table="analysis.snvs" table="analysis.snv_genotypes">
 	<columns names="chrom,start,end,alt" ref-type="src-columns"/>
 	<columns names="chrom,start,end,alt" ref-type="dst-columns"/>
 </constraint>
 
 <relationship name="rel_samples_cases" type="relfk"
-	 custom-color="#2c74d3"
+	 custom-color="#1db76c"
 	 src-table="biospecimen.samples"
 	 dst-table="clinical.cases" reference-fk="cases_fk"
 	 src-required="false" dst-required="false"/>
 
 <relationship name="rel_samples_sample_types" type="relfk"
-	 custom-color="#a77b82"
+	 custom-color="#fe408a"
 	 src-table="biospecimen.samples"
 	 dst-table="biospecimen.sample_types" reference-fk="sample_type_fk"
 	 src-required="false" dst-required="false"/>
 
 <relationship name="rel_aliquots_samples" type="relfk"
-	 custom-color="#4813dd"
+	 custom-color="#7b371e"
 	 src-table="biospecimen.aliquots"
 	 dst-table="biospecimen.samples" reference-fk="samples_fk"
 	 src-required="false" dst-required="false"/>
 
 <relationship name="rel_aliquots_analyte_types" type="relfk"
-	 custom-color="#b88144"
+	 custom-color="#20d3b2"
 	 src-table="biospecimen.aliquots"
 	 dst-table="biospecimen.analyte_types" reference-fk="analyte_type_fk"
 	 src-required="false" dst-required="false"/>
 
 <relationship name="rel_aliquots_analysis_types" type="relfk"
-	 custom-color="#55a8b0"
+	 custom-color="#06577a"
 	 src-table="biospecimen.aliquots"
 	 dst-table="biospecimen.analysis_types" reference-fk="analysis_type_fk"
 	 src-required="false" dst-required="false"/>
 
 <relationship name="rel_files_aliquots" type="relfk"
-	 custom-color="#30d9e8"
+	 custom-color="#1526a7"
 	 src-table="analysis.files"
 	 dst-table="biospecimen.aliquots" reference-fk="files_fk"
 	 src-required="false" dst-required="false"/>
 
 <relationship name="rel_files_file_formats" type="relfk"
-	 custom-color="#2fba1e"
+	 custom-color="#168967"
 	 src-table="analysis.files"
 	 dst-table="analysis.file_formats" reference-fk="format_fk"
 	 src-required="false" dst-required="false"/>
 
 <relationship name="rel_readgroups_aliquots" type="relfk"
-	 custom-color="#6d4dbd"
+	 custom-color="#8aa502"
 	 src-table="biospecimen.readgroups"
 	 dst-table="biospecimen.aliquots" reference-fk="aliquot_fk"
 	 src-required="false" dst-required="false"/>
 
 <relationship name="rel_cases_case_projects" type="relfk"
-	 custom-color="#e15ebe"
+	 custom-color="#47cdb6"
 	 src-table="clinical.cases"
 	 dst-table="clinical.case_projects" reference-fk="project_fk"
 	 src-required="false" dst-required="false"/>
 
 <relationship name="rel_cases_case_sources" type="relfk"
-	 custom-color="#0f109c"
+	 custom-color="#86b35a"
 	 src-table="clinical.cases"
 	 dst-table="clinical.case_sources" reference-fk="source_fk"
 	 src-required="false" dst-required="false"/>
 
 <relationship name="rel_files_readgroups_files" type="relfk"
-	 custom-color="#20f214"
+	 custom-color="#fb9525"
 	 src-table="analysis.files_readgroups"
 	 dst-table="analysis.files" reference-fk="files_fk"
 	 src-required="false" dst-required="false"/>
 
 <relationship name="rel_files_readgroups_readgroups" type="relfk"
-	 custom-color="#b2b541"
+	 custom-color="#415352"
 	 src-table="analysis.files_readgroups"
 	 dst-table="biospecimen.readgroups" reference-fk="readgroups_fk"
 	 src-required="false" dst-required="false"/>
@@ -770,7 +783,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 
 <relationship name="rel_snv_genotypes_snvs" type="relfk"
 	 src-table="analysis.snv_genotypes"
-	 dst-table="analysis.snvs" reference-fk="snv_fk"
+	 dst-table="analysis.snvs" reference-fk="snvs_fk"
 	 src-required="false" dst-required="false"/>
 
 </dbmodel>
