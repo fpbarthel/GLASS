@@ -122,3 +122,10 @@ table(glass_1p19q_status$codel_status)
 write.table(glass_1p19q_status, file = "/Users/johnsk/Documents/glass_1p19q_codeletion_status.txt", sep="\t", row.names = F, col.names = T, quote = F)
 
 
+# Output just TCGA WGS codel_status:
+TCGA_1p_19q = glass_1p19q_status %>% 
+#  filter(grepl("TCGA", sample_id)) %>% 
+  filter(grepl("WGS", sample_id)) %>% 
+  filter(!grepl("-NB-", sample_id))
+
+write.table(TCGA_1p_19q, file = "/Users/johnsk/Documents/tcga_wgs_1p19q_codeletion_status.txt", sep="\t", row.names = F, col.names = T, quote = F)
