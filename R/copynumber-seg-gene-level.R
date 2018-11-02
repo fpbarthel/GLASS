@@ -19,6 +19,7 @@ library(data.table)
 library(TxDb.Hsapiens.UCSC.hg19.knownGene)
 library(org.Hs.eg.db)
 library(DBI)
+library(maftools)
 
 #######################################################
 # Establish connection with Floris' database.
@@ -58,10 +59,13 @@ glass_cn_gr = makeGRangesFromDataFrame(glass_cn,
                                          keep.extra.columns = T)
 
 ## Pull gene metadata for a supervised list of genes:
-genes = c('MDM4', 'AKT3', 'PDGFRA', 'PTEN', 'EGFR', 'MET', 'NF1', 'VEGF', 'IDH1', 'IDH2', 'PIK3CA', 'PIK3R1', 'CDKN2A', 'CDKN2C', 'CDK4', 
-          'CDK6', 'RB1', 'MGMT', 'TERT', 'MYCNP', 'GLI2', 'FGFR3/TACC3', 'MYB', 'KIAA154/BRAF', 'MYBL1', 'MYC', 'PTCH1', 'CND1', 'CCND2', 
-          'MDM2', 'PARK2', 'FGFR2', 'IRS2', 'PTPRD', 'MLH1' , 'MSH2', 'MSH6', 'PMS2', 'ERBB2', 'ARF', 'MDM2', 'TP53', 'CDKN2B', 'BRAF', 
-          'HIF1', 'YKL40', 'ELDT1', 'ATM', 'ATRCTLA4', 'PD1', 'H3F3A', 'DAXX', 'PARP', 'PTEN', 'STAT3')
+#genes = c('MDM4', 'AKT3', 'PDGFRA', 'PTEN', 'EGFR', 'MET', 'NF1', 'VEGF', 'IDH1', 'IDH2', 'PIK3CA', 'PIK3R1', 'CDKN2A', 'CDKN2C', 'CDK4', 
+#          'CDK6', 'RB1', 'MGMT', 'TERT', 'MYCNP', 'GLI2', 'FGFR3/TACC3', 'MYB', 'KIAA154/BRAF', 'MYBL1', 'MYC', 'PTCH1', 'CND1', 'CCND2', 
+#          'MDM2', 'PARK2', 'FGFR2', 'IRS2', 'PTPRD', 'MLH1' , 'MSH2', 'MSH6', 'PMS2', 'ERBB2', 'ARF', 'MDM2', 'TP53', 'CDKN2B', 'BRAF', 
+#          'HIF1', 'YKL40', 'ELDT1', 'ATM', 'ATRCTLA4', 'PD1', 'H3F3A', 'DAXX', 'PARP', 'PTEN', 'STAT3')
+
+genedf = openxlsx::read.xlsx("data/ref/glioma_driver_genes.xlsx")
+genes = genedf$gene
 
 ## Define gene metadata.
 txdb = TxDb.Hsapiens.UCSC.hg19.knownGene
@@ -239,4 +243,16 @@ p_ratio_subtype = ggplot() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
 p_ratio_subtype
+
+
+
+#######
+setwd('/fastscratch/verhaak-lab/GLASS-WG/')
+maf = read.maf('results/mutect2/vcf2maf/GLASS.maf')
+
+oncoplot(maf, top=10, fontSize = 12)
+
+laml.maf = system.file('extdata', 'tcga_laml.maf.gz', package = 'maftools') #path to TCGA LAML MAF file
+laml.clin = system.file('extdata', 'tcga_laml_annot.tsv', package = 'maftools') # clinical information containing survival information and histology. This is optional
+
 
