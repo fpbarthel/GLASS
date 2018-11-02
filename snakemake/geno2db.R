@@ -1,12 +1,12 @@
 
 library(VariantAnnotation)
-setwd("/fastscratch/verhaak-lab/GLASS-WG")
+#setwd("/fastscratch/verhaak-lab/GLASS-WG")
 
 ## Parse snakemake
 fbf = snakemake@input[["freebayes"]]
 csf = snakemake@input[["consensus"]]
 mtf = snakemake@params[["mutect2"]]
-trf = snakemake@output[["trigger"]]
+tsv = snakemake@output[["tsv"]]
 spl = snakemake@wildcards[["aliquot_barcode"]]
 
 ## Read freebayes and consensus input as VRanges
@@ -64,14 +64,16 @@ df = df[which(!is.na(df$read_depth)),]
 ## Clear more memory
 rm(fb)
 
-## Write to database
-.libPaths('/home/barthf/R/x86_64-pc-linux-gnu-library/3.3')
+write.table(df, file = tsv, quote = F, sep = "\t", row.names = F, col.names = T)
 
-con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
-DBI::dbWriteTable(con, DBI::Id(schema="analysis",table="snv_genotypes"), df, append=T)
+## Write to database
+# .libPaths('/home/barthf/R/x86_64-pc-linux-gnu-library/3.3')
+
+#con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
+#DBI::dbWriteTable(con, DBI::Id(schema="analysis",table="snv_genotypes"), df, append=T)
 
 ## Write a trigger with the number of rows added
-cat(nrow(df), file = trf)
-message("Printed number of rows (", nrow(df), ") to file: ", basename(trf))
+#cat(nrow(df), file = trf)
+#message("Printed number of rows (", nrow(df), ") to file: ", basename(trf))
 
 ## END ##

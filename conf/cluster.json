@@ -218,6 +218,15 @@
         "stdout" : "logs/drmaa/{rule}.out",
         "stderr" : "logs/drmaa/{rule}.err"
     },
+    "maf2db" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.out",
+        "stderr" : "logs/drmaa/{rule}.err"
+    },
     "genotypesample" :
     {
         "ppn" : 4,
@@ -228,6 +237,12 @@
     {
         "ppn" : 1,
         "mem" : 6,
+        "walltime" : "48:00:00"
+    },
+    "geno2db" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
         "walltime" : "48:00:00"
     },
     "mutect2postprocess" :

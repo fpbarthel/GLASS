@@ -74,6 +74,54 @@
 #             > {log} 2>&1" ## {config[vcf2maf]}
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## M2-post
+## Use bcftools to post-process mutect final VCF
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule mutect2postprocess:
+    input:
+        vcf = "results/mutect2/final/{pair_barcode}.final.vcf"
+    output:
+        normalized = temp("results/mutect2/m2post/{pair_barcode}.normalized.vcf.gz"),
+        final = protected("results/mutect2/m2post/{pair_barcode}.normalized.sorted.vcf.gz"),
+        tbi = protected("results/mutect2/m2post/{pair_barcode}.normalized.sorted.vcf.gz.tbi")
+    params:
+        mem = CLUSTER_META["mutect2postprocess"]["mem"]
+    threads:
+        CLUSTER_META["mutect2postprocess"]["ppn"]
+    conda:
+        "../envs/freebayes.yaml"
+    log:
+        "logs/mutect2/mutect2postprocess/{pair_barcode}.log"
+    benchmark:
+        "benchmarks/mutect2/mutect2postprocess/{pair_barcode}.txt"
+    message:
+        "Post-process Mutect2 calls using bcftools\n"
+        "Pair barcode: {wildcards.pair_barcode}"
+    shell:
+        "bcftools norm \
+            -f {config[reference_fasta]} \
+            --check-ref ws \
+            -m-both \
+            {input.vcf} | \
+         vt decompose_blocksub - | \
+         bcftools norm -d none | \
+         bcftools view \
+            -Oz \
+            -o {output.normalized} \
+            2>> {log};"
+       
+        "bcftools sort \
+            -Oz \
+            -o {output.final} \
+            {output.normalized} \
+            2>> {log};"
+        
+        "bcftools index \
+            -t {output.final} \
+            2>> {log};"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Merge consensus variant set
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
@@ -118,7 +166,7 @@ rule consensusvcf:
             -m-both \
             {output.merged} | \
          vt decompose_blocksub - | \
-         bcftools norm -d all | \
+         bcftools norm -d none | \
          bcftools view \
             -Oz \
             -o {output.normalized} \
@@ -197,7 +245,33 @@ rule annoconsensusvcf:
             --normal-id NORMAL \
             --species homo_sapiens \
             --ncbi-build GRCh37 \
-            >> {log} 2>&1" 
+            >> {log} 2>&1"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Annotate consensus variant set
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule maf2db:
+    input:
+        maf = "results/mutect2/annoconsensusvcf/consensus.normalized.sorted.maf",
+        vcf = "results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz"
+    output:
+        tsv = "results/mutect2/maf2db/consensus.normalized.sorted.tsv"
+    params:
+        mem = CLUSTER_META["maf2db"]["mem"]
+    threads:
+        CLUSTER_META["maf2db"]["ppn"]
+    conda:
+        "../envs/r.yaml"
+    log:
+        "logs/mutect2/maf2db/maf2db.log"
+    benchmark:
+        "benchmarks/mutect2/maf2db/maf2db.txt"
+    message:
+        "Copy variants to remote"
+    script:
+        "maf2db.R"
+
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Genotype sample using consensus variant list
@@ -301,7 +375,7 @@ rule freebayes:
             -m-both \
             {output.vcfgz} | \
          vt decompose_blocksub - | \
-         bcftools norm -d all | \
+         bcftools norm -d none | \
          bcftools view \
             -Oz \
             -o {output.normalized} \
@@ -318,51 +392,30 @@ rule freebayes:
             2>> {log};"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## M2-post
-## Use bcftools to post-process mutect final VCF
+## Upload genotype to database
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule mutect2postprocess:
+rule geno2db:
     input:
-        vcf = "results/mutect2/final/{pair_barcode}.final.vcf"
+        freebayes = "results/mutect2/freebayes/{aliquot_barcode}.normalized.sorted.vcf.gz",
+        consensus = "results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz"
     output:
-        normalized = temp("results/mutect2/m2post/{pair_barcode}.normalized.vcf.gz"),
-        final = protected("results/mutect2/m2post/{pair_barcode}.normalized.sorted.vcf.gz"),
-        tbi = protected("results/mutect2/m2post/{pair_barcode}.normalized.sorted.vcf.gz.tbi")
+        tsv = "results/mutect2/geno2db/{aliquot_barcode}.normalized.sorted.tsv"
     params:
-        mem = CLUSTER_META["mutect2postprocess"]["mem"]
+        mutect2 = lambda wildcards: "results/mutect2/m2post/{}.normalized.sorted.vcf.gz".format(manifest.getFirstPair(wildcards.aliquot_barcode)) if manifest.getFirstPair(wildcards.aliquot_barcode) is not None else "",
+        mem = CLUSTER_META["geno2db"]["mem"]
     threads:
-        CLUSTER_META["mutect2postprocess"]["ppn"]
+        CLUSTER_META["geno2db"]["ppn"]
     conda:
-        "../envs/freebayes.yaml"
+        "../envs/r.yaml"
     log:
-        "logs/mutect2/mutect2postprocess/{pair_barcode}.log"
+        "logs/mutect2/geno2db/{aliquot_barcode}.log"
     benchmark:
-        "benchmarks/mutect2/mutect2postprocess/{pair_barcode}.txt"
+        "benchmarks/mutect2/geno2db/{aliquot_barcode}.txt"
     message:
-        "Post-process Mutect2 calls using bcftools\n"
-        "Pair barcode: {wildcards.pair_barcode}"
-    shell:
-        "bcftools norm \
-            -f {config[reference_fasta]} \
-            --check-ref ws \
-            -m-both \
-            {input.vcf} | \
-         vt decompose_blocksub - | \
-         bcftools norm -d all | \
-         bcftools view \
-            -Oz \
-            -o {output.normalized} \
-            2>> {log};"
-       
-        "bcftools sort \
-            -Oz \
-            -o {output.final} \
-            {output.normalized} \
-            2>> {log};"
-        
-        "bcftools index \
-            -t {output.final} \
-            2>> {log};"
+        "Add freebayes calls to the database\n"
+        "Aliquot: {wildcards.aliquot_barcode}"
+    script:
+        "geno2db.R"
 
 # ## END ##
