@@ -1,23 +1,62 @@
 ## Snakemake configuration
 ## @Author Floris Barthel
 
+## Boolean indicating whether the starting point should be raw source files (eg. source BAM or FASTQ to be aligned) or aligned data (eg. realigned BAM files)
+from_source: 0
+
+## Database settings
+db:
+  configfile: "/fastscratch/verhaak-lab/.odbc.ini"
+  configsection: "VerhaakDB"
+
+## Data paths
+data:
+  source_path: "/fastscratch/verhaak-lab/GLASS-WG/data"
+  realn_path: "/fastscratch/verhaak-lab/GLASS-WG/results/align/bqsr"
+
+#### JSON files (as alternative to database)
+json:
+  cases:       "/projects/barthf/GLASS-WG/data/manifest/cases.json"
+  samples:     "/projects/barthf/GLASS-WG/data/manifest/samples.json"
+  aliquots:    "/projects/barthf/GLASS-WG/data/manifest/aliquots.json"
+  files:       "/projects/barthf/GLASS-WG/data/manifest/files.json"
+  readgroups:  "/projects/barthf/GLASS-WG/data/manifest/readgroups.json"
+  pairs:       "/projects/barthf/GLASS-WG/data/manifest/pairs.json"
+
 ## Full path to cluster settings
-cluster_json:     "/projects/barthf/GLASS-WG/conf/cluster.json"
+cluster_json:     "conf/cluster.json"
 
 ## Working directory
-workdir:          "/fastscratch/verhaak-lab/GLASS-WG"
+#workdir:          "/fastscratch/verhaak-lab/TCGA-WG"
+
+gnomad_vcf:       "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/af-only-gnomad.raw.sites.b37.vcf.gz"
+
+## Mutect2 settings
+mutect2:
+  ## GnomAD VCF file
+  gnomad_vcf:       "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/af-only-gnomad.raw.sites.b37.vcf.gz"
+  ## Tiny VCF
+  tiny_vcf:         "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/GetPileupSummaries/small_exac_common_3_b37.vcf.gz"
+  ## Based on GATK best practices RNAseq 04/05/18
+  ## https://software.broadinstitute.org/gatk/documentation/article.php?id=3891
+  ## Calculate af-of-alleles: 1/(2*123136) = 0.00000406055 (6 sign. digits)
+  af_of_alleles_not_in_resource: 0.00000406055
+
+## GATK CNV settings
+cnv:
+  min_contig_len: 46709983
+  ## CNV intervals
+  intervals_wgs:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.interval_list"
+  intervals_wes:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/Intersect_Exome_hg19.filtered.preprocess.interval_list"
+  centromere: "/projects/verhaak-lab/verhaak_ref/gatk-cnv/somatic-b37_final_centromere_hg19.seg"
+  gistic:     "/projects/verhaak-lab/verhaak_ref/gatk-cnv/somatic-b37_CNV.hg19.bypos.v1.CR1_event_added.mod.seg"
+
+  maf90_threshold: 0.485
+
 
 ## HTML dir
 # @sbamin helix ~/ has 50GB limit. multiqc and fastqc files may grow in size.
 html_dir:         "/home/barthf/ShinyApps/"
-
-#### JSON files
-cases_json:       "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/cases.json"
-samples_json:     "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/samples.json"
-aliquots_json:    "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/aliquots.json"
-files_json:       "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/files.json"
-readgroups_json:  "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/readgroups.json"
-pairs_json:       "/fastscratch/verhaak-lab/GLASS-WG/data/manifest/pairs.json"
 
 #### GLOBAL PARAMETERS
 
@@ -30,13 +69,13 @@ tempdir:          "/fastscratch/verhaak-lab/GLASS-WG/tmp"
 ## WGS scatter intervals
 wgs_scatterdir:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50"
 
-## CNV intervals
-cnv_intervals:    "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.interval_list"
-
 ## SV mask
 svmask_lumpy:     "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svmask_lumpy.bed"
-svmask_delly:     "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svmask_delly.bed"
+svmask_delly:     "/projects/barthf/GLASS-WG/data/ref/human.hg19.excl.tsv"
 svinclude_manta:  "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svinclude_manta.bed.gz"
+
+## Exome capture common regions
+common_exome_capture_bed: "/projects/verhaak-lab/verhaak_ref/exome-capture/Intersect_Exome_hg19.filtered.bed"
 
 ## CNVnator
 cnvnator_binsize: 1000
@@ -57,12 +96,6 @@ reference_fasta:  "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/hum
 ## Reference dictionary
 reference_dict:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/human_g1k_v37_decoy.dict"
 
-## GnomAD VCF file
-gnomad_vcf:       "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/af-only-gnomad.raw.sites.b37.vcf.gz"
-
-## Tiny VCF
-tiny_vcf:         "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/GetPileupSummaries/small_exac_common_3_b37.vcf.gz"
-
 ## Vcf2MAF Perl Script location
 vcf2maf:          "/projects/verhaak-lab/mskcc-vcf2maf-747a1bb/vcf2maf.pl"
 
@@ -70,15 +103,8 @@ vcf2maf:          "/projects/verhaak-lab/mskcc-vcf2maf-747a1bb/vcf2maf.pl"
 veppath:          "/projects/barthf/opt/ensembl-vep"
 
 ## VEP cache directory
-vepdata:          "/projects/barthf/opt/.vep"
+vepdata:          "/projects/verhaak-lab/verhaak_ref/vep" #"/projects/barthf/opt/.vep"
 
-## Haplotype map (for fingerprinting)
-haplotype_map:    "/projects/barthf/GLASS-WG/data/ref/haplotype.filtered.map"
-
-## Based on GATK best practices RNAseq 04/05/18
-## https://software.broadinstitute.org/gatk/documentation/article.php?id=3891
-## Calculate af-of-alleles: 1/(2*123136) = 0.00000406055 (6 sign. digits)
-af_of_alleles_not_in_resource: 0.00000406055
 
 seconds_between_progress_updates: 900
 
@@ -87,6 +113,23 @@ samtofastq_java_opt: "'-Dsamjdk.buffer_size=131072 -Dsamjdk.compression_level=1 
 mergebamalignment_java_opt: "'-Dsamjdk.buffer_size=131072 -Dsamjdk.use_async_io=true -Dsamjdk.compression_level=1 -XX:+UseStringCache -XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -Xmx5000m'"
 
 #### ACTUAL RUN
-revertsam_extra_args : "--MAX_DISCARD_FRACTION=0.02 "
+revertsam_extra_args: "--MAX_DISCARD_FRACTION=0.02 "
+
+### Haplotyping options
+## These options are mostly used for creating the haplotype map
+## The output file (`file`) can then be used for fingerprinting
+
+haplotype_map:
+  file: "/projects/barthf/GLASS-WG/data/ref/haplotype.filtered.map"
+  ld_script: "/projects/barthf/GLASS-WG/sandbox/ldsc/ldsc.py"
+  header: "/projects/barthf/GLASS-WG/data/ref/haplotype_map_header.txt"
+  similarity: 0.10
+  min_maf: 0.10
+  ld_score_window_autosome: 1.0
+  prune_window: 1500
+  prune_slide: 5
+  prune_cutoff: 0.1
+  clump_cutoff: 0.9
+  max_distance_clump: 1500
 
 ## END ##

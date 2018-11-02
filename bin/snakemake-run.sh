@@ -9,10 +9,13 @@
 
 CONFIGFILE="conf/config.yaml"
 CLUSTRCONF="conf/cluster.json"
+NUM_JOBS=800
 OPTS="-p"
 RULEGRAPH=0
 DAG=0
-
+WORKDIR=`pwd`
+FROMSOURCE=0
+COHORT=""
 
 POSITIONAL=()
 while [[ $# -gt 0 ]]
@@ -26,6 +29,18 @@ do
 	    shift # past argument
 	    shift # past value
 	    ;;
+	    -nj|--num-jobs)
+		[ -z "$2" ] && echo "No number of jobs specified" && exit 1
+	    NUM_JOBS=$2
+	    shift # past argument
+	    shift # past value
+	    ;;
+	    -wd|--work-dir)
+		[ -z "$2" ] && echo "No workdir specified" && exit 1
+	    WORKDIR="$2"
+	    shift # past argument
+	    shift # past value
+	    ;;
 	    --rulegraph)
 	    RULEGRAPH=1
 	    shift # past argument
@@ -34,13 +49,24 @@ do
 	    DAG=1
 	    shift # past argument
 	    ;;
-	    -d|--dry-run)
-	    CONFIGFILE="conf/test_config.yaml"
-		CLUSTRCONF="conf/test_cluster.json"
+	    -cc|--cluster-conf)
+	    [ -z "$2" ] && echo "No cluster config specified" && exit 1
+	    CLUSTRCONF="$2"
+	    shift # past value
+	    shift # past argument
+	    ;;
+	    -c|--cohort)
+	    [ -z "$2" ] && echo "No cohort specified" && exit 1
+	    COHORT="$2"
+	    shift # past value
 	    shift # past argument
 	    ;;
 	    -n|--not-real)
 	    OPTS="-np"
+	    shift # past argument
+	    ;;
+	    -s|--source)
+	    FROMSOURCE=1
 	    shift # past argument
 	    ;;*)    # unknown option
 	    POSITIONAL+=("$1") # save it in an array for later
@@ -64,8 +90,6 @@ fi
 EXTRA_OPTS=$(printf " %s" "${POSITIONAL[@]}")
 EXTRA_OPTS=${EXTRA_OPTS:1}
 
-WORKDIR=`pwd`
-
 echo "Running snakemake with"
 echo "Directory: ${WORKDIR}" 
 echo "TARGET: ${TARGET}"
@@ -74,6 +98,9 @@ echo "RULEGRAPH: ${RULEGRAPH}"
 echo "CONFIG: ${CONFIGFILE}"
 echo "CLUSTER-CONFIG: ${CLUSTRCONF}"
 echo "OPTS: ${OPTS}"
+echo "NUM_JOBS: ${NUM_JOBS}"
+echo "FROMSOURCE: ${FROMSOURCE}"
+echo "COHORT: ${COHORT}"
 echo "EXTRA OPTS: ${EXTRA_OPTS}"
 
 read -p "Continue? (y/n)" -n 1 -r
@@ -92,7 +119,8 @@ elif [ ${DAG} == 1 ];
 then
 	snakemake --configfile "${CONFIGFILE}" --dag | dot -Tpng > dag.png
 else
-	snakemake ${OPTS} --jobs 400 -k --use-conda --latency-wait 120 --max-jobs-per-second 8 --configfile "${CONFIGFILE}" --cluster-config "${CLUSTRCONF}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -q {cluster.queu} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e ${WORKDIR}/{cluster.stderr} -o ${WORKDIR}/{cluster.stdout}" $EXTRA_OPTS $TARGET
+	mkdir -p "${WORKDIR}/logs/drmaa"
+	snakemake ${OPTS} --jobs ${NUM_JOBS} -k --use-conda --latency-wait 120 --max-jobs-per-second 8 --config workdir="${WORKDIR}" cluster_json="${CLUSTRCONF}" from_source="${FROMSOURCE}" cohort="${COHORT}" --restart-times 0 --cluster-config "${CLUSTRCONF}" --configfile "${CONFIGFILE}" --jobname "{jobid}.{cluster.name}" --drmaa " -S /bin/bash -j {cluster.j} -M {cluster.M} -m {cluster.m} -q {cluster.queu} -l nodes={cluster.nodes}:ppn={cluster.ppn},walltime={cluster.walltime} -l mem={cluster.mem}gb -e ${WORKDIR}/{cluster.stderr} -o ${WORKDIR}/{cluster.stdout}" $EXTRA_OPTS $TARGET
 fi
 
 ## END ##

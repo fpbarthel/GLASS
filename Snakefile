@@ -3,166 +3,37 @@
 ## Authors: Floris Barthel, Samir Amin
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+import os
 import pandas as pd
 import itertools
-import os
 
-## Touch function taken from stackoverflow
-## Link: https://stackoverflow.com/questions/1158076/implement-touch-using-python
-def touch(fname, mode=0o666, dir_fd=None, **kwargs):
-    flags = os.O_CREAT | os.O_APPEND
-    with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
-        os.utime(f.fileno() if os.utime in os.supports_fd else fname,
-            dir_fd=None if os.supports_fd else dir_fd, **kwargs)
+## Import manifest processing functions
+from python.glassfunc import dbconfig, locate
+from python.PostgreSQLManifestHandler import PostgreSQLManifestHandler
+from python.JSONManifestHandler import JSONManifestHandler
 
-## Turn an unnamed list of dicts into a nammed list of dicts
-## Taken from stackoverflow
-## https://stackoverflow.com/questions/4391697/find-the-index-of-a-dict-within-a-list-by-matching-the-dicts-value
-def build_dict(seq, key):
-    return dict((d[key], dict(d, index=index)) for (index, d) in enumerate(seq))
+## Connect to database
+## dbconf = dbconfig("/home/barthf/.odbc.ini", "VerhaakDB")
+dbconf = dbconfig(config["db"]["configfile"], config["db"]["configsection"])
+
+#print("Cohort set to ", str(config["cohort"]))
+by_cohort = None
+if len(str(config["cohort"])) > 0:
+    by_cohort = str(config["cohort"]).zfill(2)
+
+## Instantiate manifest
+manifest = PostgreSQLManifestHandler(host = dbconf["servername"], port = dbconf["port"], user = dbconf["username"], password = dbconf["password"], database = dbconf["database"],
+    source_file_basepath = config["data"]["source_path"], aligned_file_basepath = config["data"]["realn_path"], from_source = config["from_source"], by_cohort = by_cohort)
+print(manifest)
 
 ## Set working directory based on configuration file
 workdir: config["workdir"]
 
 ## GDC token file for authentication
-KEYFILE     = config["gdc_token"]
+KEYFILE = config["gdc_token"]
 
 ## Cluster metadata (memory, CPU, etc)
-CLUSTER_META    = json.load(open(config["cluster_json"]))
-
-## JSON data
-CASES 		= json.load(open(config["cases_json"]))
-SAMPLES 	= json.load(open(config["samples_json"]))
-ALIQUOTS 	= json.load(open(config["aliquots_json"]))
-FILES 		= json.load(open(config["files_json"]))
-READGROUPS 	= json.load(open(config["readgroups_json"]))
-PAIRS 		= json.load(open(config["pairs_json"]))
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## JSON processing
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-# @sbamin Unless already implemented, we should be explicitly checking json input for 
-# 1. non-empty variables, and 
-# 2. unique RGID and RGPU but an identical RGSM tags, e.g., https://github.com/TheJacksonLaboratory/glass_wgs_alignment/blob/d72fb20659bd20fddf952d331533b9ffd88d446e/runner/preprocess_fqs.R#L25 
-# We can either check it upfront while making json or more preferable to check just before snakemake submits a workflow per case or sample.
-# That way, snakemake should STOP with error or emit WARN for non-compliant RG format. 
-# This is more practical if input is FQ and not BAM unless we already have RG info for BAM file.
-## @barthf : TO-DO
-
-### NOTE NEED TO SPERATE BAM AND FASTQ READGROUPS
-
-## Validate CASES JSON
-## CASES should be unique
-## CHECK THAT ALL CASE_ID VALUES IN CASES ARE UNIQUE
-## TO-DO
-
-
-## Validate FILES JSON
-## FILES -> FILE_UUID should be unique
-## CHECK THAT ALL FILE_UUID VALUES IN FILES ARE UNIQUE
-## Check that input files exist
-## TO-DO
-
-
-## Validate PAIRS JSON
-## PAIR -> PAIR_ID should be unique
-## CHECK THAT ALL PAIR_ID VALUES IN PAIR ARE UNIQUE
-## IN PROGRESS
-
-
-## CASES -> DICT
-CASES_DICT = build_dict(CASES, "case_id")
-
-
-## FILES -> DICT
-FILES_DICT = build_dict(FILES, "file_uuid")
-
-## ALIQUOTS -> DICT
-ALIQUOTS_DICT = build_dict(ALIQUOTS, "aliquot_id")
-
-## SAMPLES -> DICT
-SAMPLES_DICT = build_dict(SAMPLES, "sample_id")
-
-
-## Pair IDs are unique, PAIRS -> DICT
-PAIRS_DICT = build_dict(PAIRS, "pair_id")
-
-
-## Aliquot IDs and BAM/FQ files map 1:1 (or 1:2 for FQ)
-
-ALIQUOT_TO_BAM_PATH = {}
-for file in FILES:
-    if file["file_format"] == "BAM":
-        ALIQUOT_TO_BAM_PATH[ file["aliquot_id"] ] = file["file_path"]
-
-
-## Dict of aliquots per case
-## Dict of aliquots per batch
-
-BATCH_TO_ALIQUOT = {}
-CASE_TO_ALIQUOT = {}
-for aliquot in ALIQUOTS:
-    aliquot["case_id"] = SAMPLES_DICT[ aliquot["sample_id"] ]["case_id"]
-    aliquot["project_id"] = CASES_DICT[ aliquot["case_id"] ]["project_id"]
-    
-    if aliquot["case_id"] not in CASE_TO_ALIQUOT:
-        CASE_TO_ALIQUOT[ aliquot["case_id"] ] = [ aliquot["aliquot_id"] ]
-    elif aliquot["aliquot_id"] not in CASE_TO_ALIQUOT[ aliquot["case_id"] ]:
-        CASE_TO_ALIQUOT[ aliquot["case_id"] ].append(aliquot["aliquot_id"])
-    
-    if aliquot["project_id"] not in BATCH_TO_ALIQUOT:
-        BATCH_TO_ALIQUOT[ aliquot["project_id"] ] = [ aliquot["aliquot_id"] ]
-    elif aliquot["aliquot_id"] not in BATCH_TO_ALIQUOT:
-        BATCH_TO_ALIQUOT[ aliquot["project_id"] ].append(aliquot["aliquot_id"])
-
-
-
-## Aliquots and RGIDs map 1:many
-
-ALIQUOT_TO_RGID = {}        
-for readgroup in READGROUPS:
-    if readgroup["aliquot_id"] not in ALIQUOT_TO_RGID:
-        ALIQUOT_TO_RGID[ readgroup["aliquot_id"] ] = [ readgroup["RGID"] ]
-    else:
-        ALIQUOT_TO_RGID[ readgroup["aliquot_id"] ].append(readgroup["RGID"])
-
-
-## Batches and normal aliquot IDs map 1:many
-## Normal aliquot IDs are repeated across multiple pairs from same case
-## Each pair has one normal and one tumor
-
-BATCH_TO_NORMAL = {}
-for pair in PAIRS:
-    pair["project_id"] = CASES_DICT[ pair["case_id"] ]["project_id"]
-    PAIRS_DICT[ pair["pair_id"] ]["project_id"] = pair["project_id"]
-    if pair["project_id"] not in BATCH_TO_NORMAL:
-        BATCH_TO_NORMAL[ pair["project_id"] ] = [ pair["normal_aliquot_id"] ]
-    elif pair["normal_aliquot_id"] not in BATCH_TO_NORMAL[ pair["project_id"] ]:
-        BATCH_TO_NORMAL[ pair["project_id"] ].append(pair["normal_aliquot_id"])
-        
-
-## Readgroup information and 
-## Aliquots and RGIDs map 1:many
-## RGIDs are unique within an aliquot
-## Aliquot IDs and fastQ files map 1:many
-
-ALIQUOT_TO_READGROUP = {}
-ALIQUOT_TO_FQ_PATH = {}
-ALIQUOT_TO_SM = {}
-for readgroup in READGROUPS:
-    if readgroup["aliquot_id"] not in ALIQUOT_TO_SM:
-        ALIQUOT_TO_SM[ readgroup["aliquot_id"] ] = readgroup["RGSM"]
-    if readgroup["aliquot_id"] not in ALIQUOT_TO_READGROUP:
-        ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ] = { readgroup["RGID"] : readgroup }
-    else:
-        ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ] = readgroup
-    ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_path"] = FILES_DICT[ ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_uuid"] ]["file_path"]
-    ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_format"] = FILES_DICT[ ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_uuid"] ]["file_format"]
-    if ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_format"] == "FQ":
-        if readgroup["aliquot_id"] not in ALIQUOT_TO_FQ_PATH:
-            ALIQUOT_TO_FQ_PATH[ readgroup["aliquot_id"] ] = {}
-        ALIQUOT_TO_FQ_PATH[ readgroup["aliquot_id"] ][ readgroup["RGID"] ] = ALIQUOT_TO_READGROUP[ readgroup["aliquot_id"] ][ readgroup["RGID"] ]["file_path"].split(",")
+CLUSTER_META = json.load(open(config["cluster_json"]))
 
 ## List of scatterlist items to iterate over
 ## Each Mutect2 run spawns 50 jobs based on this scatterlist
@@ -170,33 +41,53 @@ for readgroup in READGROUPS:
 WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in range(50)]
 
 ## Load modules
-include: "snakemake/download.smk"
-include: "snakemake/align.smk"
-include: "snakemake/mutect2.smk"
-include: "snakemake/vep.smk"
-include: "snakemake/lumpy.smk"
-include: "snakemake/cnv-gatk.smk"
-include: "snakemake/varscan2.smk"
-include: "snakemake/fingerprinting.smk"
-include: "snakemake/delly.smk"
-include: "snakemake/manta.smk"
-include: "snakemake/cnvnator.smk"
-include: "snakemake/telseq.smk"
+
+## We do not want the additional DAG processing if not from source
+if(config["from_source"]):
+    include: "snakemake/download.smk"
+    include: "snakemake/align.smk"
+
+include: "snakemake/mutect2-post.smk"
+
+# include: "snakemake/haplotype-map.smk"
+# include: "snakemake/fingerprinting.smk"
+# include: "snakemake/telseq.smk"
+# include: "snakemake/mutect2.smk"
+# include: "snakemake/varscan2.smk"
+# include: "snakemake/cnvnator.smk"
+# include: "snakemake/lumpy.smk"
+# include: "snakemake/delly.smk"
+# include: "snakemake/manta.smk"
+# include: "snakemake/cnv-gatk.smk"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Haplotype map creation rule
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule build_haplotype_map:
+    input:
+        "data/ref/fingerprint.filtered.map"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Alignment rule
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule align:
-    input: expand("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam", aliquot_id=ALIQUOTS_DICT.keys())
+    input:
+        expand("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/align/validatebam/{aliquot_barcode}.ValidateSamFile.txt", aliquot_barcode = manifest.getSelectedAliquots()),
+        lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample = aliquot_barcode, rg = readgroup)
+          for aliquot_barcode, readgroups in manifest.getSelectedReadgroupsByAliquot().items()
+          for readgroup in readgroups]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download only rule
 ## Run snakemake with 'snakemake download_only' to activate
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule download_only:
-   input: expand("{file}", file=ALIQUOT_TO_BAM_PATH.values())
+#rule download_only:
+#   input: expand("{file}", file = ALIQUOT_TO_BAM_PATH.values())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## QC rule
@@ -204,38 +95,70 @@ rule download_only:
 
 rule qc:
     input: 
-        "results/align/multiqc/multiqc_report.html",
-        expand("results/align/fastqc/{aliquot_id}/{aliquot_id}.aligned_fastqc.html", aliquot_id=ALIQUOTS_DICT.keys()),
-        expand("results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
-        expand("results/align/validatebam/{aliquot_id}.ValidateSamFile.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys())
+        "results/align/multiqc/multiqc_report.html"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## SNV rule
-## Run snakemake with target 'snv'
+## SNV rule (Mutect2)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule mt2:
-    input: expand("results/mutect2/m2filter/{pair_id}.filtered2.vcf", pair_id=PAIRS_DICT.keys())
+rule mutect2:
+    input:
+        expand("results/mutect2/vcf2maf/{pair_barcode}.final.maf", pair_barcode = manifest.getSelectedPairs())#,
+    	#expand("results/mutect2/final/{pair_barcode}.final.vcf", pair_barcode = manifest.getSelectedPairs())
+
+rule mutect2post:
+	input:
+		expand("results/mutect2/m2post/{pair_barcode}.normalized.sorted.vcf.gz", pair_barcode = manifest.getSelectedPairs())
+
+rule genotypefreebayes:
+    input:
+        expand("results/mutect2/freebayes/{aliquot_barcode}.normalized.sorted.vcf.gz", aliquot_barcode = manifest.getSelectedAliquots())
+
+rule preparem2pon:
+    input:
+        expand("results/mutect2/mergepon/{aliquot_barcode}.pon.vcf", aliquot_barcode = manifest.getPONAliquots())
+
+rule genodb:
+    input:
+        expand("results/mutect2/geno2db/{aliquot_barcode}.normalized.sorted.tsv", aliquot_barcode = manifest.getSelectedAliquots())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## PON rule (Mutect2)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule mutect2pon:
+    input:
+    	"results/mutect2/pon/pon.vcf"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SNV rule (VarScan2)
-## Run snakemake with target 'snv'
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule vs2:
+rule varscan2:
     input:
-        expand("results/varscan2/final/{pair_id}.somatic.hc.filtered.final.vcf.gz", pair_id=PAIRS_DICT.keys())
+        expand("results/varscan2/fpfilter/{pair_barcode}.{type}.Somatic.hc.final.vcf", pair_barcode = manifest.getSelectedPairs(), type = ["snp", "indel"])
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## CNV calling pipeline
 ## Run snakemake with target 'svprepare'
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+
+
 rule cnv:
     input:
-        expand("results/cnv/callsegments/{pair_id}.called.seg", pair_id=PAIRS_DICT.keys()),
-        expand("results/cnv/plotmodeledsegments/{pair_id}/{pair_id}.modeled.png", pair_id=PAIRS_DICT.keys()),
-        expand("results/cnv/plotcr/{aliquot_id}/{aliquot_id}.denoised.png", aliquot_id=ALIQUOT_TO_READGROUP.keys())
+        expand("results/cnv/plotmodeledsegments/{aliquot_barcode}/{aliquot_barcode}.modeled.png", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/cnv/acs_convert/{pair_barcode}.acs.seg", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/cnv/gistic_convert/{pair_barcode}.gistic2.seg", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/cnv/callsegments/{pair_barcode}.called.seg", pair_barcode = manifest.getSelectedPairs())
+        #expand("results/cnv/absolute/{pair_barcode}/{pair_barcode}.ABSOLUTE_plot.pdf", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/cnv/combinetracks/{pair_barcode}.final.seg", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/cnv/acs_convert/{pair_barcode}/{pair_barcode}.ABSOLUTE_plot.pdf", pair_barcode = manifest.getSelectedPairs())
+        #expand("results/cnv/callsegments/{pair_barcode}.called.seg", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/cnv/plotmodeledsegments/{pair_barcode}/{pair_barcode}.modeled.png", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png", aliquot_barcode = manifest.getSelectedAliquots()),
+
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SV using Delly
@@ -243,7 +166,7 @@ rule cnv:
 
 rule delly:
     input:
-        expand("results/delly/call/{pair_id}.vcf.gz", pair_id=PAIRS_DICT.keys())
+        expand("results/delly/filter/{pair_barcode}.prefilt.bcf", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SV using LUMPY-SV
@@ -251,8 +174,9 @@ rule delly:
 
 rule lumpy:
     input:
-        expand("results/lumpy/svtyper/{pair_id}.dict.svtyper.vcf", pair_id=PAIRS_DICT.keys()),
-        expand("results/lumpy/libstat/{pair_id}.libstat.pdf", pair_id=PAIRS_DICT.keys())
+        expand("results/lumpy/svtyper/{pair_barcode}.dict.svtyper.vcf", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/lumpy/libstat/{pair_barcode}.libstat.pdf", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/lumpy/filter/{pair_barcode}.dict.svtyper.filtered.vcf", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SV using Manta
@@ -260,7 +184,7 @@ rule lumpy:
 
 rule manta:
     input:
-        expand("results/manta/{pair_id}/results/variants/somaticSV.vcf.gz", pair_id=PAIRS_DICT.keys())
+        expand("results/manta/{pair_barcode}/results/variants/somaticSV.vcf.gz", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call CNV using Manta
@@ -268,7 +192,7 @@ rule manta:
 
 rule cnvnator:
     input:
-        expand("results/cnvnator/vcf/{aliquot_id}.call.vcf", aliquot_id=ALIQUOT_TO_READGROUP.keys())
+        expand("results/cnvnator/vcf/{aliquot_barcode}.call.vcf", aliquot_barcode = manifest.getSelectedAliquots())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SVs using all callers
@@ -276,10 +200,10 @@ rule cnvnator:
 
 rule svdetect:
     input:
-        expand("results/lumpy/svtyper/{pair_id}.dict.svtyper.vcf", pair_id=PAIRS_DICT.keys()),
-        expand("results/lumpy/libstat/{pair_id}.libstat.pdf", pair_id=PAIRS_DICT.keys()),
-        expand("results/delly/call/{pair_id}.vcf.gz", pair_id=PAIRS_DICT.keys()),
-        expand("results/manta/{pair_id}/results/variants/somaticSV.vcf.gz", pair_id=PAIRS_DICT.keys())
+        expand("results/lumpy/svtyper/{pair_barcode}.dict.svtyper.vcf", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/lumpy/libstat/{pair_barcode}.libstat.pdf", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/delly/call/{pair_barcode}.vcf.gz", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/manta/{pair_barcode}/results/variants/somaticSV.vcf.gz", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Estimate TL using telseq
@@ -287,21 +211,21 @@ rule svdetect:
 
 rule telseq:
     input:
-        expand("results/telseq/{aliquot_id}.telseq.txt", aliquot_id=ALIQUOT_TO_READGROUP.keys())
+        expand("results/telseq/{aliquot_barcode}.telseq.txt", aliquot_barcode = manifest.getSelectedAliquots())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Fingerprinting pipeline
 ## Check sample and case fingerprints
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule fingerprint:
-    input:
-        expand("results/fingerprinting/sample/{aliquot_id}.crosscheck_metrics", aliquot_id=ALIQUOT_TO_READGROUP.keys()),
-        expand("results/fingerprinting/case/{case_id}.crosscheck_metrics", case_id=CASES_DICT.keys()),
-        expand("results/fingerprinting/batch/{batch}.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
-        "results/fingerprinting/GLASS-WG.crosscheck_metrics",
-        expand("results/fingerprinting/batch/{batch}.clustered.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
-        "results/fingerprinting/GLASS-WG.clustered.crosscheck_metrics"
+#rule fingerprint:
+#    input:
+#        expand("results/fingerprinting/sample/{aliquot_barcode}.crosscheck_metrics", aliquot_barcode=ALIQUOT_TO_READGROUP.keys()),
+#        expand("results/fingerprinting/case/{case_id}.crosscheck_metrics", case_id=CASES_DICT.keys()),
+#        expand("results/fingerprinting/batch/{batch}.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
+#        "results/fingerprinting/GLASS-WG.crosscheck_metrics",
+#        expand("results/fingerprinting/batch/{batch}.clustered.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
+#        "results/fingerprinting/GLASS-WG.clustered.crosscheck_metrics"
        
 
 ## END ##

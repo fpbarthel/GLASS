@@ -1,20 +1,25 @@
 #######################################################
-# Inspect Mutect2 and Varsca2 results, compare with prior results
-# Date: 2018.08.07
+# Inspect Mutect2 and Varsca2 results, compare with prior TCGA results.
+# Date: 2018.08.15
 # Author: Kevin J.
 #######################################################
 # Local directory for github repo.
-# We are comparing filtered Mutect2 and Varscan2 calls (not yet maf files).
-mybasedir = "~/mnt/scratchhelix/johnsk/GLASS_WG_floris/results/mutect2/m2filter/"
+mybasedir = "~/mnt/scratchhelix/johnsk/GLASS_WG_floris/results/"
 setwd(mybasedir) 
 
-# Location of files.
-m2filter_total_snv_file <- paste(mybasedir, "/mutect2_snv_totals.txt", sep="") 
-m2filter_samplename_file <- paste(mybasedir, "/samplenames.txt", sep="") 
+# We are comparing filtered Mutect2 and Varscan2 calls.
+Mutect2dir =  "~/mnt/scratchhelix/johnsk/GLASS_WG_floris/results/mutect2/m2filter/"
+VarScan2dir = "~/mnt/scratchhelix/johnsk/GLASS_WG_floris/results/varscan2/final/"
+
+# Completed life-history barcodes.
+life_history_barcodes = "/Users/johnsk/Documents/Life-History/GLASS-WG/data/sequencing-information/master_life_history_uniform_naming_complete.txt"
 
 #######################################################
+
 # Load necessary packages.
 library(tidyverse)
+library(maftools)
+
 #######################################################
 
 # Generate theme for ggplot:
@@ -41,18 +46,145 @@ my_theme <- function() {
 }
 
 #######################################################
-# Create list of names with the ".filtered2.vep_filters.txt".
+# Inspect Mutect2 filters applied to both SNVs and small indels.
+setwd(Mutect2dir)
+
+# Create list of names with the ".filtered2.vep_filters.txt". Sample "GLSS-MD-LP03" was removed due to poor quality.
 filenames <- list.files(pattern = "*_filters.txt")
 list_names <-substr(filenames, 1, 22)
 
-# Load in all of the files, and set list names. 
-mutect2_tbl <- list.files(pattern = "*_filters.txt") %>% 
-  map(~read_table(., col_names = "filters")) %>% 
-  set_names(list_names)
-# save(mutect2_tbl, file="/Users/johnsk/Documents/mutect2_tbl_filters.RData")
+# Load in all of the files, and set list names. Do once because it's slow.
+# These files were made smaller by only presenting the filter column.
+#  mutect2_tbl <- list.files(pattern = "*_filters.txt") %>% 
+#  map(~read_table(., col_names = "filters")) %>% 
+#  set_names(list_names)
+#       save(mutect2_tbl, file="/Users/johnsk/Documents/mutect2_tbl_filters.RData")
+# Load "mutect2_tbl" file.
+load("/Users/johnsk/Documents/Life-History/mutect2_tbl_filters.RData")
 
-# For each variant per subject, we separate out the different filters.
-mutect2_split_tmp <- mutect2_tbl %>% map(function(x) strsplit(x$filters, ";"))
+# Each variant has M2 filters associated with its call. Some SNV/indels have many filters justifying why 
+# a variant is tossed out. We are interested in the frequency of total filters and solo filters across all cohorts.
+# Total filters applied to each sample.
+total_filters <- mutect2_tbl %>% map(function(x) strsplit(x$filters, ";")) %>% map(unlist) %>% map(table)
+
+# Create a df with each column being a filter and each row being a sample.
+total_filter_df <- as.data.frame(do.call(dplyr::bind_rows, total_filters), stringsAsFactors = FALSE) 
+total_filter_tidy <- total_filter_df %>% 
+  mutate(sample_names = names(total_filters)) %>% 
+  gather("total_filter", "total_count", artifact_in_normal:orientation_bias)
+# Create a variable on which total and solo filter data sets can be merged.
+total_filter_tidy$sample_filter <- paste(total_filter_tidy$sample_names, total_filter_tidy$total_filter, sep="-")
+
+# We are also interested in the solo filter applied per sample. 
+solo_filter_df <- tibble(sample_names = names(mutect2_tbl),  filters = mutect2_tbl) %>% 
+  unnest() %>% 
+  mutate(num_filter_applied = map(strsplit(filters, ";"), length), snv_id = row_number()) %>% 
+  unnest() %>% 
+  group_by(sample_names) %>% 
+  filter(num_filter_applied == 1) %>%  
+  count(solo_filters = filters) %>% 
+  spread(solo_filters, n)
+
+# Tidy the "solo_filter_df" so that it can be merged with the "total_filter_df".
+solo_filter_tidy <- solo_filter_df %>% 
+  gather("solo_filter", "solo_count", artifact_in_normal:t_lod)
+solo_filter_tidy$sample_filter <- paste(solo_filter_tidy$sample_names, solo_filter_tidy$solo_filter, sep="-")
+
+# We need to plot total/solo filters by cohort (boxplot).
+all_filters_tidy <- inner_join(total_filter_tidy, solo_filter_tidy, by=c("sample_filter" = "sample_filter"))
+all_filters_tidy$cohort <- NA
+all_filters_tidy$cohort[grepl("HF", all_filters_tidy$sample_names.x)] <- "HF"
+all_filters_tidy$cohort[grepl("HK", all_filters_tidy$sample_names.x)] <- "HK"
+all_filters_tidy$cohort[grepl("GLSS-MD", all_filters_tidy$sample_names.x)] <- "MD-LP"
+all_filters_tidy$cohort[grepl("TCGA", all_filters_tidy$sample_names.x)] <- "TCGA"
+
+# Create tables to provide metrics about M2 filters.
+total_filters_table <- all_filters_tidy %>% 
+  group_by(cohort, total_filter) %>% 
+  summarize(Samples = n(),
+            AvgTotalFilter = mean(total_count),
+            TotalFilterStDev = sd(total_count),
+            TotalFilterMin = min(total_count), 
+            TotalFilterMax = max(total_count))
+write.table(total_filters_table, file = sprintf("%s.%s", "/Users/johnsk/Documents/Life-History/GLASS-WG/data/sequencing-information/M2-filters/m2-total-filters", "tsv"), sep="\t", row.names = F, col.names = T, quote = F)
+# Table for solo filters.
+solo_filters_table <- all_filters_tidy %>% 
+  group_by(cohort, solo_filter) %>% 
+  summarize(Samples = n(),
+            AvgTotalFilter = mean(solo_count),
+            TotalFilterStDev = sd(solo_count),
+            TotalFilterMin = min(solo_count), 
+            TotalFilterMax = max(solo_count))
+write.table(solo_filters_table, file = sprintf("%s.%s", "/Users/johnsk/Documents/Life-History/GLASS-WG/data/sequencing-information/M2-filters/m2-solo-filters", "tsv"), sep="\t", row.names = F, col.names = T, quote = F)
+
+# Boxplots of total filters by cohort:
+ggplot(all_filters_tidy, aes(x=total_filter, y=total_count, color=cohort))  + facet_grid(~cohort) + 
+  geom_boxplot() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ylab("Total Filters Applied") +xlab("Filter Type") +
+  ggtitle("Total M2 Filters") 
+ggplot(all_filters_tidy, aes(x=total_filter, y=total_count, color=cohort))  + facet_grid(~cohort) + 
+  geom_boxplot() + theme(axis.text.x = element_text(angle = 45, hjust = 1))  + ylim(0,100000) +
+    ylab("Total Filters Applied") +xlab("Filter Type") + ggtitle("Total M2 Filters Zoomed")
+
+# Boxplots of solo filters applied:
+ggplot(all_filters_tidy, aes(x=solo_filter, y=solo_count, color=cohort))+ facet_grid(~cohort) + 
+  geom_boxplot() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ylab("Solo Filters Applied") +xlab("Filter Type") +
+  ggtitle("Solo M2 Filters")
+ggplot(all_filters_tidy, aes(x=solo_filter, y=solo_count, color=cohort))+ facet_grid(~cohort) + 
+  geom_boxplot(outlier.shape = NA) + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ylim(0,10000) + 
+  ylab("Solo Filters Applied") +xlab("Filter Type") + ggtitle("Solo M2 Filters Zoomed")
+
+# Inspect filter frequencies for small indels too?
+
+###############################
+####    TCGA maf files      ###
+###############################
+# Link "list_names" object with original TCGA names using barcodes.
+vcf_names <- substring(list_names, 1, 15)
+life_history_barcode_sheet = read.delim(life_history_barcodes, as.is=T)
+# Identify those samples that are used in the GLASS-WG project.
+glass_tcga_samples <- life_history_barcode_sheet %>% 
+  filter(Barcode%in%vcf_names) %>% 
+  filter(grepl("TCGA", Original_ID)) %>% 
+  select(Original_ID) %>% 
+  .[["Original_ID"]]
+
+# Load TCGA LGG-GBM mutation calls from exome data. Downloaded by Floris.
+tcga_gbm_snv_calls <- read.table("/Users/johnsk/Documents/Life-History/TCGA_GBM.broad.mit.edu.n308.aggregated.maf.txt", header = T, sep ="\t", fill = TRUE)
+
+# There seems to be relatively few variants per TCGA sample.
+variant_totals <- tcga_gbm_snv_calls %>% 
+  group_by(Tumor_Sample_Barcode) %>% 
+  summarise(n = n()) %>% 
+  arrange(desc(n))
+ 
+# Only three samples exist in the TCGA_GBM.broad.mit[...] data set.
+glass_tcga_samples[glass_tcga_samples%in%as.character(tcga_snv_calls$Tumor_Sample_Barcode)]
+# Only two mutations in one sample ("TCGA-06-0125-01A-01D-1490-08")?
+tcga_gbm_snv_calls %>% 
+  filter(Tumor_Sample_Barcode%in%glass_tcga_samples)
+
+# What about the LGG data?
+tcga_lgg_snv_calls = read.maf(maf = "/Users/johnsk/Documents/Life-History/PR_TCGA_LGG_PAIR_Capture_All_Pairs_QCPASS_v7.aggregated.capture.tcga.uuid.automated.somatic.maf")
+# Example comparisons between TCGA-LGG and the data I am working with.
+example_compare = tcgaCompare(maf = tcga_lgg_snv_calls, cohortName = "LOW_GRADE")
+# These plots can take a long time to render.
+oncoplot(maf = tcga_lgg_snv_calls, top = 10, fontSize = 12)
+oncostrip(maf = tcga_lgg_snv_calls, genes = c("IDH1","TP53"))
+
+# Load VarScan2 data.
+setwd(VarScan2dir)
+vs2_filenames <- list.files(pattern = "*.final.vcf$")
+vs2_list_names <-substr(vs2_filenames, 1, 22)
+
+# Load in all of the files, and set list names. 
+varscan2_tbl <- list.files(pattern = "*.final.vcf$")[1:2] %>% 
+map(~read.table(.)) %>% 
+set_names(vs2_list_names[1:2])
+
+
+# Load in the sample-specific barcodes: 
+
+
 
 # Breaks down the per sample filter frequency. 
 mutect2_HF_split <- map(mutect2_split_tmp[1:2], unlist)

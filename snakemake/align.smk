@@ -1,10 +1,3 @@
-# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-# ## RevertSAM and FASTQ-2-uBAM both output uBAM files to the same directory
-# ## Snakemake needs to be informed which rule takes presidence
-# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-# #ruleorder: revertsam > fq2ubam
-
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Revert GDC-aligned legacy BAM to unaligned SAM file
 ## Clear BAM attributes, such as re-calibrated base quality scores, alignment information
@@ -23,33 +16,45 @@
 ## Issue: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
 ## Unlikely this will get fixed any time soon
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## 08/28/18
+## TCGA BAMs often have uninformative readgroup tags. Added an additional step
+## "bam2ubam" to rename these tags. This includes the RGID tag. Added a variable
+## ALIQUOT_TO_LEGACY_RGID that maps to legacy RGID tags. The variable ALIQUOT_TO_RGID
+## maps to the new (sometiomes renamed) RGIDs
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+from python.glassfunc import touch_file
 
 rule revertsam:
     input:
-        lambda wildcards: ALIQUOT_TO_BAM_PATH[wildcards.aliquot_id]
+        lambda wildcards: ancient(manifest.getSourceBAM(wildcards.aliquot_barcode))
     output:
-        map = "results/align/ubam/{aliquot_id}/{aliquot_id}.output_map.txt",
-        bams = temp(expand("results/align/ubam/{{aliquot_id}}/{{aliquot_id}}.{rg}.unaligned.bam", rg=list(itertools.chain.from_iterable(ALIQUOT_TO_RGID.values()))))
+        map = "results/align/revertsam/{aliquot_barcode}/{aliquot_barcode}.output_map.txt",
+        bams = temp(expand("results/align/revertsam/{{aliquot_barcode}}/{{aliquot_barcode}}.{rg}.revertsam.bam", rg = manifest.getAllReadgroups(limit_bam = True)))
     params:
-        dir = "results/align/ubam/{aliquot_id}",
-        mem = CLUSTER_META["revertsam"]["mem"]
-    log: 
-        "logs/align/revertsam/{aliquot_id}.log"
+        dir = "results/align/revertsam/{aliquot_barcode}",
+        mem = CLUSTER_META["revertsam"]["mem"],
+        walltime = CLUSTER_META["revertsam"]["walltime"]
     threads:
         CLUSTER_META["revertsam"]["ppn"]
+    log: 
+        "logs/align/revertsam/{aliquot_barcode}.log"
     benchmark:
-        "benchmarks/align/revertsam/{aliquot_id}.txt"
+        "benchmarks/align/revertsam/{aliquot_barcode}.txt"
     message:
         "Reverting sample back to unaligned BAM file, stripping any previous "
         "pre-processing and restoring original base quality scores. Output files are split "
         "by readgroup.\n"
-        "Sample: {wildcards.aliquot_id}"
+        "Sample: {wildcards.aliquot_barcode}\n"
+        "Input BAM: {input}"
     run:
+        old_rg = manifest.getLegacyRGIDs(wildcards["aliquot_barcode"]) # if wildcards["aliquot_barcode"] in ALIQUOT_TO_LEGACY_RGID else ""
+        new_rg = manifest.getRGIDs(wildcards["aliquot_barcode"])
         ## Create a readgroup name / filename mapping file
         rgmap = pd.DataFrame(
             {
-                "READ_GROUP_ID": ALIQUOT_TO_RGID[wildcards["aliquot_id"]],
-                "OUTPUT": ["results/align/ubam/{aliquot_id}/{aliquot_id}.{rg}.unaligned.bam".format(aliquot_id=wildcards["aliquot_id"], rg=rg) for rg in ALIQUOT_TO_RGID[wildcards["aliquot_id"]]]
+                "READ_GROUP_ID": old_rg,
+                "OUTPUT": ["results/align/revertsam/{aliquot_barcode}/{aliquot_barcode}.{rg}.revertsam.bam".format(aliquot_barcode = wildcards["aliquot_barcode"], rg = rg) for rg in new_rg]
             },
             columns = ["READ_GROUP_ID", "OUTPUT"]
         )
@@ -57,9 +62,9 @@ rule revertsam:
 
         ## Create empty files ("touch") for readgroups not in this BAM file
         ## Workaround for issue documented here: https://bitbucket.org/snakemake/snakemake/issues/865/pre-determined-dynamic-output
-        other_rg_f = ["results/align/ubam/{aliquot_id}/{aliquot_id}.{rg}.unaligned.bam".format(aliquot_id=wildcards["aliquot_id"],rg=rg) for sample, rgs in ALIQUOT_TO_RGID.items() for rg in rgs if sample not in wildcards["aliquot_id"]]
+        other_rg_f = ["results/align/revertsam/{aliquot_barcode}/{aliquot_barcode}.{rg}.revertsam.bam".format(aliquot_barcode = wildcards["aliquot_barcode"], rg = rg) for rg in manifest.getRGIDsNotInAliquot(wildcards["aliquot_barcode"])] #manifest.getAllReadgroups(limit_bam = True)] #manifest.getRGIDsNotInAliquot(wildcards["aliquot_barcode"])]
         for f in other_rg_f:
-            touch(f)
+            touch_file(f)
 
         shell("gatk --java-options -Xmx{params.mem}g RevertSam \
             --INPUT={input} \
@@ -80,40 +85,85 @@ rule revertsam:
             --TMP_DIR={config[tempdir]} \
             > {log} 2>&1")
 
-# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-# ## Convert from FASTQ pair to uBAM
-# ## This step eases follow up steps
-# ## See: https://gatkforums.broadinstitute.org/gatk/discussion/6472/read-groups
-# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Replaces existing readgroup tag with a more informative one
+# Removing RGDT because of bug
+# See https://gatkforums.broadinstitute.org/gatk/discussion/12085/fastqtosam-no-value-found-for-tagged-argument-for-iso-8601-run-date-parameter
+#             --RGDT=\"{params.RGDT}\" \
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule bam2ubam:
+    input:
+        bam = lambda wildcards: ancient(manifest.getSourceBAM(wildcards.aliquot_barcode)), ### Input BAM is not actually used, but needs to check if present to prioritize this rule over others
+        rgbam = "results/align/revertsam/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.revertsam.bam"
+    output:
+        temp("results/align/ubam/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.unaligned.bam")
+    params:
+        RGID = lambda wildcards: wildcards.readgroup,                                                     ## ID
+        RGPL = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_platform"), ## Platform
+        RGPU = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_platform_unit"), ## Platform unit
+        RGLB = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_library"), ## Library
+        RGDT = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_timestamp"), ## Date
+        RGSM = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_sample_id"), ## Sample name
+        RGCN = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_center"), ## Center
+        mem = CLUSTER_META["bam2ubam"]["mem"],
+        walltime = CLUSTER_META["bam2ubam"]["walltime"]
+    threads:
+        CLUSTER_META["bam2ubam"]["ppn"]
+    log:
+        "logs/align/bam2ubam/{aliquot_barcode}.{readgroup}.log"
+    benchmark:
+        "benchmarks/align/bam2ubam/{aliquot_barcode}.{readgroup}.txt"
+    message:
+        "Updating RG tags\n"
+        "Sample: {wildcards.aliquot_barcode}\n"
+        "Readgroup: {wildcards.readgroup}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g AddOrReplaceReadGroups \
+            --INPUT={input.rgbam} \
+            --OUTPUT={output} \
+            --RGID=\"{params.RGID}\" \
+            --RGPU=\"{params.RGPU}\" \
+            --RGSM=\"{params.RGSM}\" \
+            --RGPL=\"{params.RGPL}\" \
+            --RGLB=\"{params.RGLB}\" \
+            --RGCN=\"{params.RGCN}\" \
+            --TMP_DIR={config[tempdir]} \
+            > {log} 2>&1" 
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Convert from FASTQ pair to uBAM
+## This step eases follow up steps
+## See: https://gatkforums.broadinstitute.org/gatk/discussion/6472/read-groups
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule fq2ubam:
     input:
-        R1 = lambda wildcards: "{file}".format(sample=wildcards.aliquot_id, file=ALIQUOT_TO_FQ_PATH[wildcards.aliquot_id][wildcards.readgroup][0]),
-        R2 = lambda wildcards: "{file}".format(sample=wildcards.aliquot_id, file=ALIQUOT_TO_FQ_PATH[wildcards.aliquot_id][wildcards.readgroup][1])
+        R1 = lambda wildcards: ancient(manifest.getFASTQ(wildcards.aliquot_barcode, wildcards.readgroup)[0]),
+        R2 = lambda wildcards: ancient(manifest.getFASTQ(wildcards.aliquot_barcode, wildcards.readgroup)[1])
     output:
-        temp("results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam")
+        temp("results/align/ubam/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.unaligned.bam")
     params:
-        RGID = lambda wildcards: wildcards.readgroup,
-        RGPL = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPL"],
-        RGPU = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGPU"],
-        RGLB = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGLB"],
-        RGDT = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGDT"],
-        RGSM = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGSM"],
-        RGCN = lambda wildcards: ALIQUOT_TO_READGROUP[wildcards.aliquot_id][wildcards.readgroup]["RGCN"],
+        RGID = lambda wildcards: wildcards.readgroup,                                                     ## ID
+        RGPL = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_platform"), ## Platform
+        RGPU = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_platform_unit"), ## Platform unit
+        RGLB = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_library"), ## Library
+        RGDT = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_timestamp"), ## Date
+        RGSM = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_sample_id"), ## Sample ID
+        RGCN = lambda wildcards: manifest.getRGTag(wildcards.aliquot_barcode, wildcards.readgroup, "readgroup_center"), ## Center
         mem = CLUSTER_META["fq2ubam"]["mem"]
-    log:
-        "logs/align/fq2ubam/{aliquot_id}.{readgroup}.log"
     threads:
         CLUSTER_META["fq2ubam"]["ppn"]
+    log:
+        "logs/align/fq2ubam/{aliquot_barcode}.{readgroup}.log"
     benchmark:
-        "benchmarks/align/fq2ubam/{aliquot_id}.{readgroup}.txt"
+        "benchmarks/align/fq2ubam/{aliquot_barcode}.{readgroup}.txt"
     message:
         "Converting FASTQ file to uBAM format\n"
-        "Sample: {wildcards.aliquot_id}\n"
+        "Sample: {wildcards.aliquot_barcode}\n"
         "Readgroup: {wildcards.readgroup}"
-    run:
-        ## ISODATE=`date +%Y-%m-%dT%H:%M:%S%z`; \
-        shell("gatk --java-options -Xmx{params.mem}g FastqToSam \
+    shell:
+        "gatk --java-options -Xmx{params.mem}g FastqToSam \
             --FASTQ={input.R1} \
             --FASTQ2={input.R2} \
             --OUTPUT={output} \
@@ -125,39 +175,37 @@ rule fq2ubam:
             --SEQUENCING_CENTER=\"{params.RGCN}\" \
             --SORT_ORDER=queryname \
             --TMP_DIR={config[tempdir]} \
-            > {log} 2>&1")
-        #            --RUN_DATE=\"{params.RGDT}\" \
+            > {log} 2>&1"
+
+ruleorder: fq2ubam > bam2ubam
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Run FASTQC on uBAM
 ## URL: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+## 6/11/18
+## Added --extract parameter, which includes a "summary.txt" file which gives WARN, FAIL, PASS
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-# @sbamin Besides html, fastqc should provide a tab-delimited output, 
-# e.g., https://gist.github.com/chapmanb/3953983, 
-# https://gitlab.com/gmapps/railab_chipseq/tree/master/scripts 
-# A step further, that can be programmatically added to emit WARN or STOP if converted FQ fails to PASS base filters, e.g., per base or tile seq quality.
-## @barthf Added --extract parameter, which includes a "summary.txt" file which gives WARN, FAIL, PASS on various aspects 6/11/18
 
 rule fastqc:
     input:
-        "results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam"
+        "results/align/ubam/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.unaligned.bam"
     output:
-        "results/align/fastqc/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned_fastqc.html"
+        "results/align/fastqc/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.unaligned_fastqc.html"
     params:
-        dir = "results/align/fastqc/{aliquot_id}",
-        mem = CLUSTER_META["fastqc"]["mem"]
+        dir = "results/align/fastqc/{aliquot_barcode}",
+        mem = CLUSTER_META["fastqc"]["mem"],
+        walltime = CLUSTER_META["fastqc"]["walltime"]
     conda:
         "../envs/align.yaml"
     threads:
         CLUSTER_META["fastqc"]["ppn"]
     log:
-        "logs/align/fastqc/{aliquot_id}.{readgroup}.log"
+        "logs/align/fastqc/{aliquot_barcode}.{readgroup}.log"
     benchmark:
-        "benchmarks/align/fastqc/{aliquot_id}.{readgroup}.txt"
+        "benchmarks/align/fastqc/{aliquot_barcode}.{readgroup}.txt"
     message:
         "Running FASTQC\n"
-        "Sample: {wildcards.aliquot_id}\n"
+        "Sample: {wildcards.aliquot_barcode}\n"
         "Readgroup: {wildcards.readgroup}"
     shell:
         "fastqc \
@@ -176,12 +224,13 @@ rule fastqc:
 
 rule markadapters:
     input:
-        "results/align/ubam/{aliquot_id}/{aliquot_id}.{readgroup}.unaligned.bam"
+        "results/align/ubam/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.unaligned.bam"
     output:
-        bam = temp("results/align/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.bam"),
-        metric = "results/align/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
+        bam = temp("results/align/markadapters/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.markadapters.bam"),
+        metric = "results/align/markadapters/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.markadapters.metrics.txt"
     params:
-        mem = CLUSTER_META["markadapters"]["mem"]
+        mem = CLUSTER_META["markadapters"]["mem"],
+        walltime = CLUSTER_META["revertsam"]["walltime"]
     conda:
         "../envs/align.yaml"
     threads:
@@ -189,12 +238,12 @@ rule markadapters:
     params:
         mem = CLUSTER_META["markadapters"]["mem"]
     log: 
-        dynamic("logs/align/markadapters/{aliquot_id}.{readgroup}.log")
+        dynamic("logs/align/markadapters/{aliquot_barcode}.{readgroup}.log")
     benchmark:
-        "benchmarks/align/markadapters/{aliquot_id}.{readgroup}.txt"
+        "benchmarks/align/markadapters/{aliquot_barcode}.{readgroup}.txt"
     message:
         "Adding XT tags. This marks Illumina Adapters and allows them to be removed in later steps\n"
-        "Sample: {wildcards.aliquot_id}\n"
+        "Sample: {wildcards.aliquot_barcode}\n"
         "Readgroup: {wildcards.readgroup}"
     shell:
         "gatk --java-options -Xmx{params.mem}g MarkIlluminaAdapters \
@@ -231,27 +280,28 @@ rule markadapters:
 
 rule samtofastq_bwa_mergebamalignment:
     input:
-        bam = "results/align/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.bam",
-        metric = "results/align/markadapters/{aliquot_id}/{aliquot_id}.{readgroup}.markadapters.metrics.txt"
+        bam = "results/align/markadapters/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.markadapters.bam",
+        metric = "results/align/markadapters/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.markadapters.metrics.txt"
     output:
-        bam = temp("results/align/bwa/{aliquot_id}/{aliquot_id}.{readgroup}.realn.bam"),
-        bai = temp("results/align/bwa/{aliquot_id}/{aliquot_id}.{readgroup}.realn.bai")
+        bam = temp("results/align/bwa/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.realn.bam"),
+        bai = temp("results/align/bwa/{aliquot_barcode}/{aliquot_barcode}.{readgroup}.realn.bai")
     threads:
         CLUSTER_META["samtofastq_bwa_mergebamalignment"]["ppn"]
     conda:
         "../envs/align.yaml"
     params:
-        mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
+        mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"],
+        walltime = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["walltime"]
     log: 
-        "logs/align/samtofastq_bwa_mergebamalignment/{aliquot_id}.{readgroup}.log"
+        "logs/align/samtofastq_bwa_mergebamalignment/{aliquot_barcode}.{readgroup}.log"
     benchmark:
-        "benchmarks/align/revertsam/{aliquot_id}.{readgroup}.txt"
+        "benchmarks/align/revertsam/{aliquot_barcode}.{readgroup}.txt"
     message:
         "BAM to FASTQ --> BWA-MEM --> Merge BAM Alignment.\n"
         "The first step converts the reverted BAM to an interleaved FASTQ, removing Illumina "
         "adapters. The output is then piped to BWA-MEM and aligned. Aligned reads are merged "
         "with the original pre-aligned BAM to preserve original metadata, including read groups.\n"
-        "Sample: {wildcards.aliquot_id}\n"
+        "Sample: {wildcards.aliquot_barcode}\n"
         "Readgroup: {wildcards.readgroup}"
     shell:
         "gatk --java-options {config[samtofastq_java_opt]} SamToFastq \
@@ -287,23 +337,27 @@ rule samtofastq_bwa_mergebamalignment:
 
 rule markduplicates:
     input:
-        lambda wildcards: expand("results/align/bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.aliquot_id, rg=ALIQUOT_TO_RGID[wildcards.aliquot_id])
+        lambda wildcards: expand("results/align/bwa/{sample}/{sample}.{rg}.realn.bam", sample=wildcards.aliquot_barcode, rg=manifest.getRGIDs(wildcards.aliquot_barcode))
     output:
-        bam = temp("results/align/markduplicates/{aliquot_id}.realn.mdup.bam"),
-        bai = temp("results/align/markduplicates/{aliquot_id}.realn.mdup.bai"),
-        metrics = "results/align/markduplicates/{aliquot_id}.metrics.txt"
+        bam = temp("results/align/markduplicates/{aliquot_barcode}.realn.mdup.bam"),
+        bai = temp("results/align/markduplicates/{aliquot_barcode}.realn.mdup.bai"),
+        metrics = "results/align/markduplicates/{aliquot_barcode}.metrics.txt"
     params:
-        mem = CLUSTER_META["markduplicates"]["mem"]
+        max_records = 6000000,
+        walltime = lambda wildcards: CLUSTER_META["markduplicates"]["walltime"],
+        mem = lambda wildcards: CLUSTER_META["markduplicates"]["mem"]
+    #resources:
+    # 	mem = lambda wildcards, attempt: CLUSTER_META["markduplicates"]["mem"] if attempt == 1 else CLUSTER_META["markduplicates"]["mem_if_fail"]
     threads:
         CLUSTER_META["markduplicates"]["ppn"]
     log:
-        "logs/align/markduplicates/{aliquot_id}.log"
+        "logs/align/markduplicates/{aliquot_barcode}.log"
     benchmark:
-        "benchmarks/align/markduplicates/{aliquot_id}.txt"
+        "benchmarks/align/markduplicates/{aliquot_barcode}.txt"
     message:
         "Readgroup-specific BAM files are combined into a single BAM. "
         "Potential PCR duplicates are marked.\n"
-        "Sample: {wildcards.aliquot_id}"
+        "Sample: {wildcards.aliquot_barcode}"
     run:
         multi_input = " ".join(["--INPUT=" + s for s in input])
         shell("gatk --java-options -Xmx{params.mem}g MarkDuplicates \
@@ -311,6 +365,8 @@ rule markduplicates:
             --OUTPUT={output.bam} \
             --METRICS_FILE={output.metrics} \
             --CREATE_INDEX=true \
+            --TMP_DIR={config[tempdir]} \
+            --MAX_RECORDS_IN_RAM={params.max_records} \
             > {log} 2>&1")
 
 # @sbamin A few notes on IndelRealignment step at annotated link: https://hyp.is/8_20bK-aEeerk1MduBFv6w/gatkforums.broadinstitute.org/gatk/discussion/7847 
@@ -327,22 +383,23 @@ rule markduplicates:
 
 rule baserecalibrator:
     input:
-        "results/align/markduplicates/{aliquot_id}.realn.mdup.bam"
+        "results/align/markduplicates/{aliquot_barcode}.realn.mdup.bam"
     output:
-        "results/align/bqsr/{aliquot_id}.bqsr.txt"
+        "results/align/bqsr/{aliquot_barcode}.bqsr.txt"
     params:
-        mem = CLUSTER_META["baserecalibrator"]["mem"]
+        mem = CLUSTER_META["baserecalibrator"]["mem"],
+        walltime = CLUSTER_META["baserecalibrator"]["walltime"]
     threads:
         CLUSTER_META["baserecalibrator"]["ppn"]
     conda:
         "../envs/align.yaml"
     log:
-        "logs/align/bqsr/{aliquot_id}.recal.log"
+        "logs/align/bqsr/{aliquot_barcode}.recal.log"
     benchmark:
-        "benchmarks/align/bqsr/{aliquot_id}.recal.txt"
+        "benchmarks/align/bqsr/{aliquot_barcode}.recal.txt"
     message:
         "Calculating base recalibration scores.\n"
-        "Sample: {wildcards.aliquot_id}"
+        "Sample: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g BaseRecalibrator \
             -R {config[reference_fasta]} \
@@ -361,23 +418,24 @@ rule baserecalibrator:
 
 rule applybqsr:
     input:
-        bam = "results/align/markduplicates/{aliquot_id}.realn.mdup.bam",
-        bqsr = "results/align/bqsr/{aliquot_id}.bqsr.txt"
+        bam = "results/align/markduplicates/{aliquot_barcode}.realn.mdup.bam",
+        bqsr = "results/align/bqsr/{aliquot_barcode}.bqsr.txt"
     output:
-        protected("results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam")
+        protected("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     params:
-        mem = CLUSTER_META["applybqsr"]["mem"]
+        mem = CLUSTER_META["applybqsr"]["mem"],
+        walltime = CLUSTER_META["applybqsr"]["walltime"]
     threads:
         CLUSTER_META["applybqsr"]["ppn"]
     conda:
         "../envs/align.yaml"
     log:
-        "logs/align/bqsr/{aliquot_id}.apply.log"
+        "logs/align/bqsr/{aliquot_barcode}.apply.log"
     benchmark:
-        "benchmarks/align/bqsr/{aliquot_id}.apply.txt"
+        "benchmarks/align/bqsr/{aliquot_barcode}.apply.txt"
     message:
         "Applying base recalibration scores and generating final BAM file\n"
-        "Sample: {wildcards.aliquot_id}"
+        "Sample: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g ApplyBQSR \
             -R {config[reference_fasta]} \
@@ -397,22 +455,23 @@ rule applybqsr:
 
 rule wgsmetrics:
     input:
-        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
-        "results/align/wgsmetrics/{aliquot_id}.WgsMetrics.txt"
+        "results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt"
     params:
-        mem = CLUSTER_META["wgsmetrics"]["mem"]
+        mem = CLUSTER_META["wgsmetrics"]["mem"],
+        walltime = CLUSTER_META["wgsmetrics"]["walltime"]
     threads:
         CLUSTER_META["wgsmetrics"]["ppn"]
     conda:
         "../envs/align.yaml"
     log:
-        "logs/wgsmetrics/{aliquot_id}.WgsMetrics.log"
+        "logs/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.log"
     benchmark:
-        "benchmarks/wgsmetrics/{aliquot_id}.WgsMetrics.txt"
+        "benchmarks/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt"
     message:
         "Computing WGS Metrics\n"
-        "Sample: {wildcards.aliquot_id}"
+        "Sample: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CollectWgsMetrics \
             -R {config[reference_fasta]} \
@@ -433,22 +492,23 @@ rule wgsmetrics:
 
 rule validatebam:
     input:
-        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
-        "results/align/validatebam/{aliquot_id}.ValidateSamFile.txt"
+        "results/align/validatebam/{aliquot_barcode}.ValidateSamFile.txt"
     params:
-        mem = CLUSTER_META["validatebam"]["mem"]
+        mem = CLUSTER_META["validatebam"]["mem"],
+        walltime = CLUSTER_META["validatebam"]["walltime"]
     threads:
         CLUSTER_META["validatebam"]["ppn"]
     conda:
         "../envs/align.yaml"
     log:
-        "logs/validatebam/{aliquot_id}.ValidateSamFile.log"
+        "logs/align/validatebam/{aliquot_barcode}.ValidateSamFile.log"
     benchmark:
-        "benchmarks/validatebam/{aliquot_id}.ValidateSamFile.txt"
+        "benchmarks/align/validatebam/{aliquot_barcode}.ValidateSamFile.txt"
     message:
         "Validating BAM file\n"
-        "Sample: {wildcards.aliquot_id}"
+        "Sample: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g ValidateSamFile \
             -I {input} \
@@ -466,34 +526,34 @@ rule validatebam:
 ## export LANG=en_US.UTF-8
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule multiqc:
-    input:
-        expand("results/align/validatebam/{sample}.ValidateSamFile.txt", sample=ALIQUOT_TO_RGID.keys()),
-        expand("results/align/wgsmetrics/{sample}.WgsMetrics.txt", sample=ALIQUOT_TO_RGID.keys()),
-        lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample=sample, rg=readgroup)
-          for sample, readgroups in ALIQUOT_TO_RGID.items()
-          for readgroup in readgroups] 
-    output:
-        "results/align/multiqc/multiqc_report.html"
-    params:
-        dir = "results/align/multiqc",
-        mem = CLUSTER_META["samtofastq_bwa_mergebamalignment"]["mem"]
-    threads:
-        CLUSTER_META["multiqc"]["ppn"]
-    conda:
-        "../envs/align.yaml"
-    log:
-        "logs/align/multiqc/multiqc.log"
-    benchmark:
-        "benchmarks/align/multiqc/multiqc.txt"
-    message:
-        "Running MultiQC"
-    shell:
-        "multiqc \
-            --interactive \
-            -o {params.dir} {config[workdir]}/results/align \
-            > {log} 2>&1; \
-            cp -R {params.dir}/* {config[html_dir]}"
+# rule multiqc:
+#     input:
+#         expand("results/align/validatebam/{sample}.ValidateSamFile.txt", sample = manifest.getSelectedAliquots()),
+#         expand("results/align/wgsmetrics/{sample}.WgsMetrics.txt", sample = manifest.getSelectedAliquots()),
+#         lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample=sample, rg=readgroup)
+#           for readgroup in manifest.getAllReadgroups()]
+#     output:
+#         "results/align/multiqc/multiqc_report.html"
+#     params:
+#         dir = "results/align/multiqc",
+#         mem = CLUSTER_META["multiqc"]["mem"],
+#         walltime = CLUSTER_META["multiqc"]["walltime"]
+#     threads:
+#         CLUSTER_META["multiqc"]["ppn"]
+#     conda:
+#         "../envs/align.yaml"
+#     log:
+#         "logs/align/multiqc/multiqc.log"
+#     benchmark:
+#         "benchmarks/align/multiqc/multiqc.txt"
+#     message:
+#         "Running MultiQC"
+#     shell:
+#         "multiqc \
+#             --interactive \
+#             -o {params.dir} {config[workdir]}/results/align \
+#             > {log} 2>&1; \
+#             cp -R {params.dir}/* {config[html_dir]}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Run FASTQC on aligned BAM
@@ -502,23 +562,23 @@ rule multiqc:
 
 # rule fastqc_bam:
 #     input:
-#         "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+#         "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
 #     output:
-#         "results/align/fastqc/{aliquot_id}/{aliquot_id}.aligned_fastqc.html"
+#         "results/align/fastqc/{aliquot_barcode}/{aliquot_barcode}.aligned_fastqc.html"
 #     params:
-#         dir = "results/align/fastqc/{aliquot_id}",
+#         dir = "results/align/fastqc/{aliquot_barcode}",
 #         mem = CLUSTER_META["fastqc_bam"]["mem"]
 #     conda:
 #         "../envs/align.yaml"
 #     threads:
 #         CLUSTER_META["fastqc_bam"]["ppn"]
 #     log:
-#         "logs/align/fastqc-bam/{aliquot_id}.log"
+#         "logs/align/fastqc-bam/{aliquot_barcode}.log"
 #     benchmark:
-#         "benchmarks/align/fastqc-bam/{aliquot_id}.txt"
+#         "benchmarks/align/fastqc-bam/{aliquot_barcode}.txt"
 #     message:
 #         "Running FASTQC\n"
-#         "Sample: {wildcards.aliquot_id}"
+#         "Sample: {wildcards.aliquot_barcode}"
 #     shell:
 #         "fastqc \
 #             --extract \

@@ -18,4 +18,6 @@ tmp/
 *.RDa
 .Rproj.user
 .Rproj.user/**
-
+.**
+*.pyc
+*.pyo

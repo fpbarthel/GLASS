@@ -11,37 +11,35 @@
 
 rule callpon:
     input:
-        bam = "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam",
-        intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
+        bam = "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam",
+        intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir = config["wgs_scatterdir"], interval = wildcards.interval)
     output:
-        temp("results/mutect2/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf")
+        vcf = temp("results/mutect2/callpon/{aliquot_barcode}/{aliquot_barcode}.{interval}.pon.vcf"),
+        idx = temp("results/mutect2/callpon/{aliquot_barcode}/{aliquot_barcode}.{interval}.pon.vcf.idx")
     params:
-        mem = CLUSTER_META["callpon"]["mem"]
+        mem = CLUSTER_META["callpon"]["mem"],
+        readgroup_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(wildcards.aliquot_barcode)
     conda:
         "../envs/gatk4.yaml"
     threads:
         CLUSTER_META["callpon"]["ppn"]
     log:
-        "logs/mutect2/callpon/{batch}.{aliquot_id}.{interval}.log"
+        "logs/mutect2/callpon/{aliquot_barcode}.{interval}.log"
     benchmark:
-        "benchmarks/mutect2/callpon/{batch}.{aliquot_id}.{interval}.txt"
+        "benchmarks/mutect2/callpon/{aliquot_barcode}.{interval}.txt"
     message:
         "Calling Mutect2 in tumor-only mode to build a panel of normals\n"
-        "Batch: {wildcards.batch}\n"
-        "Sample: {wildcards.aliquot_id}\n"
+        "Aliquot: {wildcards.aliquot_barcode}\n"
         "Interval: {wildcards.interval}"
     shell:
-        "TUMOR_SM=`samtools view -H {input} | grep '^@RG' | sed \"s/.*SM:\\([^\\t]*\\).*/\\1/g\" | uniq`; \
-        gatk --java-options -Xmx{params.mem}g Mutect2 \
+        "gatk --java-options -Xmx{params.mem}g Mutect2 \
             -R {config[reference_fasta]} \
             -I {input.bam} \
             -L {input.intervallist} \
-            --tumor-sample $TUMOR_SM \
+            --tumor-sample {params.readgroup_sample_tag} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
-            -O {output} \
+            -O {output.vcf} \
             > {log} 2>&1"
-
-            #        TUMOR_SM=${TUMOR_SM:-\"TUMOR\"}; \
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## MergePON
@@ -55,61 +53,65 @@ rule callpon:
 
 rule mergepon:
     input:
-        lambda wildcards: expand("results/mutect2/callpon/{batch}/{aliquot_id}/{aliquot_id}.{interval}.pon.vcf", batch=wildcards.batch, aliquot_id=wildcards.aliquot_id, interval=WGS_SCATTERLIST)
+        lambda wildcards: expand("results/mutect2/callpon/{aliquot_barcode}/{aliquot_barcode}.{interval}.pon.vcf", aliquot_barcode = wildcards.aliquot_barcode, interval = WGS_SCATTERLIST)
     output:
-        temp("results/mutect2/mergepon/{batch}/{aliquot_id}.pon.vcf")
+        vcf = "results/mutect2/mergepon/{aliquot_barcode}.pon.vcf",
+        idx = "results/mutect2/mergepon/{aliquot_barcode}.pon.vcf.idx"
     params:
-        mem = CLUSTER_META["mergepon"]["mem"]
+        mem = CLUSTER_META["mergepon"]["mem"],
+        input_files = lambda _, input: " ".join(["-I " + s for s in input])
+    conda:
+        "../envs/gatk4.yaml"
     threads:
         CLUSTER_META["mergepon"]["ppn"]
     log:
-        "logs/mutect2/mergepon/{batch}.{aliquot_id}.log"
+        "logs/mutect2/mergepon/{aliquot_barcode}.log"
     benchmark:
-        "benchmarks/mutect2/mergepon/{batch}.{aliquot_id}.txt"
+        "benchmarks/mutect2/mergepon/{aliquot_barcode}.txt"
     message:
         "Merging VCF files (PON)\n"
-        "Batch: {wildcards.batch}\n"
-        "Sample: {wildcards.aliquot_id}"
-    run:
-        input_cat = " ".join(["-I " + s for s in input])
-        shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
-            {input_cat} \
-            -O {output} \
-            > {log} 2>&1")
+        "Aliquot: {wildcards.aliquot_barcode}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g MergeVcfs \
+            {params.input_files} \
+            -O {output.vcf} \
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## CreatePON
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Because PON calls on normal samples were done individually for each normal, this step
-## merges calls from all samples from a given batch to build a confident PON
-## Protected output, this is the final batch-specifc PON file
+## merges calls from all samples to build a PON
+## Protected output, this is the final PON file
 ## See: 
 ## https://gatkforums.broadinstitute.org/gatk/discussion/11136/how-to-call-somatic-mutations-using-gatk4-mutect2
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 rule createpon:
     input:
-        lambda wildcards: expand("results/mutect2/mergepon/{batch}/{aliquot_id}.pon.vcf", batch=wildcards.batch, aliquot_id=BATCH_TO_NORMAL[wildcards.batch])
+        lambda wildcards: expand("results/mutect2/mergepon/{aliquot_barcode}.pon.vcf", aliquot_barcode = manifest.getPONAliquots())
     output:
-        protected("results/mutect2/pon/{batch}.pon.vcf")
+        vcf = protected("results/mutect2/pon/pon.vcf"),
+        idx = protected("results/mutect2/pon/pon.vcf.idx")
     params:
-        mem = CLUSTER_META["createpon"]["mem"]
+        mem = CLUSTER_META["createpon"]["mem"],
+        vcfs = lambda _, input: " ".join(["--vcfs=" + s for s in input])
+    conda:
+        "../envs/gatk4.yaml"
     threads:
         CLUSTER_META["createpon"]["ppn"]
     log:
-        "logs/mutect2/createpon/{batch}.createpon.log"
+        "logs/mutect2/createpon/createpon.log"
     benchmark:
-        "benchmarks/mutect2/createpon/{batch}.createpon.txt"
+        "benchmarks/mutect2/createpon/createpon.txt"
     message:
-        "Creating panel of normals from multiple Mutect2 VCFs\n"
-        "Batch: {wildcards.batch}"
-    run:
-        vcfs = " ".join(["--vcfs=" + s for s in input])
-        shell("gatk --java-options -Xmx{params.mem}g CreateSomaticPanelOfNormals \
-            {vcfs} \
+        "Creating panel of normals from multiple Mutect2 VCFs"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g CreateSomaticPanelOfNormals \
+            {params.vcfs} \
             --duplicate-sample-strategy THROW_ERROR \
-            --output {output} \
-            > {log} 2>&1")
+            --output {output.vcf} \
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SNV
@@ -128,42 +130,40 @@ rule createpon:
 
 rule callsnv:
     input:
-        tumor = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        normal = lambda wildcards: "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
-        pon = lambda wildcards: "results/mutect2/pon/{batch}.pon.vcf".format(batch=PAIRS_DICT[wildcards.pair_id]["project_id"]),
-        intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir=config["wgs_scatterdir"], interval=wildcards.interval)
+        tumor = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+        normal = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
+        pon = "results/mutect2/pon/pon.vcf",
+        intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir = config["wgs_scatterdir"], interval = wildcards.interval)
     output:
-        vcf = temp("results/mutect2/m2vcf-scatter/{pair_id}.{interval}.vcf"),
-        bam = "results/mutect2/m2bam/{pair_id}.{interval}.bam"
+        vcf = temp("results/mutect2/m2vcf-scatter/{pair_barcode}.{interval}.vcf"),
+        bam = "results/mutect2/m2bam/{pair_barcode}.{interval}.bam"
     params:
-        mem = CLUSTER_META["callsnv"]["mem"]
+        mem = CLUSTER_META["callsnv"]["mem"],
+        tumor_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(manifest.getTumor(wildcards.pair_barcode)),
+        normal_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(manifest.getNormal(wildcards.pair_barcode))
     conda:
         "../envs/gatk4.yaml"
     threads:
         CLUSTER_META["callsnv"]["ppn"]
     log:
-        "logs/mutect2/callsnv/{pair_id}.{interval}.log"
+        "logs/mutect2/callsnv/{pair_barcode}.{interval}.log"
     benchmark:
-        "benchmarks/mutect2/callsnv/{pair_id}.{interval}.txt"
+        "benchmarks/mutect2/callsnv/{pair_barcode}.{interval}.txt"
     message:
         "Calling SNVs (Mutect2)\n"
-        "Pair: {wildcards.pair_id}\n"
+        "Pair: {wildcards.pair_barcode}\n"
         "Interval: {wildcards.interval}"
     shell:
-        "TEST_NAM=`samtools view -H {input.tumor} | grep '^@RG' | sed \"s/.*SM:\\([^\\t]*\\).*/\\1/g\" | uniq`;"
-        "CTRL_NAM=`samtools view -H {input.normal} | grep '^@RG' | sed \"s/.*SM:\\([^\\t]*\\).*/\\1/g\" | uniq`;"
-        #"TEST_NAM=${TEST_NAM:-\"TUMOR\"};"
-        #"CTRL_NAM=${CTRL_NAM:-\"NORMAL\"};"
         "gatk --java-options -Xmx{params.mem}g Mutect2 \
             -R {config[reference_fasta]} \
             -I {input.tumor} \
             -I {input.normal} \
             -L {input.intervallist} \
-            --tumor-sample $TEST_NAM \
-            --normal-sample $CTRL_NAM \
+            --tumor-sample {params.tumor_sample_tag} \
+            --normal-sample {params.normal_sample_tag} \
             --panel-of-normals {input.pon} \
-            --germline-resource {config[gnomad_vcf]} \
-            --af-of-alleles-not-in-resource {config[af_of_alleles_not_in_resource]} \
+            --germline-resource {config[mutect2][gnomad_vcf]} \
+            --af-of-alleles-not-in-resource {config[mutect2][af_of_alleles_not_in_resource]} \
             --dont-use-soft-clipped-bases true \
             --standard-min-confidence-threshold-for-calling 20 \
             -O {output.vcf} \
@@ -183,26 +183,28 @@ rule callsnv:
 
 rule mergesnv:
     input:
-        lambda wildcards: expand("results/mutect2/m2vcf-scatter/{pair_id}.{interval}.vcf", pair_id=wildcards.pair_id, interval=WGS_SCATTERLIST)
+        lambda wildcards: expand("results/mutect2/m2vcf-scatter/{pair_barcode}.{interval}.vcf", pair_barcode = wildcards.pair_barcode, interval = WGS_SCATTERLIST)
     output:
-        protected("results/mutect2/m2vcf/{pair_id}.vcf")
+        protected("results/mutect2/m2vcf/{pair_barcode}.vcf")
     params:
-        mem = CLUSTER_META["mergesnv"]["mem"]
+        mem = CLUSTER_META["mergesnv"]["mem"],
+        input_files = lambda _, input: " ".join(["-I " + s for s in input])
+    conda:
+        "../envs/gatk4.yaml"
     threads:
         CLUSTER_META["mergesnv"]["ppn"]
     log:
-        "logs/mutect2/mergesnv/{pair_id}.log"
+        "logs/mutect2/mergesnv/{pair_barcode}.log"
     benchmark:
-        "benchmarks/mutect2/mergesnv/{pair_id}.txt"
+        "benchmarks/mutect2/mergesnv/{pair_barcode}.txt"
     message:
         "Merging VCF files (M2)\n"
-        "Pair: {wildcards.pair_id}"
-    run:
-        input_cat = " ".join(["-I " + s for s in input])
-        shell("gatk --java-options -Xmx{params.mem}g MergeVcfs \
-            {input_cat} \
+        "Pair: {wildcards.pair_barcode}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g MergeVcfs \
+            {params.input_files} \
             -O {output} \
-            > {log} 2>&1")
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Summarize read support for known variant sites
@@ -213,9 +215,9 @@ rule mergesnv:
 
 rule pileupsummaries:
     input:
-        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
     output:
-        "results/mutect2/pileupsummaries/{aliquot_id}.pileupsummaries.txt"
+        "results/mutect2/pileupsummaries/{aliquot_barcode}.pileupsummaries.txt"
     params:
         mem = CLUSTER_META["pileupsummaries"]["mem"]
     conda:
@@ -223,16 +225,17 @@ rule pileupsummaries:
     threads:
         CLUSTER_META["pileupsummaries"]["ppn"]
     log:
-        "logs/mutect2/pileupsummaries/{aliquot_id}.log"
+        "logs/mutect2/pileupsummaries/{aliquot_barcode}.log"
     benchmark:
-        "benchmarks/mutect2/pileupsummaries/{aliquot_id}.txt"
+        "benchmarks/mutect2/pileupsummaries/{aliquot_barcode}.txt"
     message:
         "Generating pileupsummaries\n"
-        "Sample: {wildcards.aliquot_id}"
+        "Sample: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g GetPileupSummaries \
             -I {input} \
-            -V {config[tiny_vcf]} \
+            -V {config[mutect2][tiny_vcf]} \
+            -L {config[mutect2][tiny_vcf]} \
             -O {output} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             > {log} 2>&1"
@@ -249,10 +252,10 @@ rule pileupsummaries:
 
 rule calculatecontamination:
     input:
-        tumortable = lambda wildcards: "results/mutect2/pileupsummaries/{aliquot_id}.pileupsummaries.txt".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        normaltable = lambda wildcards: "results/mutect2/pileupsummaries/{aliquot_id}.pileupsummaries.txt".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["normal_aliquot_id"]),
+        tumortable = lambda wildcards: "results/mutect2/pileupsummaries/{aliquot_barcode}.pileupsummaries.txt".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+        normaltable = lambda wildcards: "results/mutect2/pileupsummaries/{aliquot_barcode}.pileupsummaries.txt".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
     output:
-        "results/mutect2/contamination/{pair_id}.contamination.txt"
+        "results/mutect2/contamination/{pair_barcode}.contamination.txt"
     params:
         mem = CLUSTER_META["calculatecontamination"]["mem"]
     threads:
@@ -260,12 +263,12 @@ rule calculatecontamination:
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/mutect2/calculatecontamination/{pair_id}.log"
+        "logs/mutect2/calculatecontamination/{pair_barcode}.log"
     benchmark:
-        "benchmarks/mutect2/calculatecontamination/{pair_id}.txt"
+        "benchmarks/mutect2/calculatecontamination/{pair_barcode}.txt"
     message:
         "Computing contamination\n"
-        "Pair: {wildcards.pair_id}"
+        "Pair: {wildcards.pair_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CalculateContamination \
             -I {input.tumortable} \
@@ -279,10 +282,10 @@ rule calculatecontamination:
 
 rule filtermutect:
     input:
-        vcf = "results/mutect2/m2vcf/{pair_id}.vcf",
-        tab = "results/mutect2/contamination/{pair_id}.contamination.txt"
+        vcf = "results/mutect2/m2vcf/{pair_barcode}.vcf",
+        tab = "results/mutect2/contamination/{pair_barcode}.contamination.txt"
     output:
-        temp("results/mutect2/m2filter/{pair_id}.filtered.vcf")
+        temp("results/mutect2/m2filter/{pair_barcode}.filtered.vcf")
     params:
         mem = CLUSTER_META["filtermutect"]["mem"]
     threads:
@@ -290,12 +293,12 @@ rule filtermutect:
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/mutect2/filtermutect/{pair_id}.log"
+        "logs/mutect2/filtermutect/{pair_barcode}.log"
     benchmark:
-        "benchmarks/mutect2/filtermutect/{pair_id}.txt"
+        "benchmarks/mutect2/filtermutect/{pair_barcode}.txt"
     message:
         "Filtering Mutect2 calls\n"
-        "Pair: {wildcards.pair_id}"
+        "Pair: {wildcards.pair_barcode}"
     shell:    
         "gatk --java-options -Xmx{params.mem}g FilterMutectCalls \
             -V {input.vcf} \
@@ -310,23 +313,23 @@ rule filtermutect:
 
 rule collectartifacts:
     input:
-        "results/align/bqsr/{aliquot_id}.realn.mdup.bqsr.bam"
+        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
     output:
-        "results/mutect2/artifacts/{aliquot_id}.pre_adapter_detail_metrics.txt"
+        "results/mutect2/artifacts/{aliquot_barcode}.pre_adapter_detail_metrics.txt"
     params:
-        prefix = "results/mutect2/artifacts/{aliquot_id}",
+        prefix = "results/mutect2/artifacts/{aliquot_barcode}",
         mem = CLUSTER_META["collectartifacts"]["mem"]
     threads:
         CLUSTER_META["collectartifacts"]["ppn"]
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/mutect2/collectartifacts/{aliquot_id}.log"
+        "logs/mutect2/collectartifacts/{aliquot_barcode}.log"
     benchmark:
-        "benchmarks/mutect2/collectartifacts/{aliquot_id}.txt"
+        "benchmarks/mutect2/collectartifacts/{aliquot_barcode}.txt"
     message:
         "Collecting sequencing artifact metrics\n"
-        "Sample: {wildcards.aliquot_id}"
+        "Sample: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CollectSequencingArtifactMetrics \
             -I {input} \
@@ -341,10 +344,10 @@ rule collectartifacts:
 
 rule filterorientation:
     input:
-        art = lambda wildcards: "results/mutect2/artifacts/{aliquot_id}.pre_adapter_detail_metrics.txt".format(aliquot_id=PAIRS_DICT[wildcards.pair_id]["tumor_aliquot_id"]),
-        vcf = "results/mutect2/m2filter/{pair_id}.filtered.vcf"
+        art = lambda wildcards: "results/mutect2/artifacts/{aliquot_barcode}.pre_adapter_detail_metrics.txt".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+        vcf = "results/mutect2/m2filter/{pair_barcode}.filtered.vcf"
     output:
-        "results/mutect2/m2filter/{pair_id}.filtered2.vcf"
+        "results/mutect2/filterorientation/{pair_barcode}.filterorientation.vcf"
     params:
         mem = CLUSTER_META["filterorientation"]["mem"]
     threads:
@@ -352,12 +355,12 @@ rule filterorientation:
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/mutect2/filterorientation/{pair_id}.log"
+        "logs/mutect2/filterorientation/{pair_barcode}.log"
     benchmark:
-        "benchmarks/mutect2/filterorientation/{pair_id}.txt"
+        "benchmarks/mutect2/filterorientation/{pair_barcode}.txt"
     message:
         "Filtering Mutect2 calls by orientation bias\n"
-        "Pair: {wildcards.pair_id}"
+        "Pair: {wildcards.pair_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g FilterByOrientationBias \
             -AM \"G/T\" \
@@ -368,42 +371,4 @@ rule filterorientation:
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             > {log} 2>&1"
 
-# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-# ## VariantFiltration
-# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-# ## Hard filter variants, removes "bad" variants from pre-VEP VCF
-# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-# rule hardfilter:
-#     input:
-#         "results/mutect2/m2filter/{pair_id}.filtered2.vcf"
-#     output:
-#         "results/mutect2/m2filter/{pair_id}.filtered3.vcf"
-#     params:
-#         mem = CLUSTER_META["hardfilter"]["mem"]
-#     threads:
-#         CLUSTER_META["hardfilter"]["ppn"]
-#     log:
-#         "logs/hardfilter/{pair_id}.log"
-#     benchmark:
-#         "benchmarks/hardfilter/{pair_id}.txt"
-#     message:
-#         "Hard-filtering soft-filtered Mutect2 calls\n"
-#         "Pair: {wildcards.pair_id}"
-#     shell:
-#         "gatk --java-options -Xmx{params.mem}g VariantFiltration \
-#             -AM \"G/T\" \
-#             -AM \"C/T\" \
-#             -V {input.vcf} \
-#             -P {input.art} \
-#             -O {output} \
-#             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
-#             > {log} 2>&1"
-
-# @sbamin I suggest that we should put hold at VEP step until we finalize consensus calls. 
-# Idea is too get how many filtered calls we have and with what level of confidence (based on consensus calls from other callers).
-# To me, VEP with extended anntoations is of little value until vcfs are at freeze level.
-# Also, we should have uniform processing past alignment step across both canine and human (adult + pediatric) life history projects.
-# A few callers and filtering steps that we already have run on canine are at https://github.com/TheJacksonLaboratory/hourglass/issues/9.
-# If we are in need of base annotations, like exonic vs promoter vs non-coding, that should be quick enough from VEP, 
-# but I suggest to have a hold on extended annotations using vcf2maf as I guess we will end up doing those iteratively until we freeze vcfs.
+## END ##
