@@ -20,3 +20,5 @@ df <- dbGetQuery(con, "SELECT DISTINCT ON (1,2,3,4,5) v.chrom, v.start, v.\"end\
   spread(sample_type, vaf)
 
 ggplot(df, aes(TP,R1)) + geom_point()
+
+ 
