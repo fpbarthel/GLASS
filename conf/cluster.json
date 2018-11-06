@@ -239,6 +239,12 @@
         "mem" : 6,
         "walltime" : "48:00:00"
     },
+    "freebayes_batch" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "48:00:00"
+    },
     "geno2db" :
     {
         "ppn" : 2,

@@ -405,62 +405,63 @@ rule freebayes:
 ## Genotype sample using freebayes
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-# rule freebayes_batch:
-#     input:
-#         bam = ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"),
-#         vcf = "results/mutect2/consensusvcf/consensus.normalized.sorted.{batch}.vcf.gz",
-#         targets = "results/mutect2/consensusvcf/consensus.normalized.sorted.{batch}.bed"
-#     output:
-#         vcfgz = protected("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.vcf.gz"),
-#         normalized = temp("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.vcf.gz"),
-#         final = protected("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.sorted.vcf.gz"),
-#         tbi = protected("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.sorted.vcf.gz.tbi")
-#     params:
-#         vcf = "results/mutect2/freebayes/{aliquot_barcode}.vcf",
-#         mem = CLUSTER_META["freebayes"]["mem"]
-#     threads:
-#         CLUSTER_META["freebayes"]["ppn"]
-#     conda:
-#         "../envs/freebayes.yaml"
-#     log:
-#         "logs/mutect2/freebayes/{aliquot_barcode}.log"
-#     benchmark:
-#         "benchmarks/mutect2/freebayes/{aliquot_barcode}.txt"
-#     message:
-#         "Genotype consensus calls using freebayes\n"
-#         "Aliquot: {wildcards.aliquot_barcode}"
-#     shell:
-#         "freebayes \
-#             -f {config[reference_fasta]} \
-#             -t {input.targets} \
-#             -l \
-#             -@ {input.vcf} \
-#             {input.bam} \
-#             > {params.vcf} 2> {log};"
+rule freebayes_batch:
+    input:
+        bam = ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"),
+        vcf = "results/mutect2/consensusvcf/consensus.normalized.sorted.{batch}.vcf.gz",
+        targets = "results/mutect2/consensusvcf/consensus.normalized.sorted.{batch}.bed"
+    output:
+        vcfgz = protected("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.vcf.gz"),
+        normalized = temp("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.vcf.gz"),
+        final = protected("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.sorted.vcf.gz"),
+        tbi = protected("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.sorted.vcf.gz.tbi")
+    params:
+        vcf = "results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.vcf",
+        mem = CLUSTER_META["freebayes"]["mem"]
+    threads:
+        CLUSTER_META["freebayes"]["ppn"]
+    conda:
+        "../envs/freebayes.yaml"
+    log:
+        "logs/mutect2/freebayes/batch{batch}.{aliquot_barcode}.log"
+    benchmark:
+        "benchmarks/mutect2/freebayes/batch{batch}.{aliquot_barcode}.txt"
+    message:
+        "Genotype consensus calls using freebayes\n"
+        "Aliquot: {wildcards.aliquot_barcode}\n"
+        "Batch: {batch}"
+    shell:
+        "freebayes \
+            -f {config[reference_fasta]} \
+            -t {input.targets} \
+            -l \
+            -@ {input.vcf} \
+            {input.bam} \
+            > {params.vcf} 2> {log};"
 
-#         "bgzip {params.vcf} 2>> {log};"
+        "bgzip {params.vcf} 2>> {log};"
 
-#         "bcftools norm \
-#             -f {config[reference_fasta]} \
-#             --check-ref ws \
-#             -m-both \
-#             {output.vcfgz} | \
-#          vt decompose_blocksub - | \
-#          bcftools norm -d none | \
-#          bcftools view \
-#             -Oz \
-#             -o {output.normalized} \
-#             2>> {log};"
+        "bcftools norm \
+            -f {config[reference_fasta]} \
+            --check-ref ws \
+            -m-both \
+            {output.vcfgz} | \
+         vt decompose_blocksub - | \
+         bcftools norm -d none | \
+         bcftools view \
+            -Oz \
+            -o {output.normalized} \
+            2>> {log};"
        
-#         "bcftools sort \
-#             -Oz \
-#             -o {output.final} \
-#             {output.normalized} \
-#             2>> {log};"
+        "bcftools sort \
+            -Oz \
+            -o {output.final} \
+            {output.normalized} \
+            2>> {log};"
         
-#         "bcftools index \
-#             -t {output.final} \
-#             2>> {log};"
+        "bcftools index \
+            -t {output.final} \
+            2>> {log};"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Upload genotype to database
