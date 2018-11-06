@@ -22,6 +22,7 @@ library(DBI)
 con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
 extant_aliquots <- dbReadTable(con,  Id(schema="biospecimen",table="aliquots"))
 
+
 # Read in Hoon's bam sample map that was constructed on a majority of the WXS samples.
 glass_wxs_bam_map = read.delim(hoon_sequenza_data, as.is=T)
 
@@ -31,5 +32,5 @@ database_link = extant_aliquots %>%
   inner_join(glass_wxs_bam_map, by=c("aliquot_id_legacy"="tm_samplename"))
 
 # Upload file to github so that Floris is able to work with it.
-write.table(database_link, file = "/Users/johnsk/Documents/Life-History/GLASS/data/ref/glass-sequenza-link.txt", sep="\t", row.names = F, col.names = T, quote = F)
+write.table(database_link, file = "/Users/johnsk/Documents/glass-sequenza-link.txt", sep="\t", row.names = F, col.names = T, quote = F)
 
