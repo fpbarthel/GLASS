@@ -243,9 +243,16 @@
     {
         "ppn" : 1,
         "mem" : 6,
-        "walltime" : "48:00:00"
+        "walltime" : "48:00:00",
+        "queu" : "batch"
     },
     "geno2db" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "48:00:00"
+    },
+    "batches2db" :
     {
         "ppn" : 2,
         "mem" : 12,

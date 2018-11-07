@@ -405,63 +405,63 @@ rule freebayes:
 ## Genotype sample using freebayes
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule freebayes_batch:
-    input:
-        bam = ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"),
-        vcf = "results/mutect2/consensusvcf/consensus.normalized.sorted.{batch}.vcf.gz",
-        targets = "results/mutect2/consensusvcf/consensus.normalized.sorted.{batch}.bed"
-    output:
-        vcfgz = protected("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.vcf.gz"),
-        normalized = temp("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.vcf.gz"),
-        final = protected("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.sorted.vcf.gz"),
-        tbi = protected("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.sorted.vcf.gz.tbi")
-    params:
-        vcf = "results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.vcf",
-        mem = CLUSTER_META["freebayes"]["mem"]
-    threads:
-        CLUSTER_META["freebayes"]["ppn"]
-    conda:
-        "../envs/freebayes.yaml"
-    log:
-        "logs/mutect2/freebayes/batch{batch}.{aliquot_barcode}.log"
-    benchmark:
-        "benchmarks/mutect2/freebayes/batch{batch}.{aliquot_barcode}.txt"
-    message:
-        "Genotype consensus calls using freebayes\n"
-        "Aliquot: {wildcards.aliquot_barcode}\n"
-        "Batch: {batch}"
-    shell:
-        "freebayes \
-            -f {config[reference_fasta]} \
-            -t {input.targets} \
-            -l \
-            -@ {input.vcf} \
-            {input.bam} \
-            > {params.vcf} 2> {log};"
+# rule freebayes_batch:
+#     input:
+#         bam = ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"),
+#         vcf = "results/mutect2/consensusvcf/consensus.normalized.sorted.{batch}.vcf.gz",
+#         targets = "results/mutect2/consensusvcf/consensus.normalized.sorted.{batch}.bed"
+#     output:
+#         vcfgz = protected("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.vcf.gz"),
+#         normalized = temp("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.vcf.gz"),
+#         final = protected("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.sorted.vcf.gz"),
+#         tbi = protected("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.sorted.vcf.gz.tbi")
+#     params:
+#         vcf = "results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.vcf",
+#         mem = CLUSTER_META["freebayes"]["mem"]
+#     threads:
+#         CLUSTER_META["freebayes"]["ppn"]
+#     conda:
+#         "../envs/freebayes.yaml"
+#     log:
+#         "logs/mutect2/freebayes/batch{batch}.{aliquot_barcode}.log"
+#     benchmark:
+#         "benchmarks/mutect2/freebayes/batch{batch}.{aliquot_barcode}.txt"
+#     message:
+#         "Genotype consensus calls using freebayes\n"
+#         "Aliquot: {wildcards.aliquot_barcode}\n"
+#         "Batch: {wildcards.batch}"
+#     shell:
+#         "freebayes \
+#             -f {config[reference_fasta]} \
+#             -t {input.targets} \
+#             -l \
+#             -@ {input.vcf} \
+#             {input.bam} \
+#             > {params.vcf} 2> {log};"
 
-        "bgzip {params.vcf} 2>> {log};"
+#         "bgzip {params.vcf} 2>> {log};"
 
-        "bcftools norm \
-            -f {config[reference_fasta]} \
-            --check-ref ws \
-            -m-both \
-            {output.vcfgz} | \
-         vt decompose_blocksub - | \
-         bcftools norm -d none | \
-         bcftools view \
-            -Oz \
-            -o {output.normalized} \
-            2>> {log};"
+#         "bcftools norm \
+#             -f {config[reference_fasta]} \
+#             --check-ref ws \
+#             -m-both \
+#             {output.vcfgz} | \
+#          vt decompose_blocksub - | \
+#          bcftools norm -d none | \
+#          bcftools view \
+#             -Oz \
+#             -o {output.normalized} \
+#             2>> {log};"
        
-        "bcftools sort \
-            -Oz \
-            -o {output.final} \
-            {output.normalized} \
-            2>> {log};"
+#         "bcftools sort \
+#             -Oz \
+#             -o {output.final} \
+#             {output.normalized} \
+#             2>> {log};"
         
-        "bcftools index \
-            -t {output.final} \
-            2>> {log};"
+#         "bcftools index \
+#             -t {output.final} \
+#             2>> {log};"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Upload genotype to database
@@ -489,5 +489,37 @@ rule geno2db:
         "Aliquot: {wildcards.aliquot_barcode}"
     script:
         "geno2db.R"
+
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Upload genotype to database
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule batches2db:
+    input:
+        freebayes1 = "results/mutect2/freebayes/batch1/{aliquot_barcode}.normalized.sorted.vcf.gz",
+        freebayes2 = "results/mutect2/freebayes/batch2/{aliquot_barcode}.normalized.sorted.vcf.gz",
+        freebayes3 = "results/mutect2/freebayes/batch3/{aliquot_barcode}.normalized.sorted.vcf.gz",
+        freebayes4 = "results/mutect2/freebayes/batch4/{aliquot_barcode}.normalized.sorted.vcf.gz",
+        freebayes5 = "results/mutect2/freebayes/batch5/{aliquot_barcode}.normalized.sorted.vcf.gz",
+        consensus = "results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz"
+    output:
+        tsv = "results/mutect2/batches2db/{aliquot_barcode}.normalized.sorted.tsv"
+    params:
+        mutect2 = lambda wildcards: "results/mutect2/m2post/{}.normalized.sorted.vcf.gz".format(manifest.getFirstPair(wildcards.aliquot_barcode)) if manifest.getFirstPair(wildcards.aliquot_barcode) is not None else "",
+        mem = CLUSTER_META["batches2db"]["mem"]
+    threads:
+        CLUSTER_META["batches2db"]["ppn"]
+    conda:
+        "../envs/r.yaml"
+    log:
+        "logs/mutect2/batches2db/{aliquot_barcode}.log"
+    benchmark:
+        "benchmarks/mutect2/batches2db/{aliquot_barcode}.txt"
+    message:
+        "Add freebayes calls to the database\n"
+        "Aliquot: {wildcards.aliquot_barcode}"
+    script:
+        "batches2db.R"
 
 # ## END ##
