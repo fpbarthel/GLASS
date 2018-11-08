@@ -43,11 +43,11 @@ WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in ran
 ## Load modules
 
 ## We do not want the additional DAG processing if not from source
-if(config["from_source"]):
-    include: "snakemake/download.smk"
-    include: "snakemake/align.smk"
+#if(config["from_source"]):
+#    include: "snakemake/download.smk"
+include: "snakemake/align.smk"
 
-include: "snakemake/mutect2-post.smk"
+#include: "snakemake/mutect2-post.smk"
 
 # include: "snakemake/haplotype-map.smk"
 # include: "snakemake/fingerprinting.smk"
@@ -80,6 +80,11 @@ rule align:
         lambda wildcards: ["results/align/fastqc/{sample}/{sample}.{rg}.unaligned_fastqc.html".format(sample = aliquot_barcode, rg = readgroup)
           for aliquot_barcode, readgroups in manifest.getSelectedReadgroupsByAliquot().items()
           for readgroup in readgroups]
+
+rule missingmetrics:
+    input:
+        expand("results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/align/validatebam/{aliquot_barcode}.ValidateSamFile.txt", aliquot_barcode = manifest.getSelectedAliquots())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download only rule
