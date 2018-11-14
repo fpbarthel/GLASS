@@ -1,4 +1,34 @@
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Preprocess intervals
+## See: https://software.broadinstitute.org/gatk/documentation/article?id=11682
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+# rule preprocessintervals:
+# 	output:
+
+# 	params:
+#         mem = CLUSTER_META["preprocessintervals"]["mem"],
+#         intervals = lambda wildcards: config["cnv"]["intervals_wes"] if manifest.isExome(wildcards.aliquot_barcode) else config["cnv"]["intervals_wgs"]
+#     threads:
+#         CLUSTER_META["preprocessintervals"]["ppn"]
+#     log:
+#         "logs/cnv/preprocessintervals/{aliquot_barcode}.log"
+#     conda:
+#         "../envs/gatk4.yaml"
+#     benchmark:
+#         "benchmarks/cnv/preprocessintervals/{aliquot_barcode}.txt"
+#     message:
+#         "Preprocess intervals\n"
+#         "Sample: {wildcards.aliquot_barcode}"
+#     shell:
+#         "gatk --java-options -Xmx{params.mem}g CollectReadCounts \
+#             -I {input} \
+#             -L {params.intervals} \
+#             --interval-merging-rule OVERLAPPING_ONLY \
+#             -O {output} \
+#             > {log} 2>&1"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Collect read counts
 ## See: https://software.broadinstitute.org/gatk/documentation/article?id=11682
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -74,7 +104,8 @@ rule createcnvpon:
         "results/cnv/createcnvpon/{aliquot_batch}.pon.hdf5"
     params:
         mem = CLUSTER_META["createcnvpon"]["mem"],
-        input_files = lambda _, input: " ".join(["-I " + s for s in input])
+        input_files = lambda _, input: " ".join(["-I " + s for s in input]),
+        gcanno = lambda wildcards: config["cnv"]["intervals_wes_gcanno"] if wildcards.aliquot_batch.endswith("WXS") else config["cnv"]["intervals_wgs_gcanno"]
     threads:
         CLUSTER_META["createcnvpon"]["ppn"]
     log:
@@ -89,7 +120,7 @@ rule createcnvpon:
     shell:
         "gatk --java-options -Xmx{params.mem}g CreateReadCountPanelOfNormals \
             {params.input_files} \
-            --minimum-interval-median-percentile 5.0 \
+            --annotated-intervals {params.gcanno} \
             -O {output} \
             > {log} 2>&1"
 

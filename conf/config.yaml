@@ -6,22 +6,22 @@ from_source: 0
 
 ## Database settings
 db:
-  configfile: "/fastscratch/verhaak-lab/.odbc.ini"
+  configfile: "/projects/verhaak-lab/GLASS-analysis/.odbc.ini"
   configsection: "VerhaakDB"
 
 ## Data paths
 data:
-  source_path: "/fastscratch/verhaak-lab/GLASS-WG/data"
-  realn_path: "/fastscratch/verhaak-lab/GLASS-WG/results/align/bqsr"
+  source_path: "/projects/verhaak-lab/GLASS-analysis/data"
+  realn_path: "/projects/verhaak-lab/GLASS-analysis/results/align/bqsr"
 
 #### JSON files (as alternative to database)
-json:
-  cases:       "/projects/barthf/GLASS-WG/data/manifest/cases.json"
-  samples:     "/projects/barthf/GLASS-WG/data/manifest/samples.json"
-  aliquots:    "/projects/barthf/GLASS-WG/data/manifest/aliquots.json"
-  files:       "/projects/barthf/GLASS-WG/data/manifest/files.json"
-  readgroups:  "/projects/barthf/GLASS-WG/data/manifest/readgroups.json"
-  pairs:       "/projects/barthf/GLASS-WG/data/manifest/pairs.json"
+# json:
+#   cases:       "/projects/barthf/GLASS-WG/data/manifest/cases.json"
+#   samples:     "/projects/barthf/GLASS-WG/data/manifest/samples.json"
+#   aliquots:    "/projects/barthf/GLASS-WG/data/manifest/aliquots.json"
+#   files:       "/projects/barthf/GLASS-WG/data/manifest/files.json"
+#   readgroups:  "/projects/barthf/GLASS-WG/data/manifest/readgroups.json"
+#   pairs:       "/projects/barthf/GLASS-WG/data/manifest/pairs.json"
 
 ## Full path to cluster settings
 cluster_json:     "conf/cluster.json"
@@ -46,8 +46,10 @@ mutect2:
 cnv:
   min_contig_len: 46709983
   ## CNV intervals
-  intervals_wgs:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.interval_list"
-  intervals_wes:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/Intersect_Exome_hg19.filtered.preprocess.interval_list"
+  intervals_wgs:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.10kb.allchrs.interval_list"
+  intervals_wes:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/Intersect_Exome_hg19.filtered.preprocess.5kpad.interval_list"
+  intervals_wgs_gcanno: "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.10kb.allchrs.gcanno.tsv"
+  intervals_wes_gcanno:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/Intersect_Exome_hg19.filtered.preprocess.5kpad.gcanno.tsv"
   centromere: "/projects/verhaak-lab/verhaak_ref/gatk-cnv/somatic-b37_final_centromere_hg19.seg"
   gistic:     "/projects/verhaak-lab/verhaak_ref/gatk-cnv/somatic-b37_CNV.hg19.bypos.v1.CR1_event_added.mod.seg"
 
@@ -64,7 +66,7 @@ html_dir:         "/home/barthf/ShinyApps/"
 gdc_token:        "/home/barthf/gdc-user-token.2018-05-23T11_13_25-04_00.txt"
 
 ## Temporary directory
-tempdir:          "/fastscratch/verhaak-lab/GLASS-WG/tmp"
+tempdir:          "/fastscratch/verhaak-lab/temp"
 
 ## WGS scatter intervals
 wgs_scatterdir:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50"

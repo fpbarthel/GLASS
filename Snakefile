@@ -45,7 +45,7 @@ WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in ran
 ## We do not want the additional DAG processing if not from source
 #if(config["from_source"]):
 #    include: "snakemake/download.smk"
-include: "snakemake/align.smk"
+#include: "snakemake/align.smk"
 
 #include: "snakemake/mutect2-post.smk"
 
@@ -58,7 +58,7 @@ include: "snakemake/align.smk"
 # include: "snakemake/lumpy.smk"
 # include: "snakemake/delly.smk"
 # include: "snakemake/manta.smk"
-# include: "snakemake/cnv-gatk.smk"
+include: "snakemake/cnv.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Haplotype map creation rule
@@ -164,11 +164,12 @@ rule varscan2:
 
 rule cnv:
     input:
-        expand("results/cnv/plotmodeledsegments/{aliquot_barcode}/{aliquot_barcode}.modeled.png", aliquot_barcode = manifest.getSelectedAliquots()),
         expand("results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png", aliquot_barcode = manifest.getSelectedAliquots()),
-        expand("results/cnv/acs_convert/{pair_barcode}.acs.seg", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/cnv/gistic_convert/{pair_barcode}.gistic2.seg", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/cnv/plotmodeledsegments/{aliquot_barcode}/{aliquot_barcode}.modeled.png", aliquot_barcode = manifest.getSelectedAliquots())#,
         #expand("results/cnv/callsegments/{pair_barcode}.called.seg", pair_barcode = manifest.getSelectedPairs())
+        #expand("results/cnv/acs_convert/{pair_barcode}.acs.seg", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/cnv/gistic_convert/{pair_barcode}.gistic2.seg", pair_barcode = manifest.getSelectedPairs()),
+        
         #expand("results/cnv/absolute/{pair_barcode}/{pair_barcode}.ABSOLUTE_plot.pdf", pair_barcode = manifest.getSelectedPairs()),
         #expand("results/cnv/combinetracks/{pair_barcode}.final.seg", pair_barcode = manifest.getSelectedPairs()),
         #expand("results/cnv/acs_convert/{pair_barcode}/{pair_barcode}.ABSOLUTE_plot.pdf", pair_barcode = manifest.getSelectedPairs())

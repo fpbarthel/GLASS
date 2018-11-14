@@ -284,13 +284,13 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00"
+        "walltime" : "12:00:00"
     },
     "createcnvpon" :
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "12:00:00",
         "name" : "{rule}",
         "stdout" : "logs/drmaa/{rule}.out",
         "stderr" : "logs/drmaa/{rule}.err"
@@ -299,31 +299,31 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00"
+        "walltime" : "12:00:00"
     },
     "plotcr" :
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00"
+        "walltime" : "2:00:00"
     },
     "collectalleliccounts" :
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00"
+        "walltime" : "12:00:00"
     },
     "modelsegments" :
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00"
+        "walltime" : "12:00:00"
     },
     "callsegments" :
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00"
+        "walltime" : "12:00:00"
     },
     "plotmodeledsegments" :
     {
