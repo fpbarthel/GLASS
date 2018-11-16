@@ -1,9 +1,5 @@
 benchmarks/**
-data/fastq/**
-data/download/**
-data/clinical-data/**
-data/sequencing-information/**
-data/st-jude-data/**
+data/**
 results/**
 logs/**
 sandbox/**
