@@ -1,13 +1,13 @@
 #######################################################
-# 1p/19q calling in the GLASS-WXS & GLASS-WG datasets
-# Date: 2018.10.30 
+# 1p/19q calling in the GLASS-WXS & GLASS-WG datasets.
+# Date: 2018.11.15 
 # Author: Kevin J.
 #######################################################
 
-# Downloaded the UCSC cytoband file.
+# Downloaded the UCSC cytoband file for hg19.
 cytoband_file = "/Users/johnsk/Documents/Life-History/GLASS-WG/data/ref/human_grch37_hg19_ucsc_cytoBand.txt"
 
-# Directory for GLASS analysis.
+# Directory for GLASS analysis and copy number files.
 mybasedir = 'Volumes/verhaak-lab/GLASS-analysis/'
 datadir   = 'results/cnv/callsegments'
 pattern   = '.called.seg$'
@@ -19,23 +19,20 @@ library(parallel)
 library(tidyverse)
 library(GenomicRanges)
 library(data.table)
-
 setwd(mybasedir)
 
 #######################################################
-## Read in an example "*.called.seg" file to test the calling.
+## Read in the "*.called.seg" files.
 files = list.files(datadir, full.names = T, pattern = pattern, recursive=T)
-# If it is desirable to include the sample names.
-cnsamples = data.frame(sample_id=gsub(".called.seg", "", basename(files)), library_type = substring(basename(files), 21, 23))
 
-# The first 88 rows of each file represent a header.
+## The first 88 rows of each ".called.seg" file represent a header.
 cn_dat = mclapply(files, function(f){
   dat = tryCatch(read.delim(f,as.is=T, header=T, skip = 88), error=function(e) e)
   if(inherits(dat,'error')) {
     message(f, '\n', dat, '\n')
     return()
   }
-# Truncate the file name to just the sample_id.
+# Truncate the file name to just the sample_id. We are only interested in 1p and 19q.
   dat = dat %>%
     mutate(sample_id = gsub(".called.seg", "", basename(f))) %>% 
     filter(CONTIG%in%c("1", "19"))
@@ -47,12 +44,13 @@ cn_dat = mclapply(files, function(f){
 ## Combine all the samples from the GLASS-WG cohort.
 glass_cn = data.table::rbindlist(cn_dat)
 
-## Create a GRanges friendly chromosome identifier.
+## Make sure GRanges chromosome identifiers line up with one another.
 glass_cn = glass_cn %>% 
-  mutate(chromosome = paste0("chr", CONTIG)) %>% 
+  # swap column labels.
+  mutate(chr = CONTIG) %>% 
   select(-CONTIG)
 
-## Inspect the averages, min, and max for how the algorithm called copy number changes. Interestingly, it appears that there must be some sample-specific normalization
+## Inspect the averages, min, and max for how the algorithm called copy number changes. It appears that there must be some sample-specific normalization
 # as the there are negative values for `0` as well as very high `+` values. These may be classified somehow as artifacts.
 glass_cn %>% 
   group_by(CALL) %>% 
@@ -72,15 +70,20 @@ hg19_1p = cytobands %>%
   filter(V1=='chr1') %>% 
   filter(grepl("p", V4))
 colnames(hg19_1p) <- c("chromosome", "start", "end", "cytoband", "stain")
-hg19_1p_GR = makeGRangesFromDataFrame(hg19_1p)
+hg19_1p_GR = makeGRangesFromDataFrame(hg19_1p, keep.extra.columns = T)
 
 # Create a genomic range object for chr19 cytoband q.
 hg19_19q = cytobands %>% 
   filter(V1=='chr19') %>% 
   filter(grepl("q", V4))
 colnames(hg19_19q) <- c("chromosome", "start", "end", "cytoband", "stain")
-hg19_19q_GR = makeGRangesFromDataFrame(hg19_19q)
+hg19_19q_GR = makeGRangesFromDataFrame(hg19_19q, keep.extra.columns = T)
 
+#######################
+# OPTION 1 codel calling. 
+# quick and dirty.
+# Average over all cytobands results in false positives.
+#######################
 ## Need to only use those coordinates corresponding to the chromosome arm.
 ## We don't want to consider segments that run on into a different arm.
 # Restrict ranges to the p arm of chromosome 1:
@@ -110,6 +113,7 @@ chr1p_19q_calls_subject <- data.frame(seqnames=seqnames(chr1p_19q_calls_restrict
 glass_1p19q_status = chr1p_19q_calls_subject %>%  
   group_by(seqnames, sample_id) %>% 
   summarise(weighted_log2 = sum(widths*mean_log2_copy_ratio)/sum(widths)) %>% 
+  # log2(0.9) represents single copy loss. -.3 is a more conservative threshold.
   mutate(chr_call = ifelse(weighted_log2<=log2(0.9), "deletion", "intact")) %>% 
   select(-weighted_log2) %>% 
   spread(seqnames, chr_call) %>% 
@@ -118,14 +122,72 @@ glass_1p19q_status = chr1p_19q_calls_subject %>%
 # Briefly, enumerate the codel_status:  
 table(glass_1p19q_status$codel_status)
 
-# Write file out for deletion only calls. We did not consider the amplification, only whether it was deleted.
-write.table(glass_1p19q_status, file = "/Users/johnsk/Documents/glass_1p19q_codeletion_status.txt", sep="\t", row.names = F, col.names = T, quote = F)
 
+#######################
+## OPTION 2 (MORE ACCURATE)
+## Accounts for issues with partial 1p 19q codeletion
+#######################
+# For each cytoband it may be advantageous to look to see whether there are local or total deletions.
+hg19_1p19q = c(hg19_1p_GR, hg19_19q_GR)
 
-# Output just TCGA WGS codel_status:
-TCGA_1p_19q = glass_1p19q_status %>% 
-#  filter(grepl("TCGA", sample_id)) %>% 
-  filter(grepl("WGS", sample_id)) %>% 
-  filter(!grepl("-NB-", sample_id))
+## Try to do this the data.table way.
+copynum_calls = data.table(
+  chr = as.numeric(as.character(seqnames(glass_cn_gr))),
+  start = start(glass_cn_gr), 
+  end =  end(glass_cn_gr),
+  sample_id = glass_cn_gr$sample_id,
+  copy_ratio = glass_cn_gr$MEAN_LOG2_COPY_RATIO,
+  CALL = glass_cn_gr$CALL)
+setkey(copynum_calls, chr, start, end)
 
-write.table(TCGA_1p_19q, file = "/Users/johnsk/Documents/tcga_wgs_1p19q_codeletion_status.txt", sep="\t", row.names = F, col.names = T, quote = F)
+# Make sure chromosomes are correct ("1" and "19").
+glioma_1p19q_coord = data.table(
+  chr = as.numeric(seqnames(hg19_1p19q)),
+  start = start(hg19_1p19q), 
+  end =  end(hg19_1p19q),
+  cytoband = hg19_1p19q$cytoband)
+setkey(glioma_1p19q_coord, chr, start, end)
+
+# Find overlaps for hg19 1p19q in the GLASS samples.
+cn_1p19q_overlap <- foverlaps(copynum_calls, glioma_1p19q_coord, type = "any", nomatch = 0)
+cn_1p19q_overlap_df <- as.data.frame(cn_1p19q_overlap)
+cn_1p19q_overlap_df$full_cytoband = paste0(cn_1p19q_overlap_df$chr, cn_1p19q_overlap_df$cytoband)
+cn_1p19q_overlap_df$cytoband = NULL
+
+## Determine the copy number ratio per gene per sample. 
+glass_cytoband_ratio = cn_1p19q_overlap_df %>%
+  mutate(widths = abs(end-start)) %>% 
+  group_by(full_cytoband, sample_id) %>% 
+  summarise(weighted_log2 = sum(widths*copy_ratio)/sum(widths)) %>% 
+  # We are using more stringent log2 ratio  values for copy number to insure true deletion.
+  mutate(call = ifelse(weighted_log2<=(-0.3), "deletion", ifelse(weighted_log2>=0.3, "amplification", "neutral"))) %>% 
+  ungroup() %>% 
+  dplyr::select(-call) %>% 
+  spread(full_cytoband, weighted_log2)
+
+## There are 46 segments across 1p 19q. Focus on enumerating the deleted segments.
+glass_cytoband_call = cn_1p19q_overlap_df %>%
+  mutate(widths = abs(end-start)) %>% 
+  group_by(full_cytoband, sample_id) %>% 
+  summarise(weighted_log2 = sum(widths*copy_ratio)/sum(widths)) %>% 
+  # We are using more stringent log2 ratio  values for copy number to insure true deletion.
+  mutate(call = ifelse(weighted_log2<=(-0.3), "deletion", ifelse(weighted_log2>=0.3, "amplification", "neutral"))) %>% 
+  ungroup() %>% 
+  dplyr::select(-weighted_log2) %>% 
+  group_by(sample_id) %>% 
+  filter(!grepl("-NB-", sample_id)) %>% 
+  filter(call == "deletion") %>% 
+  summarise(del_counts = n())
+
+# Check inconsistencies for 1p19q:
+glass_codel = glass_cytoband_call %>% 
+  filter(del_counts > 38) %>% 
+  mutate(subject_id = substr(sample_id, 1, 12)) %>% 
+  mutate(status_1p19q = "codel") %>% 
+  select(-sample_id, -del_counts) %>% 
+  # Poor performing UCSF samples.
+  filter(!subject_id%in%c("GLSS-SF-0081", "GLSS-SF-0006")) %>% 
+  distinct()
+
+# Write out file with codel tumors.
+write.table(glass_codel, file ="/Users/johnsk/Documents/Life-History/glass-subject-level-codel-status.txt", quote=FALSE, sep='\t', row.names = F)

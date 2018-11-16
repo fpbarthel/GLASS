@@ -15,8 +15,11 @@ pattern   = '.WgsMetrics.txt$'
 library(parallel)
 library(tidyverse)
 library(data.table)
+library(DBI)
 
 #######################################################
+# Establish connection with the database.
+con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
 
 ## Read in an example "*.WgsMetrics.txt" file to test the calling.
 files = list.files(datadir, full.names = T, pattern = pattern, recursive=T)
@@ -47,8 +50,15 @@ glass_cov = data.table::rbindlist(cov_dat)
 glass_samples_cumulative_cov = glass_cov %>% 
   group_by(sample_id) %>% 
   mutate(cumulative_coverage = rev(cumsum(rev(high_quality_coverage_count)))) %>% 
-  select(aliquot_id = sample_id, coverage, high_quality_coverage_count, cumulative_coverage)
+  # Make sure colnames are formatting right.
+  select(aliquot_barcode = sample_id, coverage, high_quality_coverage_count, cumulative_coverage) %>% 
+  filter(!grepl("GLSS-CU-00", aliquot_barcode))
+
+# Total number should be 885.
+n_distinct(glass_samples_cumulative_cov$aliquot_barcode)
 
 # Write output as one table or a table for each file:
-write.table(glass_samples_cumulative_cov, file = "/Users/johnsk/Documents/Life-History/GLASS-WG/data/ref/glass-cumulative-coverage.txt", sep="\t", row.names = F, col.names = T, quote = F)
+# write.table(glass_samples_cumulative_cov, file = "/Users/johnsk/Documents/Life-History/GLASS-WG/data/ref/glass-cumulative-coverage.txt", sep="\t", row.names = F, col.names = T, quote = F)
 
+# Write to cumulative coverage files to database.
+dbWriteTable(con, Id(schema="analysis",table="coverage"), glass_samples_cumulative_cov, append=T)
