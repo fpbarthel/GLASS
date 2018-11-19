@@ -29,18 +29,19 @@ LEFT JOIN analysis.mutation_freq mf ON mf.aliquot_barcode = gt.aliquot_barcode
 LEFT JOIN clinical.surgeries s ON s.sample_barcode = ts.sample_barcode
 INNER JOIN clinical.cases ca ON ts.case_barcode = ca.case_barcode
 WHERE ts.sample_type IN ('TP','R1') AND ((v.variant_classification IN ('In_Frame_Ins','In_Frame_Del','Frame_Shift_Del','Frame_Shift_Ins','Missense_Mutation','Nonstop_Mutation','Nonsense_Mutation')
-AND v.gene_symbol IN ('TP53','ATRX','IDH1','EGFR','PTEN','NF1','CIC','FUBP1','NOTCH1','PIK3CA','PIK3R1')) 
-OR (v.variant_classification = '5''Flank' AND v.gene_symbol = 'TERT'))"
+AND v.gene_symbol IN ('IDH1','CIC','FUBP1','NOTCH1')) 
+OR (v.variant_classification = '5''Flank' AND v.gene_symbol = 'TERT' AND (v.start = 1295250 OR v.start = 1295228)))"
 
 qres <- dbGetQuery(con, q)
 
 df = qres %>% 
   filter(coverage_adj_mut_freq < 8, complete.cases(idh_status, codel_status)) %>% ## (1) Filter out hypermutator samples
   group_by(case_barcode) %>%
-  mutate(idh_codel_grp = ifelse(any(idh_status == "IDH.mt") && any(codel_status == "codel"), "IDHmut-codel", 
-                                ifelse(any(idh_status == "IDH.mt"), "IDHmut",
-                                       ifelse(any(idh_status == "IDH.wt"), "IDHwt", NA)))) %>%
+  mutate(idh_codel_grp = ifelse(any(idh_status == "IDHmut") && any(codel_status == "codel"), "IDHmut-codel", 
+                                ifelse(any(idh_status == "IDHmut"), "IDHmut",
+                                       ifelse(any(idh_status == "IDHwt"), "IDHwt", NA)))) %>%
   ungroup() %>%
+  filter(idh_codel_grp == "IDHmut-codel") %>%
   mutate(var = sprintf("%s:%s-%s_%s", chrom, start, end, alt),
          called = called == "1",
          severity_score = case_when(variant_classification == "Nonsense" ~ 0,
@@ -60,11 +61,12 @@ df = qres %>%
   mutate(any_called = any(called, na.rm=T),
          num_samples = n_distinct(sample_barcode)) %>%
   ungroup() %>%
+  filter(num_samples > 1) %>% ## (4) filter out singletons (unpaired samples)
   group_by(gene_symbol) %>%
   mutate(num_patient = n_distinct(case_barcode),
          gene_symbol_label = sprintf("%s (n=%s)", gene_symbol, num_patient)) %>%
   ungroup() %>%
-  filter(any_called, num_samples > 1) %>% ## (4) a. filter out gene/patient combinations where that gene was not called as mutant in any subsample and b. filter out singletons (unpaired samples)
+  filter(any_called) %>% ## (4) a. filter out gene/patient combinations where that gene was not called as mutant in any subsample and b. filter out singletons (unpaired samples)
   arrange(severity_score) %>%
   group_by(case_barcode, gene_symbol) %>%
   mutate(keep = chrom == chrom[which(called)[1]] & 
@@ -82,7 +84,7 @@ ggdat = df %>%
   spread(temp, value) 
 
 ggplot(ggdat, aes(TP_vaf, R1_vaf)) +
-  geom_point(aes(color=variant_classification, shape=idh_codel_grp)) + 
+  geom_point(aes(color=variant_classification)) + 
   geom_abline(slope=1, alpha=0.2, linetype=2) +
   facet_wrap(~gene_symbol_label) +
   labs(x="Primary", y="First Recurrence", color = "Variant Classification", shape = "Glioma subtype") +

@@ -33,28 +33,41 @@
 ## See: https://software.broadinstitute.org/gatk/documentation/article?id=11682
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+def selectIntervals(is_exome, chromosomes):
+	if is_exome:
+		if chromosomes == "autosomal":
+			return config["cnv"]["intervals_wes_autosomal"]
+		elif chromosomes == "allosomal":
+			return config["cnv"]["intervals_wes_allosomal"]
+	else:
+		if chromosomes == "autosomal":
+			return config["cnv"]["intervals_wgs_autosomal"]
+		elif chromosomes == "allosomal":
+			return config["cnv"]["intervals_wgs_allosomal"]
+
 rule collectreadcounts:
     input:
-        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
+        bam = ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
-        "results/cnv/readcounts/{aliquot_barcode}.counts.hdf5"
+        "results/cnv/readcounts/{aliquot_barcode}.{chromosomes}.counts.hdf5"
     params:
         mem = CLUSTER_META["collectreadcounts"]["mem"],
-        intervals = lambda wildcards: config["cnv"]["intervals_wes"] if manifest.isExome(wildcards.aliquot_barcode) else config["cnv"]["intervals_wgs"]
+        intervals = lambda wildcards: selectIntervals(manifest.isExome(wildcards.aliquot_barcode), wildcards["chromosomes"])
     threads:
         CLUSTER_META["collectreadcounts"]["ppn"]
     log:
-        "logs/cnv/readcounts/{aliquot_barcode}.log"
+        "logs/cnv/readcounts/{aliquot_barcode}.{chromosomes}.log"
     conda:
         "../envs/gatk4.yaml"
     benchmark:
-        "benchmarks/cnv/readcounts/{aliquot_barcode}.txt"
+        "benchmarks/cnv/readcounts/{aliquot_barcode}.{chromosomes}.txt"
     message:
         "Collecting read counts\n"
-        "Sample: {wildcards.aliquot_barcode}"
+        "Sample: {wildcards.aliquot_barcode}\n"
+        "Chromosomes: {wildcards.chromosomes}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CollectReadCounts \
-            -I {input} \
+            -I {input.bam} \
             -L {params.intervals} \
             --interval-merging-rule OVERLAPPING_ONLY \
             -O {output} \
@@ -66,28 +79,28 @@ rule collectreadcounts:
 ## See: https://gatkforums.broadinstitute.org/dsde/discussion/11683/
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule collectalleliccounts:
+rule collecthets:
     input:
         ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
-        "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv"
+        "results/cnv/hets/{aliquot_barcode}.allelicCounts.tsv"
     params:
-        mem = CLUSTER_META["collectalleliccounts"]["mem"]
+        mem = CLUSTER_META["collecthets"]["mem"]
     threads:
-        CLUSTER_META["collectalleliccounts"]["ppn"]
+        CLUSTER_META["collecthets"]["ppn"]
     log:
-        "logs/cnv/alleliccounts/{aliquot_barcode}.log"
+        "logs/cnv/hets/{aliquot_barcode}.log"
     conda:
         "../envs/gatk4.yaml"
     benchmark:
-        "benchmarks/cnv/alleliccounts/{aliquot_barcode}.txt"
+        "benchmarks/cnv/hets/{aliquot_barcode}.txt"
     message:
         "Collect allelic counts\n"
         "Aliquot: {wildcards.aliquot_barcode}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CollectAllelicCounts \
             -I {input} \
-            -L {config[cnv_common_snp]} \
+            -L {config[cnv][hetsites]} \
             -R {config[reference_fasta]} \
             -O {output} \
             > {log} 2>&1"
@@ -97,26 +110,40 @@ rule collectalleliccounts:
 ## See: https://software.broadinstitute.org/gatk/documentation/article?id=11682
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+def selectGCAnnotation(is_exome, chromosomes):
+	if is_exome:
+		if chromosomes == "autosomal":
+			return config["cnv"]["intervals_wes_autosomal_gc"]
+		elif chromosomes == "allosomal":
+			return config["cnv"]["intervals_wes_allosomal_gc"]
+	else:
+		if chromosomes == "autosomal":
+			return config["cnv"]["intervals_wgs_autosomal_gc"]
+		elif chromosomes == "allosomal":
+			return config["cnv"]["intervals_wgs_allosomal_gc"]
+
 rule createcnvpon:
     input:
-        lambda wildcards: expand("results/cnv/readcounts/{aliquot_barcode}.counts.hdf5", aliquot_barcode = manifest.getPONAliquotsByBatch(wildcards.aliquot_batch)) #wildcards.analysis_type))
+        lambda wildcards: expand("results/cnv/readcounts/{aliquot_barcode}.{chromosomes}.counts.hdf5", aliquot_barcode = manifest.getPONAliquotsByBatchAndSex(wildcards.aliquot_batch, wildcards.sex if wildcards.sex != "NA" else None), chromosomes = wildcards.chromosomes)
     output:
-        "results/cnv/createcnvpon/{aliquot_batch}.pon.hdf5"
+        "results/cnv/createcnvpon/{aliquot_batch}.{chromosomes}.{sex}.pon.hdf5"
     params:
         mem = CLUSTER_META["createcnvpon"]["mem"],
         input_files = lambda _, input: " ".join(["-I " + s for s in input]),
-        gcanno = lambda wildcards: config["cnv"]["intervals_wes_gcanno"] if wildcards.aliquot_batch.endswith("WXS") else config["cnv"]["intervals_wgs_gcanno"]
+        gcanno = lambda wildcards: selectGCAnnotation(wildcards.aliquot_batch.endswith("WXS"), wildcards["chromosomes"])
     threads:
         CLUSTER_META["createcnvpon"]["ppn"]
     log:
-        "logs/cnv/createcnvpon/{aliquot_batch}.log"
+        "logs/cnv/createcnvpon/{aliquot_batch}.{chromosomes}.{sex}.log"
     conda:
         "../envs/gatk4.yaml"
     benchmark:
-        "benchmarks/cnv/createcnvpon/{aliquot_batch}.txt"
+        "benchmarks/cnv/createcnvpon/{aliquot_batch}.{chromosomes}.{sex}.txt"
     message:
         "Creating CNV panel of normals\n"
-        "Batch: {wildcards.aliquot_batch}"
+        "Batch: {wildcards.aliquot_batch}\n"
+        "Chromosomes: {wildcards.chromosomes}\n"
+        "Sex: {wildcards.sex}"
     shell:
         "gatk --java-options -Xmx{params.mem}g CreateReadCountPanelOfNormals \
             {params.input_files} \
@@ -129,13 +156,20 @@ rule createcnvpon:
 ## See: https://software.broadinstitute.org/gatk/documentation/article?id=11682
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+def getSexString(manifest, aliquot_barcode, chromosomes):
+	if chromosomes == "autosomal":
+		return "all"
+	elif chromosomes == "allosomal":
+		sex = manifest.getSex(aliquot_barcode)
+		return sex if sex is not None else "NA"
+
 rule denoisereadcounts:
     input:
-        sample = lambda wildcards: "results/cnv/readcounts/{aliquot_barcode}.counts.hdf5".format(aliquot_barcode = wildcards.aliquot_barcode),
-        pon =  lambda wildcards: "results/cnv/createcnvpon/{aliquot_batch}.pon.hdf5".format(aliquot_batch = manifest.getBatch(wildcards.aliquot_barcode))
+        sample = lambda wildcards: "results/cnv/readcounts/{aliquot_barcode}.{chromosomes}.counts.hdf5".format(aliquot_barcode = wildcards.aliquot_barcode, chromosomes = wildcards.chromosomes),
+        pon =  lambda wildcards: "results/cnv/createcnvpon/{aliquot_batch}.{chromosomes}.{sex}.pon.hdf5".format(aliquot_batch = manifest.getBatch(wildcards.aliquot_barcode), chromosomes = wildcards.chromosomes, sex = getSexString(manifest, wildcards.aliquot_barcode, wildcards.chromosomes))
     output:
-        standardized = "results/cnv/denoisereadcounts/{aliquot_barcode}.standardizedCR.tsv",
-        denoised = "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv"
+        standardized = "results/cnv/denoisereadcounts/{aliquot_barcode}.{chromosomes}.standardizedCR.tsv",
+        denoised = "results/cnv/denoisereadcounts/{aliquot_barcode}.{chromosomes}.denoisedCR.tsv"
     params:
         mem = CLUSTER_META["denoisereadcounts"]["mem"]
     threads:
@@ -143,12 +177,13 @@ rule denoisereadcounts:
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/cnv/denoisereadcounts/{aliquot_barcode}.log"
+        "logs/cnv/denoisereadcounts/{aliquot_barcode}.{chromosomes}.log"
     benchmark:
-        "benchmarks/cnv/denoisereadcounts/{aliquot_barcode}.txt"
+        "benchmarks/cnv/denoisereadcounts/{aliquot_barcode}.{chromosomes}.txt"
     message:
         "Denoising and standardizing read counts\n"
-        "Aliquot: {wildcards.aliquot_barcode}"
+        "Aliquot: {wildcards.aliquot_barcode}\n"
+        "Chromosomes: {wildcards.chromosomes}"
     shell:
         "gatk --java-options -Xmx{params.mem}g DenoiseReadCounts \
             -I {input.sample} \
@@ -156,6 +191,39 @@ rule denoisereadcounts:
             --standardized-copy-ratios {output.standardized} \
             --denoised-copy-ratios {output.denoised} \
             > {log} 2>&1"
+
+
+rule mergedenoisedreadcounts:
+    input:
+        standardized_autosomal = 	"results/cnv/denoisereadcounts/{aliquot_barcode}.autosomal.standardizedCR.tsv",
+        denoised_autosomal = 		"results/cnv/denoisereadcounts/{aliquot_barcode}.autosomal.denoisedCR.tsv",
+        standardized_allosomal = 	"results/cnv/denoisereadcounts/{aliquot_barcode}.allosomal.standardizedCR.tsv",
+        denoised_allosomal = 		"results/cnv/denoisereadcounts/{aliquot_barcode}.allosomal.denoisedCR.tsv"
+    output:
+        standardized = 	"results/cnv/mergedenoisedreadcounts/{aliquot_barcode}.standardizedCR.tsv",
+        denoised = 		"results/cnv/mergedenoisedreadcounts/{aliquot_barcode}.denoisedCR.tsv"
+    params:
+        mem = CLUSTER_META["mergedenoisedreadcounts"]["mem"]
+    threads:
+        CLUSTER_META["mergedenoisedreadcounts"]["ppn"]
+    conda:
+        "../envs/gatk4.yaml"
+    log:
+        "logs/cnv/mergedenoisedreadcounts/{aliquot_barcode}.log"
+    benchmark:
+        "benchmarks/cnv/mergedenoisedreadcounts/{aliquot_barcode}.txt"
+    message:
+        "Merging denoising and standardizing read counts\n"
+        "Aliquot: {wildcards.aliquot_barcode}"
+    shell:
+        "awk 'FNR==1 && NR!=1 {{ while (/^@|^CONTIG/) getline; }} 1 {{print}}' \
+        	{input.standardized_autosomal} {input.standardized_allosomal} \
+        	1> {output.standardized} \
+            2> {log};"
+        "awk 'FNR==1 && NR!=1 {{ while (/^@|^CONTIG/) getline; }} 1 {{print}}' \
+        	{input.denoised_autosomal} {input.denoised_allosomal} \
+        	1> {output.denoised} \
+            2>> {log};"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Plot denoised and standardized copy ratios
@@ -165,8 +233,8 @@ rule denoisereadcounts:
 
 rule plotcr:
     input:
-        standardized = "results/cnv/denoisereadcounts/{aliquot_barcode}.standardizedCR.tsv",
-        denoised = "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv"
+        standardized = "results/cnv/mergedenoisedreadcounts/{aliquot_barcode}.standardizedCR.tsv",
+        denoised = "results/cnv/mergedenoisedreadcounts/{aliquot_barcode}.denoisedCR.tsv"
     output:
         "results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png",
         "results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoisedLimit4.png",
@@ -207,8 +275,8 @@ rule plotcr:
 
 rule modelsegments:
     input:
-        denoised = "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv",
-        counts = "results/cnv/alleliccounts/{aliquot_barcode}.allelicCounts.tsv"
+        denoised = "results/cnv/mergedenoisedreadcounts/{aliquot_barcode}.denoisedCR.tsv",
+        counts = "results/cnv/hets/{aliquot_barcode}.allelicCounts.tsv"
     output:
         "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelBegin.seg",
         "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.seg",
@@ -222,7 +290,7 @@ rule modelsegments:
         mem = CLUSTER_META["modelsegments"]["mem"],
         outputdir = "results/cnv/modelsegments/{aliquot_barcode}",
         outputprefix = "{aliquot_barcode}",
-        normal_counts_cmd = lambda wildcards: "--normal-allelic-counts results/cnv/alleliccounts/{}.allelicCounts.tsv".format(manifest.getMatchedNormal(wildcards.aliquot_barcode)) if manifest.getMatchedNormal(wildcards.aliquot_barcode) is not None else ""
+        normal_counts_cmd = lambda wildcards: "--normal-allelic-counts results/cnv/hets/{}.allelicCounts.tsv".format(manifest.getMatchedNormal(wildcards.aliquot_barcode)) if manifest.getMatchedNormal(wildcards.aliquot_barcode) is not None else ""
     threads:
         CLUSTER_META["modelsegments"]["ppn"]
     conda:
@@ -281,7 +349,7 @@ rule callsegments:
 
 rule plotmodeledsegments:
     input:
-        denoisedCR = "results/cnv/denoisereadcounts/{aliquot_barcode}.denoisedCR.tsv",
+        denoisedCR = "results/cnv/mergedenoisedreadcounts/{aliquot_barcode}.denoisedCR.tsv",
         hets = "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.hets.tsv",
         segments = "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.seg"
     output:

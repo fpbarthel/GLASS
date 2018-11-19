@@ -9,8 +9,8 @@ con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
 q = "SELECT mf.aliquot_barcode, s.case_barcode, treatment_tmz, who_classification, ts.sample_type, ta.aliquot_portion AS portion, ta.aliquot_analysis_type AS analysis_type,
 surgery_number, surgical_interval_mo, histology, grade, idh_status, codel_status, coverage_adj_mut_freq, cumulative_coverage
 FROM analysis.mutation_freq mf
-INNER JOIN biospecimen.aliquots ta ON ta.aliquot_barcode = mf.aliquot_barcode
-INNER JOIN biospecimen.samples ts ON ts.sample_barcode = ta.sample_barcode
+LEFT JOIN biospecimen.aliquots ta ON ta.aliquot_barcode = mf.aliquot_barcode
+LEFT JOIN biospecimen.samples ts ON ts.sample_barcode = ta.sample_barcode
 LEFT JOIN clinical.surgeries s ON s.sample_barcode = ts.sample_barcode"
 
 qres <- dbGetQuery(con, q)
@@ -31,9 +31,9 @@ df <- qres %>%
             who_classification = who_classification[1]) %>%
   ungroup() %>%
   group_by(case_barcode) %>%
-  mutate(idh_codel_grp = ifelse(any(idh_status == "IDH.mt") && any(codel_status == "codel"), "IDHmut-codel", 
-                                ifelse(any(idh_status == "IDH.mt"), "IDHmut",
-                                       ifelse(any(idh_status == "IDH.wt"), "IDHwt", NA))),
+  mutate(idh_codel_grp = ifelse(any(idh_status == "IDHmut") && any(codel_status == "codel"), "IDHmut-codel", 
+                                ifelse(any(idh_status == "IDHmut"), "IDHmut",
+                                       ifelse(any(idh_status == "IDHwt"), "IDHwt", NA))),
          hypermut_grp = ifelse(any(coverage_adj_mut_freq > 8), "hypermut", "non-hypermut"),
          n = n()) %>%
   ungroup() %>% filter(n>1)

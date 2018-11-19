@@ -45,11 +45,23 @@ mutect2:
 ## GATK CNV settings
 cnv:
   min_contig_len: 46709983
+  
   ## CNV intervals
-  intervals_wgs:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.10kb.allchrs.interval_list"
-  intervals_wes:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/Intersect_Exome_hg19.filtered.preprocess.5kpad.interval_list"
-  intervals_wgs_gcanno: "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.10kb.allchrs.gcanno.tsv"
-  intervals_wes_gcanno:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/Intersect_Exome_hg19.filtered.preprocess.5kpad.gcanno.tsv"
+  intervals_wgs_autosomal:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.10kb.autosomal.interval_list"
+  intervals_wgs_allosomal:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.10kb.allosomal.interval_list"
+  
+  intervals_wes_autosomal:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/Intersect_Exome_hg19.filtered.preprocess.2kb.autosomal.interval_list"
+  intervals_wes_allosomal:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/Intersect_Exome_hg19.filtered.preprocess.2kb.allosomal.interval_list"
+  
+  intervals_wgs_autosomal_gc: "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.10kb.autosomal.gcanno.tsv"
+  intervals_wgs_allosomal_gc: "/projects/verhaak-lab/verhaak_ref/gatk-cnv/human_g1k_v37_decoy.preprocessed.10kb.allosomal.gcanno.tsv"
+  
+  intervals_wes_autosomal_gc:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/Intersect_Exome_hg19.filtered.preprocess.2kb.autosomal.gcanno.tsv"
+  intervals_wes_allosomal_gc:  "/projects/verhaak-lab/verhaak_ref/gatk-cnv/Intersect_Exome_hg19.filtered.preprocess.2kb.allosomal.gcanno.tsv"
+
+  ## CNV common SNPs
+  hetsites:   "/projects/verhaak-lab/verhaak_ref/gatk-cnv/af-only-gnomad.raw.sites.b37.AFgt0.1.vcf.gz"
+  
   centromere: "/projects/verhaak-lab/verhaak_ref/gatk-cnv/somatic-b37_final_centromere_hg19.seg"
   gistic:     "/projects/verhaak-lab/verhaak_ref/gatk-cnv/somatic-b37_CNV.hg19.bypos.v1.CR1_event_added.mod.seg"
 
@@ -88,9 +100,6 @@ svtyper_reads:    1000
 
 ## Telseq
 telseq_r:         160 
-
-## CNV common SNPs
-cnv_common_snp:   "/projects/verhaak-lab/verhaak_ref/gatk-cnv/af-only-gnomad.raw.sites.b37.selected.vcf.gz"
 
 ## Reference genome
 reference_fasta:  "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/human_g1k_v37_decoy.fasta"

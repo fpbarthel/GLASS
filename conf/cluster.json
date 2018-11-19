@@ -301,16 +301,22 @@
         "mem" : 12,
         "walltime" : "12:00:00"
     },
+    "mergedenoisedreadcounts" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "2:00:00"
+    },
     "plotcr" :
     {
         "ppn" : 2,
         "mem" : 12,
         "walltime" : "2:00:00"
     },
-    "collectalleliccounts" :
+    "collecthets" :
     {
-        "ppn" : 2,
-        "mem" : 12,
+        "ppn" : 4,
+        "mem" : 24,
         "walltime" : "12:00:00"
     },
     "modelsegments" :

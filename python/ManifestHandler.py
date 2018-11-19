@@ -150,11 +150,18 @@ class ManifestHandler:
         """
         return [aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["case_project"] == case_project]
 
-    def getPONAliquotsByBatch(self, aliquot_batch):
+    def getPONAliquotsByBatchAndSex(self, aliquot_batch, case_sex):
         """
         Returns a list of aliquots given a batch
         """
-        return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["aliquot_batch"] == aliquot_batch and  al["sample_type"] in ["NB","NM"]]) & set(self.getSelectedAliquots()))
+        if case_sex == "all":
+            return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["aliquot_batch"] == aliquot_batch and al["sample_type"] in ["NB","NM"]]) & set(self.getSelectedAliquots()))
+        elif case_sex == "male":
+            return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["aliquot_batch"] == aliquot_batch and al["sample_type"] in ["NB","NM"] and al["case_sex"] == "male"]) & set(self.getSelectedAliquots()))
+        elif case_sex == "female":
+            return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["aliquot_batch"] == aliquot_batch and al["sample_type"] in ["NB","NM"] and al["case_sex"] == "female"]) & set(self.getSelectedAliquots()))
+        else:
+            return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["aliquot_batch"] == aliquot_batch and al["sample_type"] in ["NB","NM"] and al["case_sex"] is None]) & set(self.getSelectedAliquots()))
 
     def getPONAliquots(self):
         """
@@ -234,6 +241,12 @@ class ManifestHandler:
         Returns batch of given aliquot
         """
         return self.aliquots[aliquot_barcode]["aliquot_batch"]
+
+    def getSex(self, aliquot_barcode):
+        """
+        Returns sex of given aliquot
+        """
+        return self.aliquots[aliquot_barcode]["case_sex"]
 
     def getFiles(self):
         """
