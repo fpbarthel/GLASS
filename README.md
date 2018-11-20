@@ -1,65 +1,44 @@
-# GLASS-WG
+![glass-logo](https://user-images.githubusercontent.com/9220167/48782377-13789600-ecac-11e8-8598-771b6e5d75c6.png)
 
-This Github is home to alignment, variant calling and analysis pipelines for the GLASS whole genomes (GLASS-WG) analysis project.
+## The GLASS consortium
 
-The "home" directory for the project on Helix was moved to `/fastscratch/verhaak-lab/GLASS-WG`. This will always contain a mirror of the `master` branch. Keep your own testing/development branches (eg. `devel`) under a personal directory, eg. I keep mine under `/projects/barthf/GLASS-WG`.
+### Overview
+The Glioma Longitudinal AnalySiS (GLASS) consortium consists of clinical, bioinformaticians, and basic science researchers from leading institutions across the world striving to better understand glioma tumor evolution and to expose its therapeutic vulnerabilities. For more information, please read our position paper: **The Glioma Longitudinal Analysis Consortium. Glioma Through the Looking GLASS: Molecular Evolution of Diffuse Gliomas and the Glioma Longitudinal AnalySiS Consortium.** *Neuro Oncol. 2018* PMID: 29432615. 
 
-## Results
+#### Analytical contributors
+*In no particular order*: Floris Barthel, Kevin Johnson, Samir Amin, Fred Varn, Anzhela Moskalik, Hoon Kim, Roel Verhaak
 
-Description of the directory structure under `results\`. Most of the directories here store temporary and intermediate files that are deleted upon completion of the subsequent step. 
+#### Data contributors
+*In no particular order*: Mustafa Khasraw (U Sydney), Joe Costello (UCSF), Tom Mikkelsen (Henry Ford Hospital), Dohyun Nam (Samsung Medical Center), Pieter Wesseling (VUMC), Antonio Iavarone (Columbia), Gaetano Finochiaro (Instituto Besta), Lucy Stead (Leeds U), Adelheid Wöhrer (Vienna), Hiromichi Suzuki (Kyoto U), Priscilla Brastianos (MGH), Jason Huse (MD Anderson), John de Groot (MD Anderson), Kristin Alfaro-Munoz (MD Anderson), and NIH/NCI The Cancer Genome Atlas.
 
-folder | workflow | description
----|---|---
-artifacts | mutect2 | Collect metrics on sequencing context artifacts
-bqsr | align | Output for BaseRecalibrator (BQSR text file) and final BAM (w/ BQSR applied) *protected*
-bwa | align | BWA aligned BAMs
-callpon | mutect2 | VCF files for each control sample per scatter interval
-contamination | mutect2 | Estimate contamination
-m2bam | mutect2 | Run M2 - output BAM files
-m2filter | mutect2 | Filter M2
-m2vcf | mutect2 | Run M2 - output VCF files
-m2vcf-scatter | mutect2 | M2 output files per scatter interval
-markadapters | align | Mark Illumina adapters
-markduplicates | align | Mark duplicates and merge readgroup BAMs into a single sample BAM
-mergepon | mutect2 | Merges scattered individual PON VCFs into per-control PON VCFs
-pileupsummaries | mutect2 | Get pileup summaries
-pon | mutect2 | Merges per-control PON VCF into a final per-batch PON VCF *protected*
-qc | align | QC metrics
-ubam | align | Unaligned BAM files (uBAM)
-vep | mutect2 | Annotated MAF files *protected*
+### The GLASS Data Model
 
-## Changelog
+The GLASS data model was built to carefully take into the account the temporal nature of the dataset. The layers of the dataset is best explained using the diagram below. Here we see a single hypothetical patient (left-most column) from which we have obtained tumor samples at three different time points (second column), including a second tumor sub-sample (eg. multisector sample) from the primary tumor (third column). Moreover, a simultaneous DNA-RNA extraction was performed on 1st tumor recurrence and both were sequenced (fourth column). Lastly, some of the DNA aliquots were split off and separately sent off for whole genome and whole exome sequencing (fifth column).
 
-### Version 0.3
-- Finalized JSON format, see `data/manifest` for details
-- Alignment pipeline works successfully for BAM and FQ input, both TCGA and HK dataset processed succesfully
-- Updated reference genome to b37-decoy
-- SNV pipeline works (Mutect2)
-- To-Do: CNV, SV, alternative SNV
-- Cleaned up repository
+The gray colored blocks in the diagram represent the abstraction layers we are using to represent this complexity. Firstly, the `case` level represents patient in the cohort. Secondly, the `sample` level represent bulk samples (tumor and control) in the cohort and finally the `aliquot` level is the aggregate of the sample portion used for differentiating between multi-sector samples, the analyte used for differentiating between DNA and RNA extractions and finally the analysis to which the aliquot was subjected, such as whole genome, whole exome or RNA sequencing.
 
-### Version 0.2
+![data-model](https://user-images.githubusercontent.com/9220167/48782460-3dca5380-ecac-11e8-8ac5-c3c2d71bb94a.png)
 
-- Improved JSON format and parsing
-- JSON now indicates patients, samples, files and readgroups
-- Added QC steps
-- Streamlined workflow
-- Support for BAM and FASTQ as input
-- No longer relies on dynamic() statement in snakemake and instead statically reads readgroups from JSON (this is difficult for TCGA as BAM files need to be downloaded before readgroups can be determined, thus download of TCGA files should now be considered a seperate step. Regardless, determination of readgroups in TCGA BAMs has been completed and are stored in `data/` directory).
-- Fixed a lot of errors/bugsb
+Internally, we are using the PostgreSQL database management system to manage the complex relationships between data entities. More information on the database scheme can be found [here](https://www.synapse.org/#!Synapse:syn17038081/wiki/585706).
 
-### Version 0.1
+#### GLASS Barcode
 
-Alignment pipeline working with most standard settings. It can take FASTQ files or TCGA UUIDs as input that are specified in `samples.json` file (see `data/ref`). TCGA UUIDS are used to download BAM files which are then reverted back to uBAM (preserving original base qualities) and split across readgroups. Multiple FASTQ files from the same sample should reside in the same directory.
+The GLASS barcodes are inspired by the TCGA barcodes and are constructed in a recognizable fashion:
 
-Pipeline output can be found in `bqsr/`
+![barcode](https://user-images.githubusercontent.com/9220167/48782475-491d7f00-ecac-11e8-9bba-c4ba02e8aa07.png)
 
-To-Do for alignment pipeline:
-- Implement rigorous QC metrics (eg. FASTQ, samtools, MultiQC)
-- Enforce QC standards, eg. create reports that indicate PASS or FAIL
-- Accept gzipped FASTQ files as input
+Key parts of the data model are represented in the barcode.
 
-General To-Do:
-- SNV calling pipeline
-- CNV calling pipeline
-- etc..
+### Data Release version 2018-11-15
+The data available here marks the initial release of the GLASS project dataset, which is managed internally using the PostgreSQL database management system. The data available here represents the `2018-11-15` snapshot of our dataset. These data are under active curation so future versions will include additional data as well as correct potential errors. Please report any inconsistencies you find on the discussion board here or on our Github issue tracker https://github.com/TheJacksonLaboratory/GLASS.
+
+#### Current Data by the Numbers
+
+The following infographic shows the some summary statistics of the `2018-11-15` release of the GLASS dataset.
+
+![glass-numbers](https://user-images.githubusercontent.com/9220167/48782498-53d81400-ecac-11e8-807a-45f9b67e0e5f.png)
+
+#### Data Download
+The GLASS data can be downloaded from the `Tables` page [here](https://www.synapse.org/#!Synapse:syn17038081/tables/). It is also possible to query the data directly using the the API by using queries. You can read more about that [here](https://docs.synapse.org/articles/tables.html).
+
+Royalty-free icon made by Darius Dan of <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
