@@ -2,6 +2,7 @@ benchmarks/**
 data/**
 results/**
 logs/**
+dbm/glass-dbdump-20181004.sql
 sandbox/**
 archive/**
 documents/**
