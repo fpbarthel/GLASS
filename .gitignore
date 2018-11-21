@@ -3,6 +3,9 @@ data/**
 results/**
 logs/**
 dbm/glass-dbdump-20181004.sql
+R/md-anderson-clinical.R
+R/manifest/yung-create-manifest.R
+R/RData/**
 sandbox/**
 archive/**
 documents/**
