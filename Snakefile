@@ -50,7 +50,7 @@ WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in ran
 #include: "snakemake/mutect2-post.smk"
 
 # include: "snakemake/haplotype-map.smk"
-# include: "snakemake/fingerprinting.smk"
+include: "snakemake/fingerprinting.smk"
 # include: "snakemake/telseq.smk"
 # include: "snakemake/mutect2.smk"
 # include: "snakemake/varscan2.smk"
@@ -166,8 +166,9 @@ rule cnv:
     input:
         expand("results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png", aliquot_barcode = manifest.getSelectedAliquots()),
         expand("results/cnv/plotmodeledsegments/{aliquot_barcode}/{aliquot_barcode}.modeled.png", aliquot_barcode = manifest.getSelectedAliquots()),
-        expand("results/cnv/acs_convert/{pair_barcode}.acs.seg", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/cnv/gistic_convert/{pair_barcode}.gistic2.seg", pair_barcode = manifest.getSelectedPairs())
+        
+        #expand("results/cnv/acs_convert/{pair_barcode}.acs.seg", pair_barcode = manifest.getSelectedPairs()),
+        #expand("results/cnv/gistic_convert/{pair_barcode}.gistic2.seg", pair_barcode = manifest.getSelectedPairs()),
         
         #expand("results/cnv/absolute/{pair_barcode}/{pair_barcode}.ABSOLUTE_plot.pdf", pair_barcode = manifest.getSelectedPairs()),
         #expand("results/cnv/combinetracks/{pair_barcode}.final.seg", pair_barcode = manifest.getSelectedPairs()),
@@ -176,6 +177,10 @@ rule cnv:
         #expand("results/cnv/plotmodeledsegments/{pair_barcode}/{pair_barcode}.modeled.png", pair_barcode = manifest.getSelectedPairs()),
         #expand("results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png", aliquot_barcode = manifest.getSelectedAliquots()),
 
+rule titancna:
+    input:
+        expand("results/cnv/titan/{pair_barcode}/{pair_barcode}.optimalClusters.txt", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/cnv/titanfinal/seg/{pair_barcode}.seg.txt", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Call SV using Delly
@@ -235,14 +240,11 @@ rule telseq:
 ## Check sample and case fingerprints
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-#rule fingerprint:
-#    input:
-#        expand("results/fingerprinting/sample/{aliquot_barcode}.crosscheck_metrics", aliquot_barcode=ALIQUOT_TO_READGROUP.keys()),
-#        expand("results/fingerprinting/case/{case_id}.crosscheck_metrics", case_id=CASES_DICT.keys()),
-#        expand("results/fingerprinting/batch/{batch}.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
-#        "results/fingerprinting/GLASS-WG.crosscheck_metrics",
-#        expand("results/fingerprinting/batch/{batch}.clustered.crosscheck_metrics", batch=BATCH_TO_ALIQUOT.keys()),
-#        "results/fingerprinting/GLASS-WG.clustered.crosscheck_metrics"
+rule fingerprint:
+   input:
+       expand("results/fingerprinting/sample/{aliquot_barcode}.crosscheck_metrics", aliquot_barcode = manifest.getSelectedAliquots()),
+       expand("results/fingerprinting/case/{case_barcode}.crosscheck_metrics", case_barcode = manifest.getSelectedCases()),
+       "results/fingerprinting/GLASS.crosscheck_metrics",
        
 
 ## END ##

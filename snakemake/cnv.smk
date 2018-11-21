@@ -4,9 +4,9 @@
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 # rule preprocessintervals:
-# 	output:
+#   output:
 
-# 	params:
+#   params:
 #         mem = CLUSTER_META["preprocessintervals"]["mem"],
 #         intervals = lambda wildcards: config["cnv"]["intervals_wes"] if manifest.isExome(wildcards.aliquot_barcode) else config["cnv"]["intervals_wgs"]
 #     threads:
@@ -34,16 +34,16 @@
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 def selectIntervals(is_exome, chromosomes):
-	if is_exome:
-		if chromosomes == "autosomal":
-			return config["cnv"]["intervals_wes_autosomal"]
-		elif chromosomes == "allosomal":
-			return config["cnv"]["intervals_wes_allosomal"]
-	else:
-		if chromosomes == "autosomal":
-			return config["cnv"]["intervals_wgs_autosomal"]
-		elif chromosomes == "allosomal":
-			return config["cnv"]["intervals_wgs_allosomal"]
+    if is_exome:
+        if chromosomes == "autosomal":
+            return config["cnv"]["intervals_wes_autosomal"]
+        elif chromosomes == "allosomal":
+            return config["cnv"]["intervals_wes_allosomal"]
+    else:
+        if chromosomes == "autosomal":
+            return config["cnv"]["intervals_wgs_autosomal"]
+        elif chromosomes == "allosomal":
+            return config["cnv"]["intervals_wgs_allosomal"]
 
 rule collectreadcounts:
     input:
@@ -111,16 +111,16 @@ rule collecthets:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 def selectGCAnnotation(is_exome, chromosomes):
-	if is_exome:
-		if chromosomes == "autosomal":
-			return config["cnv"]["intervals_wes_autosomal_gc"]
-		elif chromosomes == "allosomal":
-			return config["cnv"]["intervals_wes_allosomal_gc"]
-	else:
-		if chromosomes == "autosomal":
-			return config["cnv"]["intervals_wgs_autosomal_gc"]
-		elif chromosomes == "allosomal":
-			return config["cnv"]["intervals_wgs_allosomal_gc"]
+    if is_exome:
+        if chromosomes == "autosomal":
+            return config["cnv"]["intervals_wes_autosomal_gc"]
+        elif chromosomes == "allosomal":
+            return config["cnv"]["intervals_wes_allosomal_gc"]
+    else:
+        if chromosomes == "autosomal":
+            return config["cnv"]["intervals_wgs_autosomal_gc"]
+        elif chromosomes == "allosomal":
+            return config["cnv"]["intervals_wgs_allosomal_gc"]
 
 rule createcnvpon:
     input:
@@ -157,11 +157,11 @@ rule createcnvpon:
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 def getSexString(manifest, aliquot_barcode, chromosomes):
-	if chromosomes == "autosomal":
-		return "all"
-	elif chromosomes == "allosomal":
-		sex = manifest.getSex(aliquot_barcode)
-		return sex if sex is not None else "NA"
+    if chromosomes == "autosomal":
+        return "all"
+    elif chromosomes == "allosomal":
+        sex = manifest.getSex(aliquot_barcode)
+        return sex if sex is not None else "NA"
 
 rule denoisereadcounts:
     input:
@@ -195,13 +195,13 @@ rule denoisereadcounts:
 
 rule mergedenoisedreadcounts:
     input:
-        standardized_autosomal = 	"results/cnv/denoisereadcounts/{aliquot_barcode}.autosomal.standardizedCR.tsv",
-        denoised_autosomal = 		"results/cnv/denoisereadcounts/{aliquot_barcode}.autosomal.denoisedCR.tsv",
-        standardized_allosomal = 	"results/cnv/denoisereadcounts/{aliquot_barcode}.allosomal.standardizedCR.tsv",
-        denoised_allosomal = 		"results/cnv/denoisereadcounts/{aliquot_barcode}.allosomal.denoisedCR.tsv"
+        standardized_autosomal =    "results/cnv/denoisereadcounts/{aliquot_barcode}.autosomal.standardizedCR.tsv",
+        denoised_autosomal =        "results/cnv/denoisereadcounts/{aliquot_barcode}.autosomal.denoisedCR.tsv",
+        standardized_allosomal =    "results/cnv/denoisereadcounts/{aliquot_barcode}.allosomal.standardizedCR.tsv",
+        denoised_allosomal =        "results/cnv/denoisereadcounts/{aliquot_barcode}.allosomal.denoisedCR.tsv"
     output:
-        standardized = 	"results/cnv/mergedenoisedreadcounts/{aliquot_barcode}.standardizedCR.tsv",
-        denoised = 		"results/cnv/mergedenoisedreadcounts/{aliquot_barcode}.denoisedCR.tsv"
+        standardized =  "results/cnv/mergedenoisedreadcounts/{aliquot_barcode}.standardizedCR.tsv",
+        denoised =      "results/cnv/mergedenoisedreadcounts/{aliquot_barcode}.denoisedCR.tsv"
     params:
         mem = CLUSTER_META["mergedenoisedreadcounts"]["mem"]
     threads:
@@ -217,12 +217,12 @@ rule mergedenoisedreadcounts:
         "Aliquot: {wildcards.aliquot_barcode}"
     shell:
         "awk 'FNR==1 && NR!=1 {{ while (/^@|^CONTIG/) getline; }} 1 {{print}}' \
-        	{input.standardized_autosomal} {input.standardized_allosomal} \
-        	1> {output.standardized} \
+            {input.standardized_autosomal} {input.standardized_allosomal} \
+            1> {output.standardized} \
             2> {log};"
         "awk 'FNR==1 && NR!=1 {{ while (/^@|^CONTIG/) getline; }} 1 {{print}}' \
-        	{input.denoised_autosomal} {input.denoised_allosomal} \
-        	1> {output.denoised} \
+            {input.denoised_autosomal} {input.denoised_allosomal} \
+            1> {output.denoised} \
             2>> {log};"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -804,8 +804,142 @@ rule runabsolute:
         "Run ABSOLUTE 1.2 (patched)\n"
         "Pair ID: {wildcards.pair_barcode}"
     shell:"""
-    	conda activate R341
+        conda activate R341
         Rscript -e 'ABSOLUTE::RunAbsolute("{input.seg}", genome_build = "hg19", platform = "Illumina_WES", copy_num_type = "allelic", results.dir = "{params.outdir}", sample.name = "{wildcards.pair_barcode}", gender = NA, output.fn.base = "{wildcards.pair_barcode}", maf.fn = "{input.maf}", min.mut.af = 0.05, SSNV_skew = as.numeric(readLines("{input.skew}",warn=F)), verbose = T, max.as.seg.count = 10E10, primary.disease="Glioma")' > {log} 2>&1
     """
     
+
+rule preparetitan:
+    input:
+        seg     = lambda wildcards: "results/cnv/mergedenoisedreadcounts/{aliquot_barcode}.denoisedCR.tsv".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+        hets    = lambda wildcards: "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.hets.tsv".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode))
+    output:
+        hets    = "results/cnv/titan/{pair_barcode}/{pair_barcode}.hets.tsv",
+        seg     = "results/cnv/titan/{pair_barcode}/{pair_barcode}.seg"
+    threads:
+        CLUSTER_META["preparetitan"]["ppn"]
+    log:
+        "logs/cnv/preparetitan/{pair_barcode}.log"
+    benchmark:
+        "benchmarks/cnv/preparetitan/{pair_barcode}.txt"
+    message:
+        "Prepare TitanCNA\n"
+        "Pair ID: {wildcards.pair_barcode}"
+    shell:"""
+        cat {input.hets} | awk '/^[^@]/ {{ print $1,$2,$5,$3,$6,$4 }}' | tr ' ' '\\t' > {output.hets}
+        cat {input.seg} | awk -F\\t 'BEGIN{{print"chr\\tstart\\tend\\tlog2_TNratio_corrected"}} /^[^@C]/ {{ print $0 }}' > {output.seg}
+    """
+
+ploidy = [2,3,4]
+numcluster = [1,2,3]
+
+rule titan:
+    input:
+        hets    = "results/cnv/titan/{pair_barcode}/{pair_barcode}.hets.tsv",
+        seg     = "results/cnv/titan/{pair_barcode}/{pair_barcode}.seg"
+    output:
+        seg     = "results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.seg",
+        segs    = "results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.segs.txt",
+        titan   = "results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.titan.txt",
+        params  = "results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.params.txt",
+        cf      = "results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}/{pair_barcode}_cluster0{cluster}_CF.pdf",
+        cna     = "results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}/{pair_barcode}_cluster0{cluster}_CNA.pdf",
+        cnaseg  = "results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}/{pair_barcode}_cluster0{cluster}_CNASEG.pdf",
+        loh     = "results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}/{pair_barcode}_cluster0{cluster}_LOH.pdf",
+        lohseg  = "results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}/{pair_barcode}_cluster0{cluster}_LOHSEG.pdf"
+    params:
+        outdir =        "results/cnv/titan/{pair_barcode}/ploidy{ploidy}/",
+        alphaK =        lambda wildcards: 2500 if manifest.isExome(manifest.getTumor(wildcards.pair_barcode)) else 10000,
+        alphaKHigh =    lambda wildcards: 2500 if manifest.isExome(manifest.getTumor(wildcards.pair_barcode)) else 10000
+    threads:
+        CLUSTER_META["titan"]["ppn"]
+    #conda:
+    #    "../envs/titan.yaml"
+    log:
+        "logs/cnv/titan/{pair_barcode}_ploidy{ploidy}_cluster{cluster}.log"
+    benchmark:
+        "benchmarks/cnv/titan/{pair_barcode}_ploidy{ploidy}_cluster{cluster}.txt"
+    message:
+        "Run TitanCNA\n"
+        "Pair ID: {wildcards.pair_barcode}\n"
+        "Cluster: {wildcards.cluster}\n"
+        "Ploidy: {wildcards.ploidy}"
+    shell:"""
+        source activate R341
+        Rscript /projects/barthf/opt/TitanCNA/scripts/R_scripts/titanCNA.R \
+            --id {wildcards.pair_barcode} \
+            --hetFile {input.hets} \
+            --cnFile {input.seg} \
+            --numClusters {wildcards.cluster} \
+            --numCores {threads} \
+            --normal_0 0.5 \
+            --ploidy_0 {wildcards.ploidy} \
+            --alphaK {params.alphaK} \
+            --alphaKHigh {params.alphaKHigh} \
+            --chrs "c(1:22, \\"X\\")" \
+            --estimatePloidy TRUE \
+            --outDir {params.outdir} \
+            --libdir /projects/barthf/opt/TitanCNA \
+            > {log} 2>&1
+    """
+
+rule selecttitan:
+    input:
+        seg     = lambda wildcards: expand("results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.seg", ploidy = [2,3,4], cluster = [1,2,3], pair_barcode = wildcards.pair_barcode),
+        segs    = lambda wildcards: expand("results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.segs.txt", ploidy = [2,3,4], cluster = [1,2,3], pair_barcode = wildcards.pair_barcode),
+        titan   = lambda wildcards: expand("results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.titan.txt", ploidy = [2,3,4], cluster = [1,2,3], pair_barcode = wildcards.pair_barcode),
+        params  = lambda wildcards: expand("results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.params.txt", ploidy = [2,3,4], cluster = [1,2,3], pair_barcode = wildcards.pair_barcode)
+    output:
+        txt     = "results/cnv/titan/{pair_barcode}/{pair_barcode}.optimalClusters.txt"
+    threads:
+        CLUSTER_META["selecttitan"]["ppn"]
+    log:
+        "logs/cnv/selecttitan/{pair_barcode}.log"
+    benchmark:
+        "benchmarks/cnv/selecttitan/{pair_barcode}.txt"
+    message:
+        "Select optimal TitanCNA cluster and ploidy\n"
+        "Pair ID: {wildcards.pair_barcode}"
+    shell:"""
+        source activate R341
+        Rscript /projects/barthf/opt/TitanCNA/scripts/R_scripts/selectSolution.R \
+            --ploidyRun2=results/cnv/titan/{wildcards.pair_barcode}/ploidy2 \
+            --ploidyRun3=results/cnv/titan/{wildcards.pair_barcode}/ploidy3 \
+            --ploidyRun4=results/cnv/titan/{wildcards.pair_barcode}/ploidy4 \
+            --threshold=0.05 \
+            --outFile {output.txt} \
+            > {log} 2>&1
+    """
+
+
+rule finaltitan:
+    input:
+        txt     = "results/cnv/titan/{pair_barcode}/{pair_barcode}.optimalClusters.txt"
+    output:
+        segs    = "results/cnv/titanfinal/seg/{pair_barcode}.seg.txt",
+        params  = "results/cnv/titanfinal/params/{pair_barcode}.params.txt",
+        cna     = "results/cnv/titanfinal/cna/{pair_barcode}.cna.pdf",
+        cnaseg  = "results/cnv/titanfinal/cnaseg/{pair_barcode}.cnaseg.pdf",
+        loh     = "results/cnv/titanfinal/loh/{pair_barcode}.loh.pdf",
+        lohseg  = "results/cnv/titanfinal/lohseg/{pair_barcode}.logseg.pdf"
+    threads:
+        CLUSTER_META["finaltitan"]["ppn"]
+    log:
+        "logs/cnv/finaltitan/{pair_barcode}.log"
+    benchmark:
+        "benchmarks/cnv/finaltitan/{pair_barcode}.txt"
+    message:
+        "Copy selected (final) TitanCNA results\n"
+        "Pair ID: {wildcards.pair_barcode}"
+    shell:"""
+        TITANDIR=$(cat {input} | awk -F'\\t' '{{print $11}}' | sed -n 2p)
+        cp "${{TITANDIR}}.segs.txt" {output.segs}
+        cp "${{TITANDIR}}.params.txt" {output.params}
+        cp $TITANDIR/*_CNA.pdf {output.cna}
+        cp $TITANDIR/*_CNASEG.pdf {output.cnaseg}
+        cp $TITANDIR/*_LOH.pdf {output.loh}
+        cp $TITANDIR/*_LOHSEG.pdf {output.lohseg}
+    """
+
+
 ## END ##

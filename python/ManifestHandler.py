@@ -77,6 +77,12 @@ class ManifestHandler:
         """
         return list(self.selected_aliquots)
 
+    def getSelectedCases(self):
+        """
+        Return a list of selected cases
+        """
+        return list(set([s[0:12] for s in self.selected_aliquots]))
+
     def getSelectedPairs(self):
         """
         Return a list of selected pairs

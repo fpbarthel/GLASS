@@ -409,6 +409,42 @@
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
     },
+    "preparetitan" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.pair_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
+    },
+    "titan" :
+    {
+        "ppn" : 4,
+        "mem" : 24,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.pair_barcode}.{wildcards.cluster}.{wildcards.ploidy}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.{wildcards.cluster}.{wildcards.ploidy}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.{wildcards.cluster}.{wildcards.ploidy}.err"
+    },
+    "selecttitan" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.pair_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
+    },
+    "finaltitan" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "2:00:00",
+        "name" : "{rule}.{wildcards.pair_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
+    },
     "pileup" :
     {
         "ppn" : 2,
@@ -518,7 +554,8 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "420:00:00",
+        "queu" : "long",
         "name" : "{rule}.{wildcards.project}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.project}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.project}.err"
@@ -527,7 +564,8 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "420:00:00",
+        "queu" : "long",
         "name" : "{rule}",
         "stdout" : "logs/drmaa/{rule}.out",
         "stderr" : "logs/drmaa/{rule}.err"
