@@ -8,7 +8,7 @@
 latest_clinical_data = '/Users/johnsk/Documents/Life-History/SurgeriesTableAM-201810241443-20181114.xlsx'
 
 # Here is the codel status from the file I created from GATK copy number output (see `determine-codel-status.R`).
-glass_codel_subject = "/Users/johnsk/Documents/Life-History/glass-subject-level-codel-status.txt"
+glass_codel_subject = "/Users/johnsk/Documents/Life-History/GLASS-WG/data/ref/glass-subject-level-codel-status.txt"
 
 #######################################################
 
