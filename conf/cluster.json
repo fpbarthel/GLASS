@@ -582,7 +582,7 @@
     "clusterfingerprintall" :
     {
         "ppn" : 2,
-        "mem" : 12,
+        "mem" : 96,
         "walltime" : "72:00:00",
         "name" : "{rule}",
         "stdout" : "logs/drmaa/{rule}.out",

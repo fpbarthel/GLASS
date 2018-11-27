@@ -60,6 +60,7 @@ rule fingerprintcase:
     shell:
         "gatk --java-options -Xmx{params.mem}g CrosscheckFingerprints \
             --HAPLOTYPE_MAP {config[haplotype_map][file]} \
+            --CROSSCHECK_BY SAMPLE \
             {params.samples} \
             --OUTPUT {output} \
             > {log} 2>&1 \
