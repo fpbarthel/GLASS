@@ -885,10 +885,10 @@ rule titan:
 
 rule selecttitan:
     input:
-        seg     = lambda wildcards: expand("results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.seg", ploidy = [2,3,4], cluster = [1,2,3], pair_barcode = wildcards.pair_barcode),
-        segs    = lambda wildcards: expand("results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.segs.txt", ploidy = [2,3,4], cluster = [1,2,3], pair_barcode = wildcards.pair_barcode),
-        titan   = lambda wildcards: expand("results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.titan.txt", ploidy = [2,3,4], cluster = [1,2,3], pair_barcode = wildcards.pair_barcode),
-        params  = lambda wildcards: expand("results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.params.txt", ploidy = [2,3,4], cluster = [1,2,3], pair_barcode = wildcards.pair_barcode)
+        seg     = lambda wildcards: expand("results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.seg", ploidy = [2,3], cluster = [1,2,3], pair_barcode = wildcards.pair_barcode),
+        segs    = lambda wildcards: expand("results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.segs.txt", ploidy = [2,3], cluster = [1,2,3], pair_barcode = wildcards.pair_barcode),
+        titan   = lambda wildcards: expand("results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.titan.txt", ploidy = [2,3], cluster = [1,2,3], pair_barcode = wildcards.pair_barcode),
+        params  = lambda wildcards: expand("results/cnv/titan/{pair_barcode}/ploidy{ploidy}/{pair_barcode}_cluster0{cluster}.params.txt", ploidy = [2,3], cluster = [1,2,3], pair_barcode = wildcards.pair_barcode)
     output:
         txt     = "results/cnv/titan/{pair_barcode}/{pair_barcode}.optimalClusters.txt"
     threads:
@@ -905,8 +905,7 @@ rule selecttitan:
         Rscript /projects/barthf/opt/TitanCNA/scripts/R_scripts/selectSolution.R \
             --ploidyRun2=results/cnv/titan/{wildcards.pair_barcode}/ploidy2 \
             --ploidyRun3=results/cnv/titan/{wildcards.pair_barcode}/ploidy3 \
-            --ploidyRun4=results/cnv/titan/{wildcards.pair_barcode}/ploidy4 \
-            --threshold=0.05 \
+            --threshold=0.15 \
             --outFile {output.txt} \
             > {log} 2>&1
     """
@@ -918,10 +917,7 @@ rule finaltitan:
     output:
         segs    = "results/cnv/titanfinal/seg/{pair_barcode}.seg.txt",
         params  = "results/cnv/titanfinal/params/{pair_barcode}.params.txt",
-        cna     = "results/cnv/titanfinal/cna/{pair_barcode}.cna.pdf",
-        cnaseg  = "results/cnv/titanfinal/cnaseg/{pair_barcode}.cnaseg.pdf",
-        loh     = "results/cnv/titanfinal/loh/{pair_barcode}.loh.pdf",
-        lohseg  = "results/cnv/titanfinal/lohseg/{pair_barcode}.logseg.pdf"
+        pdf     = "results/cnv/titanfinal/pdf/{pair_barcode}.pdf",
     threads:
         CLUSTER_META["finaltitan"]["ppn"]
     log:
@@ -935,10 +931,7 @@ rule finaltitan:
         TITANDIR=$(cat {input} | awk -F'\\t' '{{print $11}}' | sed -n 2p)
         cp "${{TITANDIR}}.segs.txt" {output.segs}
         cp "${{TITANDIR}}.params.txt" {output.params}
-        cp $TITANDIR/*_CNA.pdf {output.cna}
-        cp $TITANDIR/*_CNASEG.pdf {output.cnaseg}
-        cp $TITANDIR/*_LOH.pdf {output.loh}
-        cp $TITANDIR/*_LOHSEG.pdf {output.lohseg}
+        /opt/software/helix/ImageMagick/7.0.7-26/bin/montage $TITANDIR/*_CNA.pdf $TITANDIR/*_LOH.pdf -tile 1x2 -geometry +0+0 {output.pdf}
     """
 
 
