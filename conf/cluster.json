@@ -409,6 +409,15 @@
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
     },
+    "titanhets" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "72:00:00",
+        "name" : "{rule}.{wildcards.pair_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
+    },
     "preparetitan" :
     {
         "ppn" : 2,
@@ -563,7 +572,7 @@
     "fingerprintall" :
     {
         "ppn" : 2,
-        "mem" : 12,
+        "mem" : 96,
         "walltime" : "420:00:00",
         "queu" : "long",
         "name" : "{rule}",
