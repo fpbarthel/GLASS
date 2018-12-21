@@ -1,5 +1,4 @@
 library(tidyverse)
-library(odbc)
 library(DBI)
 library(ggthemes)
 library(ggplot2)
@@ -7,27 +6,64 @@ library(shiny)
 
 con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
 
-q <- "SELECT gene_symbol,COUNT(DISTINCT aliquot_barcode) AS ct
-FROM analysis.called_genotypes
-WHERE gene_symbol <> 'Unknown' AND variant_classification IN ('In_Frame_Ins','In_Frame_Del','Frame_Shift_Del','Frame_Shift_Ins','Missense_Mutation','Nonstop_Mutation','Nonsense_Mutation')
-GROUP BY gene_symbol
-HAVING COUNT(DISTINCT aliquot_barcode) > 9
-ORDER BY ct DESC"
-genes <- dbGetQuery(con, q)$gene_symbol
+q <- "SELECT gene_name AS gene_symbol FROM analysis.dndscv_gene
+      WHERE qglobal_cv < 0.30"
+genes <- c(dbGetQuery(con, q)$gene_symbol,"TERT")
 
-q <- "SELECT ts.case_barcode, case_sex, s.idh_status, s.codel_status, v.gene_symbol, ts.sample_type, ts.sample_barcode, 
-v.chrom, v.start, v.end, v.alt, v.variant_classification, v.variant_type, 
-gt.aliquot_barcode, v.hgvs_p, gt.ref_count, gt.alt_count, gt.read_depth, sift, polyphen, gt.called, mf.coverage_adj_mut_freq
-FROM analysis.snvs v
-FULL JOIN analysis.snv_genotypes gt ON v.chrom = gt.chrom AND v.start = gt.start AND v.end = gt.end AND v.alt = gt.alt
-INNER JOIN biospecimen.aliquots ta ON ta.aliquot_barcode = gt.aliquot_barcode
-INNER JOIN biospecimen.samples ts ON ts.sample_barcode = ta.sample_barcode
-LEFT JOIN analysis.mutation_freq mf ON mf.aliquot_barcode = gt.aliquot_barcode
-LEFT JOIN clinical.surgeries s ON s.sample_barcode = ts.sample_barcode
-INNER JOIN clinical.cases ca ON ts.case_barcode = ca.case_barcode
-WHERE ts.sample_type IN ('TP','R1') 
-AND v.variant_classification IN ('In_Frame_Ins','In_Frame_Del','Frame_Shift_Del','Frame_Shift_Ins','Missense_Mutation','Nonstop_Mutation','Nonsense_Mutation')
-AND v.gene_symbol = ?"
+q <- "
+    WITH
+/*
+Define a list of 'selected tumor pairs': select a single primary/recurrent pair per subject/case after removing any aliquots from the blocklist and sorting samples by surgical interval,
+so that pairs with the highest surgical interval are prioritized, and pairs with WGS are prioritized over WXS when both are available
+*/
+selected_tumor_pairs AS
+(
+  SELECT
+  tumor_pair_barcode,
+  row_number() OVER (PARTITION BY case_barcode ORDER BY surgical_interval_mo DESC, portion_a ASC, portion_b ASC, substring(tumor_pair_barcode from 27 for 3) ASC) AS priority
+  FROM analysis.tumor_pairs ps
+  LEFT JOIN analysis.blocklist b1 ON b1.aliquot_barcode = ps.tumor_barcode_a
+  LEFT JOIN analysis.blocklist b2 ON b2.aliquot_barcode = ps.tumor_barcode_b
+  LEFT JOIN analysis.mutation_freq mf1 ON mf1.aliquot_barcode = ps.tumor_barcode_a  -- join with mutation freq to remove hypermutators
+  LEFT JOIN analysis.mutation_freq mf2 ON mf2.aliquot_barcode = ps.tumor_barcode_b
+  WHERE
+  comparison_type = 'longitudinal' AND
+  sample_type_b <> 'M1' AND 													-- exclude metastatic samples here because this is outside the scope of our study
+  --b1.cnv_exclusion = 'allow' AND b2.cnv_exclusion = 'allow' AND
+  b1.coverage_exclusion = 'allow' AND b2.coverage_exclusion = 'allow' AND
+  b1.clinical_exclusion <> 'block' AND b2.clinical_exclusion <> 'block' AND
+  mf1.coverage_adj_mut_freq < 10 AND mf2.coverage_adj_mut_freq < 10			-- filter hypermutators
+),
+  /*
+  Aggregate counts over tumor pairs and genes
+  Performs an INNER JOIN with selected_tumor_pairs from above so that only those pairs are included in the analysis.
+  Restrict to events with coverage >= 15 in both A and B
+  Variants for each tumor pair/gene combination are ordered according to variant_classification_priority (see new table analysis.variant_classifications) and whether or not the mutation was called in a/b and finally based on read_depth
+  Note that I am adding `mutect2_call_a` to `mutect2_call_b` (true = 1, false = 0) as to avoid prioritizing mutations in either A or B over the other
+  The row_number() function asigns a row number to each row within each group of gene_symbol and case_barcode, after ordering by the given parameters
+  */
+  variants_by_case_and_gene AS
+  (
+  SELECT
+  gtc.gene_symbol,
+  gtc.case_barcode,
+  gtc.variant_classification,
+  alt_count_a::decimal / (alt_count_a + ref_count_a) AS vaf_a,
+  alt_count_b::decimal / (alt_count_b + ref_count_b) AS vaf_b,
+  row_number() OVER (PARTITION BY gtc.gene_symbol, gtc.case_barcode ORDER BY vc.variant_classification_priority, mutect2_call_a::integer + mutect2_call_b::integer DESC, read_depth_a + read_depth_b DESC) AS priority
+  FROM analysis.master_genotype_comparison gtc
+  INNER JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = gtc.tumor_pair_barcode AND stp.priority = 1
+  LEFT JOIN analysis.variant_classifications vc ON gtc.variant_classification = vc.variant_classification
+  WHERE
+  gene_symbol = ? AND
+  (mutect2_call_a OR mutect2_call_b) AND
+  (alt_count_a + ref_count_a) >= 5 AND (alt_count_b + ref_count_b) >= 5
+  AND (variant_classification_priority IS NOT NULL OR -- this removes any variant types we don't care about, eg. Silent and Intronic mutations, see the analysis.variant_classifications table for more details
+  (gene_symbol = 'TERT' AND gtc.variant_classification = '5''Flank'))
+  )
+  SELECT *
+  FROM variants_by_case_and_gene vg
+  WHERE priority = 1"
 
 vaf_res <- dbSendQuery(con, q)
 #vaf_bind <- dbBind(vaf_res, list("EGFR"))
@@ -53,59 +89,10 @@ server <- function(input, output, session) {
     vaf_bind <- dbBind(vaf_res, list(input$genes))
     qres <- dbFetch(vaf_bind)
     
-    df = qres %>% 
-      filter(coverage_adj_mut_freq < 8, complete.cases(idh_status, codel_status)) %>% ## (1) Filter out hypermutator samples
-      group_by(case_barcode) %>%
-      mutate(idh_codel_grp = ifelse(any(idh_status == "IDHmut") && any(codel_status == "codel"), "IDHmut-codel", 
-                                    ifelse(any(idh_status == "IDHmut"), "IDHmut",
-                                           ifelse(any(idh_status == "IDHwt"), "IDHwt", NA)))) %>%
-      ungroup() %>%
-      mutate(var = sprintf("%s:%s-%s_%s", chrom, start, end, alt),
-             called = called == "1",
-             severity_score = case_when(variant_classification == "Nonsense" ~ 0,
-                                        variant_classification %in% c("Frame_Shift_Del","Frame_Shift_Del") ~ 1,
-                                        variant_classification %in% c("In_Frame_Del","In_Frame_Ins") ~ 2,
-                                        variant_classification == "Missense_Mutation" ~ 3,
-                                        variant_classification == "5'Flank" ~ 4)) %>%
-      group_by(sample_barcode, var) %>%
-      mutate(optimal_variant = order(read_depth, decreasing = T)) %>%
-      ungroup() %>%
-      filter(optimal_variant == 1) %>% ## (2) For each sample/variant combination, select the variant with the highest read depth, eg. when a variant was profiled across multple sectors or with both WGS and WES
-      group_by(case_barcode, var) %>%
-      mutate(sufficient_dp = all(ref_count + alt_count > 14)) %>%
-      ungroup() %>%
-      filter(sufficient_dp) %>% ## (3) For each patient/variant combination filter out variants that do not have >14x coverage across all subsamples
-      group_by(case_barcode,gene_symbol) %>%
-      mutate(any_called = any(called, na.rm=T),
-             num_samples = n_distinct(sample_barcode)) %>%
-      ungroup() %>%
-      filter(num_samples > 1) %>% ## (4) filter out singletons (unpaired samples)
-      group_by(gene_symbol) %>%
-      mutate(num_patient = n_distinct(case_barcode),
-             gene_symbol_label = sprintf("%s (n=%s)", gene_symbol, num_patient)) %>%
-      ungroup() %>%
-      filter(any_called) %>% ## (4) a. filter out gene/patient combinations where that gene was not called as mutant in any subsample and b. filter out singletons (unpaired samples)
-      arrange(severity_score) %>%
-      group_by(case_barcode, gene_symbol) %>%
-      mutate(keep = chrom == chrom[which(called)[1]] & 
-               start == start[which(called)[1]] & 
-               end == end[which(called)[1]] & 
-               alt == alt[which(called)[1]]) %>%
-      ungroup() %>%
-      filter(keep) ## (5) For each patient/gene combination, keep only those specific variants that were called in at least one subsample
-    
-    ggdat = df %>%
-      mutate(vaf = alt_count/(alt_count+ref_count)) %>%
-      select(case_barcode, idh_codel_grp, case_sex, gene_symbol_label, chrom, start, end, hgvs_p, variant_type, variant_classification, var, sample_type, vaf, dp = read_depth) %>%
-      gather(variable, value, vaf, dp) %>%
-      unite(temp, sample_type, variable) %>%
-      spread(temp, value) 
-    
-    ggplot(ggdat, aes(TP_vaf, R1_vaf)) +
+    ggplot(qres, aes(vaf_a, vaf_b)) +
       geom_point(aes(color=variant_classification)) + 
       geom_abline(slope=1, alpha=0.2, linetype=2) +
-      facet_wrap(~gene_symbol_label) +
-      labs(x="Primary", y="First Recurrence", color = "Variant Classification", shape = "Glioma subtype") +
+      labs(x="Primary", y="Recurrence", color = "Variant Classification") +
       coord_cartesian(xlim = c(0,1), ylim = c(0,1)) +
       theme_bw(base_size = 18) +
       theme(axis.text=element_text(size=10))
