@@ -25,6 +25,9 @@ VCF_files <- VCF_files[inclusion_index]
 VCF_samples <- VCF_samples[inclusion_index]
 VCF_files <- paste(VCF_dir,VCF_files,sep="")
 
+subset_num <- 10
+VCF_files <- VCF_files[1:subset_num]
+VCF_samples <- VCF_samples[1:subset_num]
 
 primaries <- VCF_samples[grep("-TP-",VCF_samples)]
 R1s <- VCF_samples[grep("-R1-",VCF_samples)]
@@ -34,7 +37,7 @@ R4s <- VCF_samples[grep("-R4-",VCF_samples)]
 recurrences <- c(R1s,R2s,R3s,R4s)
 
 
-#Run mutationalSignatures on the files
+#Run mutationalSignatures on ten of the files
 #--------------------------------------------------
 #Load reference genome using BSgenome
 ref_genome <- "BSgenome.Hsapiens.UCSC.hg19"		#Ref genome for VCF: human_g1k_v37_decoy.fasta
@@ -53,7 +56,7 @@ collapsed_mut_mat <- matrix(c(primary_average,recurrence_average),
 					 dimnames=list(rownames(mut_mat),c("Primary","Recurrent")))
 
 #Primary vs recurrence 96 mutational profile
-pdf("/projects/varnf/GLASS/Figures/signatures/mut96_profile_TPvR.pdf",width=7,height=3)
+pdf("/projects/varnf/GLASS/Figures/signatures/test/mut96_profile_TPvR.pdf",width=7,height=3)
 plot_96_profile(collapsed_mut_mat,condensed=TRUE)
 dev.off()
 
@@ -81,19 +84,19 @@ cosmic_order = colnames(cancer_signatures)[hclust_cosmic[["order"]]]
 individual_sample_sim_matrix <- cos_sim_matrix(mut_mat,cancer_signatures)
 rownames(individual_sample_sim_matrix) <- sapply(strsplit(rownames(individual_sample_sim_matrix),"-"),function(x)paste(x[1:5],collapse="-"))
 write.table(individual_sample_sim_matrix, 
-"/projects/varnf/GLASS/analysis/signatures/individual_sample_similarity_matrix.txt",
+"/projects/varnf/GLASS/analysis/signatures/test/individual_sample_similarity_matrix.txt",
 sep="\t",quote=F)
 
-pdf("/projects/varnf/GLASS/Figures/signatures/individual_signature_heatmap.pdf",width=7,height=5)
+pdf("/projects/varnf/GLASS/Figures/signatures/test/individual_signature_heatmap.pdf",width=7,height=5)
 plot_cosine_heatmap(individual_sample_sim_matrix, col_order=cosmic_order, cluster_rows=TRUE)
 dev.off()
 
 primary_vs_recurrent_sim_matrix <- cos_sim_matrix(collapsed_mut_mat,cancer_signatures)
 write.table(primary_vs_recurrent_sim_matrix, 
-"/projects/varnf/GLASS/analysis/signatures/primary_vs_recurrent_similarity_matrix.txt",
+"/projects/varnf/GLASS/analysis/signatures/test/primary_vs_recurrent_similarity_matrix.txt",
 sep="\t",quote=F)
 
-pdf("/projects/varnf/GLASS/Figures/signatures/primary_vs_recurrent_signature_heatmap.pdf",width=7,height=5)
+pdf("/projects/varnf/GLASS/Figures/signatures/test/primary_vs_recurrent_signature_heatmap.pdf",width=7,height=5)
 plot_cosine_heatmap(primary_vs_recurrent_sim_matrix, col_order=cosmic_order, cluster_rows=TRUE)
 dev.off()
 
@@ -107,27 +110,24 @@ colnames(individual_fit[["reconstructed"]]) <- sapply(strsplit(colnames(individu
 select <- which(rowSums(individual_fit[["contribution"]])>10)
 
 #Plot contribution barplot
-pdf("/projects/varnf/GLASS/Figures/signatures/individual_relative_sig_contribution.pdf",width=7,height=5)
+pdf("/projects/varnf/GLASS/Figures/signatures/test/individual_relative_sig_contribution.pdf",width=7,height=5)
 plot_contribution(individual_fit[["contribution"]][select,],
 					cancer_signatures[,select],
 					coord_flip=FALSE,
 					mode="relative")
 dev.off()
-pdf("/projects/varnf/GLASS/Figures/signatures/individual_absolute_relative_sig_contribution.pdf",width=7,height=5)
+pdf("/projects/varnf/GLASS/Figures/signatures/test/individual_absolute_relative_sig_contribution.pdf",width=7,height=5)
 plot_contribution(individual_fit[["contribution"]][select,],
 					cancer_signatures[,select],
 					coord_flip=FALSE,
 					mode="absolute")
 dev.off()
 #Plot contribution heatmap
-pdf("/projects/varnf/GLASS/Figures/signatures/individual_sig_contribution_heatmap.pdf",width=7,height=5)
+pdf("/projects/varnf/GLASS/Figures/signatures/test/individual_sig_contribution_heatmap.pdf",width=7,height=5)
 plot_contribution_heatmap(individual_fit[["contribution"]],
 						  cluster_samples=TRUE,
 						  method="complete")
 dev.off()
-
-#To do: Heatmap with color row bar by subtype (IDH mut, IDH wt, codel, and primary/recurrence (R color brewer paired))
-#Use Hoontable
 
 #grouped primary and recurrent
 primary_vs_recurrent_fit <- fit_to_signatures(collapsed_mut_mat, cancer_signatures)
@@ -135,20 +135,20 @@ primary_vs_recurrent_fit <- fit_to_signatures(collapsed_mut_mat, cancer_signatur
 select <- which(rowSums(primary_vs_recurrent_fit[["contribution"]])>10)
 
 #Plot contribution barplot
-pdf("/projects/varnf/GLASS/Figures/signatures/primary_vs_recurrent_relative_sig_contribution.pdf",width=4,height=5)
+pdf("/projects/varnf/GLASS/Figures/signatures/test/primary_vs_recurrent_relative_sig_contribution.pdf",width=4,height=5)
 plot_contribution(primary_vs_recurrent_fit[["contribution"]][select,],
 					cancer_signatures[,select],
 					coord_flip=FALSE,
 					mode="relative")
 dev.off()
-pdf("/projects/varnf/GLASS/Figures/signatures/primary_vs_recurrent_absolute_relative_sig_contribution.pdf",width=4,height=5)
+pdf("/projects/varnf/GLASS/Figures/signatures/test/primary_vs_recurrent_absolute_relative_sig_contribution.pdf",width=4,height=5)
 plot_contribution(primary_vs_recurrent_fit[["contribution"]][select,],
 					cancer_signatures[,select],
 					coord_flip=FALSE,
 					mode="absolute")
 dev.off()
 #Plot contribution heatmap
-pdf("/projects/varnf/GLASS/Figures/signatures/primary_vs_recurrent_sig_contribution_heatmap.pdf",width=7,height=5)
+pdf("/projects/varnf/GLASS/Figures/signatures/test/primary_vs_recurrent_sig_contribution_heatmap.pdf",width=7,height=5)
 plot_contribution_heatmap(primary_vs_recurrent_fit[["contribution"]],
 						  cluster_samples=TRUE,
 						  method="complete")
