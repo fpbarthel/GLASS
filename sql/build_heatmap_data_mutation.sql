@@ -124,13 +124,16 @@ squared_variants AS
 )
 SELECT
 	gene_symbol,
-	case_barcode,
+	var.case_barcode,
 	variant_classification,
 	hgvs_p,
 	(CASE
-	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_a AND selected_call_b 				THEN 3
-	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_a AND NOT selected_call_b 			THEN 2
-	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_b AND NOT selected_call_a 			THEN 1
-	 WHEN cov_a >= 5 AND cov_b >= 5 AND (NOT selected_call_b OR selected_call_b IS NULL) AND (NOT selected_call_a OR selected_call_a IS NULL) THEN 0
-	 ELSE NULL END) AS variant_call
-FROM squared_variants
+	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_a AND selected_call_b 				THEN 'Shared'
+	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_a AND NOT selected_call_b 			THEN 'Shed'
+	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_b AND NOT selected_call_a 			THEN 'Acquired'
+	 ELSE NULL END) AS variant_call,
+	(CASE WHEN cov_a >= 5 AND cov_b >= 5 THEN 'Coverage >= 5' ELSE 'Coverage < 5' END) AS covered--,
+	--su.idh_codel_subtype 
+FROM squared_variants var
+--LEFT JOIN selected_tumor_pairs stp ON stp.case_barcode = var.case_barcode AND priority = 1
+--LEFT JOIN clinical.surgeries su ON su.sample_barcode = substring(tumor_barcode_a from 1 for 15)
