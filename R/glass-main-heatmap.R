@@ -9,6 +9,7 @@ con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
 hmapdata <- dbGetQuery(con, read_file("sql/build_heatmap_data_mutation.sql"))
 genedata <- dbGetQuery(con, read_file("sql/build_heatmap_data_mutation_by_gene.sql"))
 cnv_data <- dbGetQuery(con, read_file("sql/build_heatmap_data_cnv.sql"))
+
 ## Load IDH-codel subtypes
 clindata <- dbGetQuery(con, "SELECT DISTINCT case_barcode, idh_codel_subtype FROM clinical.surgeries WHERE idh_codel_subtype IS NOT NULL")
 
@@ -32,10 +33,15 @@ df <- hmapdata %>%
 cnvdf <- cnv_data %>%
   left_join(clindata)
 
-ggplot(df, aes(x=case_barcode, y=gene_symbol)) + 
+## genes
+genedf <- genedata %>%
+  mutate(gene_symbol = factor(gene_symbol, levels = levels(df$gene_symbol)))
+
+## Plot mutations
+p1a <- 
+  ggplot(df, aes(x=case_barcode, y=gene_symbol)) + 
   geom_tile(aes(fill = covered)) + 
   geom_point(aes(shape = variant_call, color = variant_classification)) +
-  facet_grid(. ~ idh_codel_subtype, scales = "free_x", space = "free") +
   scale_fill_manual(values=c("gray90","white"), na.value = "gray90") + 
   scale_color_manual(values=c("5'Flank" = brewer.pal(9, "Paired")[9],
                              "Frame_Shift_Del" = brewer.pal(7, "Paired")[1],
@@ -47,31 +53,45 @@ ggplot(df, aes(x=case_barcode, y=gene_symbol)) +
                              "Splice_Site" = brewer.pal(9, "Paired")[7],
                              "Translation_Start_Site" = brewer.pal(9, "Paired")[8])) +
   labs(color = "Variant Classification", fill = "Coverage", shape = "Variant Retention") +
-  theme_bw()
 
-genedf <- genedata %>%
-  mutate(gene_symbol = factor(gene_symbol, levels = levels(df$gene_symbol)))
-
-ggplot(genedf, aes(x=gene_symbol)) +
+## Plot genes
+p1b <-
+  ggplot(genedf, aes(x=gene_symbol)) +
   geom_bar(aes(y=count_a), stat="identity") + 
   geom_bar(aes(y=shared), stat="identity", fill = "yellow") + 
   geom_bar(aes(y=-count_b), stat="identity") +
   geom_bar(aes(y=-shared), stat="identity", fill = "yellow") +
   geom_hline(yintercept = 0, linetype = 2) +
   coord_flip() +
-  theme_bw() + 
   labs(y = "Number of Variants\n<-- recurrence -- primary -->")
 
 
 ## plot cnv
-ggplot(cnvdf, aes(x=case_barcode, y=gene_symbol)) + 
-  geom_tile(aes(fill = cnv_class)) +
-  geom_point(aes(shape = cnv_call), color = "#f7f7f7") +
-  facet_grid(. ~ idh_codel_subtype, scales = "free_x", space = "free") +
-  scale_fill_manual(values=c("Homozygous deletion" = "#0571b0",
-                              "Deletion" = "#92c5de",
+p2 <-
+  ggplot(cnvdf, aes(x=case_barcode, y=gene_symbol)) + 
+  geom_tile(fill = "#f7f7f7") +
+  geom_point(aes(color = cnv_class, shape = cnv_retention), size = 2) +
+  scale_color_manual(values=c("Deletion" = "#0571b0",
                               "Heterozygous" = "#f7f7f7",
-                              "Amplification" = "#f4a582",
-                              "High-level amplification" = "#ca0020")) +
-  labs(color = "Variant Classification", fill = "Coverage", shape = "Variant Retention") +
-  theme_bw()
+                              "Amplification" = "#ca0020")) +
+  labs(color = "Variant Classification", fill = "Coverage", shape = "Variant Retention")
+
+## Plot elements
+plot_grid      = facet_grid(. ~ idh_codel_subtype, scales = "free_x", space = "free")
+plot_theme     <- theme_bw()
+null_legend <- theme(legend.position = 'none')
+null_x      <- theme(axis.title.x=element_blank(),
+                     axis.text.x=element_blank(),
+                     axis.ticks.x=element_blank()) 
+bottom_x    <- theme(axis.text.x=element_blank())
+null_facet = theme(strip.background = element_blank(),
+                   strip.text.x = element_blank())
+top_margin    <- theme(plot.margin= unit(c(1, 1, 0.1, 1), "lines")) ## Top, Right, Bottom, Left
+middle_margin <- theme(plot.margin= unit(c(0, 1, 0.1, 1), "lines"))
+bottom_margin <- theme(plot.margin= unit(c(0, 1, 1, 1), "lines"))
+
+## Bind
+g1 = ggplotGrob(p1a + plot_grid + plot_theme + null_legend + null_x + null_facet + top_margin + theme(axis.title = element_text(size = 10), axis.text = element_text(size=10)))  %>% gtable_frame()
+g2 = ggplotGrob(g2 + plot_grid + plot_theme + null_legend + bottom_x + null_facet + bottom_margin + theme(axis.title = element_text(size = 10), axis.text = element_text(size=10)))  %>% gtable_frame()
+
+g = gtable_rbind(g1, g2)
