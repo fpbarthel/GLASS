@@ -695,6 +695,58 @@
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
     },
+    "pyclone_tsv" :
+    {
+        "ppn" : 1,
+        "mem" : 6,
+        "walltime" : "2:00:00",
+        "name" : "{rule}"
+    },
+    "pyclone_setup" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "2:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.err"
+    },
+    "pyclone_run" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.err"
+    },
+    "pyclone_build_table" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.{wildcards.table_type}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.{wildcards.table_type}.err"
+    },
+    "pyclone_plot_loci" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.{wildcards.plot_type}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.{wildcards.plot_type}.err"
+    },
+    "pyclone_plot_clusters" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.{wildcards.plot_type}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.{wildcards.plot_type}.err"
+    },
     "cnvnator_tree" :
     {
         "ppn" : 2,

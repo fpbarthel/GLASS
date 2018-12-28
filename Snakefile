@@ -60,6 +60,7 @@ WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in ran
 # include: "snakemake/manta.smk"
 #include: "snakemake/cnv.smk"
 include: "snakemake/cnv-post.smk"
+include: "snakemake/pyclone.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Haplotype map creation rule
@@ -236,6 +237,14 @@ rule svdetect:
 rule telseq:
     input:
         expand("results/telseq/{aliquot_barcode}.telseq.txt", aliquot_barcode = manifest.getSelectedAliquots())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Run PyClone
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule pyclone:
+    input:
+        expand("results/pyclone/run/{pyclone_short_name}/PyClone.done", pyclone_short_name = manifest.getPyCloneShortNames())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Fingerprinting pipeline

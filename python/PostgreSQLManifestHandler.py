@@ -22,6 +22,7 @@ class PostgreSQLManifestHandler(ManifestHandler):
         self.initReadgroups()
         self.initPairs()
         self.initFilesReadgroups()
+        self.initPyCloneAliquots()
             
         ManifestHandler.__init__(self, source_file_basepath, aligned_file_basepath, from_source, by_cohort)
 
@@ -108,5 +109,12 @@ class PostgreSQLManifestHandler(ManifestHandler):
         res = self.query(q, cursor_factory = psycopg2.extras.RealDictCursor)
         
         self.files_readgroups = res
+
+    def initPyCloneAliquots(self):
+        q = "SELECT * FROM analysis.pyclone_aliquots"
+
+        res = self.query(q, cursor_factory = psycopg2.extras.RealDictCursor)
+        
+        self.pyclone_aliquots = res
 
 ## END ##

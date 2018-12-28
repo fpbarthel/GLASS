@@ -24,6 +24,8 @@ class ManifestHandler:
     
     files_readgroups = [] ## List of file to readgroup mappings
 
+    pyclone_aliquots = [] ## List of pyclone aliquots
+
     selected_aliquots = set()
     selected_pairs = set()
     
@@ -123,7 +125,10 @@ class ManifestHandler:
         
     def initFilesReadgroups(self):
         raise NotImplementedError("ManifestHandler should not be implemented directly")
-        
+    
+    def initPyCloneAliquots(self):
+        raise NotImplementedError("ManifestHandler should not be implemented directly")
+
     def getAllAliquots(self):
         """
         Returns a list of all aliquots
@@ -272,6 +277,27 @@ class ManifestHandler:
         """
         s = set([fr["readgroup_idtag"] for fr in self.files_readgroups if fr["aliquot_barcode"] != aliquot_barcode])
         return sorted(s)
+
+    def getPyCloneAliquots(self, case_barcode, analysis_type):
+        """
+        Returns a list of aliquot barcodes for a given case and analysis type
+        """
+        s = [pa["aliquot_barcode"] for pa in self.pyclone_aliquots if pa["case_barcode"] == case_barcode and pa["aliquot_analysis_type"] == analysis_type]
+        return s
+
+    def getPyClonePurity(self, case_barcode, analysis_type):
+        """
+        Returns a list of purity values for a given case and analysis type
+        """
+        s = [str(pa["purity"]) for pa in self.pyclone_aliquots if pa["case_barcode"] == case_barcode and pa["aliquot_analysis_type"] == analysis_type]
+        return s
+
+    def getPyCloneShortNames(self):
+        """
+        Returns a list of short names for a given case and analysis type
+        """
+        s = [pa["short_name"] for pa in self.pyclone_aliquots]
+        return s
 
     def getFASTQ(self, aliquot_barcode, readgroup_idtag):
         """
