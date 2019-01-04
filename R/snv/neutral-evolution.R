@@ -1,6 +1,6 @@
 #######################################################
 # Test neutral evolution using package provided by Marc Williams (Nature Genetics paper).
-# Date: 2018.12.21 
+# Updated: 2019.01.02
 # Author: Kevin J.
 #######################################################
 
@@ -28,7 +28,6 @@ pairs = dbReadTable(con,  Id(schema="analysis",table="pairs"))
 aliquots = dbReadTable(con,  Id(schema="biospecimen",table="aliquots"))
 surgeries = dbReadTable(con,  Id(schema="clinical",table="surgeries"))
 titan_param = dbReadTable(con,  Id(schema="analysis",table="titan_params"))
-
 
 ## WXS coverage files.
 wxs_coverage_unmerged = read_tsv(wxs_coverage)
@@ -161,8 +160,6 @@ FROM analysis.master_genotype_comparison gtc
 INNER JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = gtc.tumor_pair_barcode AND stp.priority = 1
 LEFT JOIN analysis.snvs snvs ON snvs.chrom = gtc.chrom AND snvs.pos = gtc.pos AND snvs.alt = gtc.alt
 WHERE (mutect2_call_a OR mutect2_call_b) AND (gtc.alt_count_a + gtc.ref_count_a) >= 30 AND (gtc.alt_count_b + gtc.ref_count_b) >= 30 AND corrected_call_a = 'HET' AND corrected_call_b = 'HET'"
-
-
 
 
 # Retrieve the relevant variant_allele_frequencies for the optimally selected GLASS pair.
@@ -318,7 +315,7 @@ colnames(neutral_results_recur_shared) =  c("case_barcode", "aliquot_barcode", "
 neutral_results_recur_shared = as.data.frame(neutral_results_recur_shared)
 
 # Set directory for output.
-setwd("/Users/johnsk/Documents/Life-History/glass-analyses/figures/neutral-evolution/recurrent_shared/")
+setwd("/Users/johnsk/Documents/Life-History/glass-analyses/figures/neutral-evolution-unfiltered/recurrent_shared/")
 
 ## Generate results for "RECURRENT AND SHARED" in "vaf_b" recurrent sample.
 for ( i in 1:length(unique(glass_vaf_recur_shared$case_barcode))) { 
@@ -585,7 +582,7 @@ write.table(neutral_results_all_b, file = "/Users/johnsk/Documents/Life-History/
 write.table(neutral_results_primary, file = "/Users/johnsk/Documents/Life-History/glass-analyses/figures/neutral-evolution/tabular_results/neutral_results_primary.txt", sep="\t", row.names = F, col.names = T, quote = F)
 write.table(neutral_results_pri_shared, file = "/Users/johnsk/Documents/Life-History/glass-analyses/figures/neutral-evolution/tabular_results/neutral_results_pri_shared.txt", sep="\t", row.names = F, col.names = T, quote = F)
 write.table(neutral_results_recur, file = "/Users/johnsk/Documents/Life-History/glass-analyses/figures/neutral-evolution/tabular_results/neutral_results_recur.txt", sep="\t", row.names = F, col.names = T, quote = F)
-write.table(neutral_results_shared_recur, file = "/Users/johnsk/Documents/Life-History/glass-analyses/figures/neutral-evolution/tabular_results/neutral_results_shared_recur.txt", sep="\t", row.names = F, col.names = T, quote = F)
+write.table(neutral_results_recur_shared, file = "/Users/johnsk/Documents/Life-History/glass-analyses/figures/neutral-evolution-unfiltered/tabular_results/neutral_results_shared_recur.txt", sep="\t", row.names = F, col.names = T, quote = F)
 write.table(neutral_results_shared_a, file = "/Users/johnsk/Documents/Life-History/glass-analyses/figures/neutral-evolution/tabular_results/neutral_results_shared_a.txt", sep="\t", row.names = F, col.names = T, quote = F)
 write.table(neutral_results_shared_b, file = "/Users/johnsk/Documents/Life-History/glass-analyses/figures/neutral-evolution/tabular_results/neutral_results_shared_b.txt", sep="\t", row.names = F, col.names = T, quote = F)
 
