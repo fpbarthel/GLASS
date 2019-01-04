@@ -23,6 +23,7 @@ LEFT JOIN analysis.snvs snvs ON snvs.chrom = gtc.chrom AND snvs.pos = gtc.pos AN
 WHERE 
     (mutect2_call_a OR mutect2_call_b) AND 
     (gtc.alt_count_a + gtc.ref_count_a) >= 30 AND 
-    (gtc.alt_count_b + gtc.ref_count_b) >= 30
+    (gtc.alt_count_b + gtc.ref_count_b) >= 30  AND
+    (gtc.ref_count_a > 0 OR gtc.alt_count_a > 0)
 
 -- END --
