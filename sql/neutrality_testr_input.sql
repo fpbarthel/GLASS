@@ -17,7 +17,7 @@ SELECT
     ROUND(gtc.alt_count_a::decimal / (gtc.alt_count_a + gtc.ref_count_a),4) AS vaf_a,
     ROUND(gtc.alt_count_b::decimal / (gtc.alt_count_b + gtc.ref_count_b),4) AS vaf_b,
     ROUND((gtc.alt_count_a::decimal + gtc.alt_count_b::decimal) / (gtc.alt_count_a + gtc.alt_count_b + gtc.ref_count_a + gtc.ref_count_b),4) AS vaf_ab,
-    (CASE WHEN gtc.alt_count_a > 0 AND gtc.alt_count_b > 0 THEN 'S' WHEN gtc.alt_count_a > 0 AND NOT gtc.alt_count_b > 0 THEN 'P' WHEN gtc.alt_count_b > 0 AND gtc.alt_count_a > 0 THEN 'R' END) AS status
+    (CASE WHEN gtc.alt_count_a > 0 AND gtc.alt_count_b > 0 THEN 'S' WHEN gtc.alt_count_a > 0 AND NOT gtc.alt_count_b > 0 THEN 'P' WHEN gtc.alt_count_b > 0 AND NOT gtc.alt_count_a > 0 THEN 'R' END) AS status
 FROM analysis.master_genotype_comparison gtc
 LEFT JOIN analysis.snvs snvs ON snvs.chrom = gtc.chrom AND snvs.pos = gtc.pos AND snvs.alt = gtc.alt
 WHERE 
