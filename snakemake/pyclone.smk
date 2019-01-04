@@ -27,7 +27,7 @@ rule pyclone_setup:
     PyClone setup
     """
     input:
-        lambda wildcards: expand("results/pyclone/mytsv/{aliquot_barcode}.tsv", aliquot_barcode = manifest.getPyCloneAliquots(wildcards.case_barcode, wildcards.analysis_type))
+        lambda wildcards: expand("results/pyclone/mytsv/{barcode}.tsv", barcode = manifest.getPyCloneAliquots(wildcards.case_barcode, wildcards.analysis_type))
     output:
         "results/pyclone/run/{case_barcode}-{analysis_type}/config.yaml"
     params:
@@ -118,7 +118,7 @@ rule pyclone_plot_loci:
             --config_file {input.conf} \
             --plot_file {output} \
             --plot_type {wildcards.plot_type} \
-            --burnin 100 \
+            --burnin 1000 \
             --thin 1 \
             --min_cluster_size 2 \
             --max_clusters 6 \
@@ -154,7 +154,7 @@ rule pyclone_plot_clusters:
             --config_file {input.conf} \
             --plot_file {output} \
             --plot_type {wildcards.plot_type} \
-            --burnin 100 \
+            --burnin 1000 \
             --thin 1 \
             --min_cluster_size 2 \
             --max_clusters 6 \
@@ -191,18 +191,8 @@ rule pyclone_build_table:
             --out_file {output} \
             --table_type {wildcards.table_type} \
             --max_clusters 6 \
-            --burnin 100 \
+            --burnin 1000 \
             --thin 1 \
             > {log} 2>&1"
-
-rule pyclone_final:
-    input:
-        lambda wildcards: expand("results/pyclone/run/{case_barcode}-{analysis_type}/plots/loci/{plot_type}.pdf", case_barcode = wildcards.case_barcode, analysis_type = wildcards.analysis_type, plot_type = ['density','parallel_coordinates','scatter','similarity_matrix','vaf_parallel_coordinates','vaf_scatter']),
-        lambda wildcards: expand("results/pyclone/run/{case_barcode}-{analysis_type}/plots/clusters/{plot_type}.pdf", case_barcode = wildcards.case_barcode, analysis_type = wildcards.analysis_type, plot_type = ['density','parallel_coordinates','scatter']),
-        lambda wildcards: expand("results/pyclone/run/{case_barcode}-{analysis_type}/tables/{table_type}.tsv", case_barcode = wildcards.case_barcode, analysis_type = wildcards.analysis_type, table_type = ['cluster','loci'])
-    output:
-        touch("results/pyclone/run/{case_barcode}-{analysis_type}/PyClone.done")
-    shell:
-        "echo done"
 
 ## END ##

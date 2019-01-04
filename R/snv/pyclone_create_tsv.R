@@ -26,7 +26,7 @@ df <- qres %>%
   mutate(has_30x_in_all_subsamples = num_aliquots_variant_30x == num_aliquots_total,
          has_50x_in_all_subsamples = num_aliquots_variant_50x == num_aliquots_total,
          non_null_cn_in_all_subsamples = num_aliquots_non_null_cn == num_aliquots_total) %>%
-  filter(has_30x_in_all_subsamples, non_null_cn_in_all_subsamples, complete.cases(ref_counts,var_counts,normal_cn,minor_cn,major_cn)) %>%
+  filter(has_30x_in_all_subsamples, non_null_cn_in_all_subsamples, complete.cases(ref_counts,var_counts,normal_cn,minor_cn,major_cn), major_cn > 0) %>%
   select(mutation_id,ref_counts,var_counts,normal_cn,minor_cn,major_cn)
   
 write.table(df, file = tsv, sep = "\t", row.names = FALSE, col.names = TRUE, quote = FALSE)

@@ -244,7 +244,9 @@ rule telseq:
 
 rule pyclone:
     input:
-        expand("results/pyclone/run/{pyclone_short_name}/PyClone.done", pyclone_short_name = manifest.getPyCloneShortNames())
+        lambda wildcards: expand("results/pyclone/run/{pyclone_short_name}/plots/loci/{plot_type}.pdf", pyclone_short_name = manifest.getPyCloneShortNames(), plot_type = ['density','parallel_coordinates','scatter','similarity_matrix','vaf_parallel_coordinates','vaf_scatter']),
+        lambda wildcards: expand("results/pyclone/run/{pyclone_short_name}/plots/clusters/{plot_type}.pdf", pyclone_short_name = manifest.getPyCloneShortNames(), plot_type = ['density','parallel_coordinates','scatter']),
+        lambda wildcards: expand("results/pyclone/run/{pyclone_short_name}/tables/{table_type}.tsv", pyclone_short_name = manifest.getPyCloneShortNames(), table_type = ['cluster','loci'])
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Fingerprinting pipeline
