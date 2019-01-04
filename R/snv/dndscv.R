@@ -1,5 +1,3 @@
-
-#library(devtools); install_github("im3sanger/dndscv")
 library(dndscv)
 library(tidyverse)
 library(DBI)
@@ -39,12 +37,15 @@ q <- "WITH selected_tumor_pairs AS
       LEFT JOIN analysis.snvs ON snvs.chrom = gt.chrom AND snvs.pos = gt.pos AND snvs.alt = gt.alt
       LEFT JOIN analysis.variant_classifications vc ON gt.variant_classification = vc.variant_classification
       LEFT JOIN clinical.surgeries su ON su.sample_barcode = substring(gt.aliquot_barcode from 1 for 15)
-      WHERE mutect2_call"
+      WHERE mutect2_call AND vc.variant_classification_impact IN ('LOW','MODERATE','HIGH')"
 
 qres_all <- dbGetQuery(con, sprintf(q, "", "(stp.tumor_barcode_a = gt.aliquot_barcode OR stp.tumor_barcode_b = gt.aliquot_barcode)"))
-dnds_all = dndscv(qres_all %>% select(-idh_codel_subtype), refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 500)
+dnds_all = dndscv(qres_all %>% select(-idh_codel_subtype), refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 500, gene_list = known_cancergenes)
 
-result_list <- lapply(unique(qres$idh_codel_subtype), function(qres_subtype) {
+print(dnds_all$globaldnds)
+print(dnds_all$nbreg$theta)
+
+result_list <- lapply(unique(qres_all$idh_codel_subtype), function(qres_subtype) {
   message("Computing dNdS for ", qres_subtype)
   qres_subset = qres_all %>% filter(idh_codel_subtype == qres_subtype) %>% dplyr::select(-idh_codel_subtype)
   dnds_subset = dndscv(qres_subset, refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 500)
@@ -53,10 +54,7 @@ result_list <- lapply(unique(qres$idh_codel_subtype), function(qres_subtype) {
 
 res <- data.table::rbindlist(result_list)
 
-dbWriteTable(con, Id(schema="analysis",table="dndscv_global_by_subtype"), as.data.frame(res))
-
-
-print(dnds_all$globaldnds)
+#dbWriteTable(con, Id(schema="analysis",table="dndscv_global_by_subtype"), as.data.frame(res))
 
 sel_cv = dnds_all$sel_cv
 print(head(sel_cv, 20), digits = 3)
@@ -164,13 +162,16 @@ qres_shared = qres %>% filter(status == 'shared') %>% dplyr::select(-status)
 qres_primary = qres %>% filter(status == 'primary') %>% dplyr::select(-status)
 qres_recurrent = qres %>% filter(status == 'recurrent') %>% dplyr::select(-status)
 
-dnds_shared = dndscv(qres_shared, refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 500)
-dnds_primary = dndscv(qres_primary, refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 500)
-dnds_recurrent = dndscv(qres_recurrent, refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 500)
+dnds_shared = dndscv(qres_shared, refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 500, gene_list = known_cancergenes)
+dnds_primary = dndscv(qres_primary, refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 500, gene_list = known_cancergenes)
+dnds_recurrent = dndscv(qres_recurrent, refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 500, gene_list = known_cancergenes)
 
 print(dnds_shared$globaldnds)
+print(dnds_shared$nbreg$theta)
 print(dnds_primary$globaldnds)
+print(dnds_primary$nbreg$theta)
 print(dnds_recurrent$globaldnds)
+print(dnds_recurrent$nbreg$theta)
 
 df <- rbind(cbind(status = "shared", dnds_shared$globaldnds),
             cbind(status = "primary", dnds_primary$globaldnds),
