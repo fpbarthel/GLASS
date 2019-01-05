@@ -18,6 +18,32 @@ common_cases <- intersect(hmapdata$case_barcode, cnv_data$case_barcode)
 ## Load IDH-codel subtypes
 clindata <- dbGetQuery(con, "SELECT DISTINCT case_barcode, idh_codel_subtype FROM clinical.surgeries WHERE idh_codel_subtype IS NOT NULL")
 
+## Plot
+
+# Generate a df with information about the proportion of unique and shared mutations.
+mut_freq_bar = mut_freq_gold %>% 
+  mutate(primary_only = (count_a-intersection_ab)/union_ab,
+         recurrence_only =  (count_b-intersection_ab)/union_ab,
+         shared = intersection_ab/union_ab) %>% 
+  select(primary_only, recurrence_only, shared, tumor_pair_barcode, union_ab, idh_codel_subtype) %>% 
+  gather(mutation_type, mutation_percent, c(primary_only, recurrence_only, shared), -tumor_pair_barcode, -union_ab, -idh_codel_subtype)
+mut_freq_bar$mutation_type = factor(mut_freq_bar$mutation_type, levels = c("recurrence_only", "primary_only", "shared"))
+
+# Choose complementary colors from the colortools package. http://www.sthda.com/english/wiki/the-elements-of-choosing-colors-for-great-data-visualization-in-r
+splitComp("#2fb3ca")
+tetradic("#005295")
+
+# Order by total number of mutations (union_ab) AND only present for each class.
+top_plot = ggplot(mut_freq_bar, aes(x =reorder(tumor_pair_barcode, as.numeric(union_ab)), y=as.numeric(log10(union_ab)))) + geom_bar(stat="identity") + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank(), axis.title.y=element_text(size=rel(0.6))) +
+  xlab("") + ylab("Log10(mutation union)") + facet_grid(~idh_codel_subtype, scales="free")
+
+bot_plot = ggplot(mut_freq_bar, aes(x =reorder(tumor_pair_barcode, as.numeric(union_ab)), y=as.numeric(mutation_percent), fill=mutation_type)) + geom_bar(stat="identity") + 
+  scale_fill_manual(values=c("#2FB3CA", "#CA2F66", "#CA932F")) + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank(), axis.title.y=element_text(size=rel(0.9))) +
+  xlab("") + ylab("% SNVs and Indels") + guides(fill=guide_legend("Mutation")) + facet_grid(~idh_codel_subtype, scales="free") 
+
+# Combine the plot to incorporate both mutation burden and proportions.
+plot_grid(top_plot, bot_plot, align = "v", axis= "rl" , nrow = 2, rel_heights = c(1/4, 3/4), label_size = 12)
+
 ## Sort
 mutdf <- hmapdata %>%
   filter(case_barcode %in% common_cases) %>%
