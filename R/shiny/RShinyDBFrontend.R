@@ -3,15 +3,21 @@ library(shiny)
 library(DBI)
 library(tidyverse)
 con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
-tables <- dbGetQuery(con, "SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema != 'pg_catalog' AND table_schema !='information_schema'")
+tables <- dbGetQuery(con, "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_schema != 'pg_catalog' AND table_schema !='information_schema'")
+tables <- rbind(tables, cbind(dbGetQuery(con, "SELECT schemaname AS table_schema, matviewname AS table_name FROM pg_matviews"), table_type = "Materialized View"))
+tables <- tables %>% mutate(table_type = fct_recode(table_type, "View" = "VIEW", "Table" = "BASE TABLE"))
 ui <- dashboardPage(
   dashboardHeader(),
   dashboardSidebar(
     sidebarMenu(
-      lapply(unique(tables$table_schema), function(schema) menuItem(schema, 
-                                                                    lapply(tables$table_name[tables$table_schema==schema],
-                                                                           function(table) menuSubItem(table, tabName = table, icon = icon("th"))), 
-                                                                    tabName = schema, icon = icon("dashboard")))
+      #lapply(unique(tables$table_schema), function(schema) menuItem(schema, 
+      #                                                              lapply(tables$table_name[tables$table_schema==schema],
+      #                                                                     function(table) menuSubItem(table, tabName = table, icon = icon("th"))), 
+      #                                                              tabName = schema, icon = icon("dashboard")))
+      lapply(unique(tables$table_schema), function(schema) menuItem(schema,
+        lapply(unique(tables$table_type[tables$table_schema==schema]), function(type) menuItem(type,
+          lapply(tables$table_name[tables$table_schema==schema & tables$table_type==type], function(table) menuSubItem(table, 
+            tabName = table, icon = icon("th"))), tabName = schema, icon = icon("dashboard")))))
     )
   ),
   dashboardBody(
