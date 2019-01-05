@@ -77,14 +77,14 @@ variants_by_case_and_gene AS
 		gtc.alt,
 		gtc.variant_classification,
 		sg.hgvs_p,
-		(alt_count_a > 1) AS selected_call_a,
-		(alt_count_b > 1) AS selected_call_b,
+		(alt_count_a > 0) AS selected_call_a,
+		(alt_count_b > 0) AS selected_call_b,
 		row_number() OVER (PARTITION BY gtc.gene_symbol, gtc.case_barcode ORDER BY mutect2_call_a::integer + mutect2_call_b::integer DESC, variant_classification_priority, mutect2_call_a::integer + mutect2_call_b::integer DESC, read_depth_a + read_depth_b DESC) AS priority
 	FROM analysis.master_genotype_comparison gtc
 	INNER JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = gtc.tumor_pair_barcode AND stp.priority = 1
 	INNER JOIN selected_genes sg ON sg.chrom = gtc.chrom AND sg.pos = gtc.pos AND sg.alt = gtc.alt
-	WHERE
-		((alt_count_a::decimal / (alt_count_a+ref_count_a) > 0.05) OR (alt_count_b::decimal / (alt_count_b+ref_count_b) > 0.05)) AND (mutect2_call_a OR mutect2_call_b) AND read_depth_a >= 5 AND read_depth_b >= 5
+	WHERE 
+		(mutect2_call_a OR mutect2_call_b) AND read_depth_a >= 15 AND read_depth_b >= 15
 ),
 variants_by_case AS
 (
@@ -96,6 +96,7 @@ variants_by_case AS
 		bool_and(selected_call_a AND selected_call_b) AS shared,
 		bool_or(selected_call_a AND NOT selected_call_b) AS private_a,
 		bool_or(NOT selected_call_a AND selected_call_b) AS private_b,
+		COUNT(DISTINCT gene_symbol) AS driver_count,
 		trim(BOTH ', ' FROM string_agg(CASE WHEN selected_call_b AND NOT selected_call_a THEN '+' || gene_symbol || ', ' ELSE '' END, '')) AS target_a,
 		trim(BOTH ', ' FROM string_agg(CASE WHEN selected_call_a AND NOT selected_call_b THEN '-' || gene_symbol || ', ' ELSE '' END, '')) AS target_b
 	FROM variants_by_case_and_gene
@@ -109,6 +110,7 @@ driver_status AS
 		tumor_pair_barcode,
 		tumor_barcode_a,
 		tumor_barcode_b,
+		driver_count,
 		(CASE WHEN shared THEN 'Driver stable'
 		 WHEN NOT shared AND private_a AND NOT private_b THEN 'Driver loss'
 		 WHEN NOT shared AND private_b AND NOT private_a THEN 'Driver gain'
@@ -116,4 +118,4 @@ driver_status AS
 		TRIM(BOTH ', ' FROM target_a || ', ' || target_b) AS target
 	FROM variants_by_case
 )
-SELECT driver_status,COUNT(*) FROM driver_status GROUP BY driver_status
+SELECT * FROM driver_status --driver_status,COUNT(*) FROM driver_status GROUP BY driver_status
