@@ -715,7 +715,8 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "queu" : "long",
+        "walltime" : "480:00:00",
         "name" : "{rule}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.err"
