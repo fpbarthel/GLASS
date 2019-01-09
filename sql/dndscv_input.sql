@@ -33,10 +33,11 @@ SELECT DISTINCT -- remove duplicate entries
           WHEN gt.alt_count_a > 0 AND NOT gt.alt_count_b > 0 THEN 'P'
           WHEN gt.alt_count_b > 0 AND NOT gt.alt_count_a > 0 THEN 'R' END) AS status*/
 FROM analysis.master_genotype_comparison gt
-INNER JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = gt.tumor_pair_barcode AND stp.priority = 1
+INNER JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = gt.tumor_pair_barcode 
 LEFT JOIN analysis.snvs ON snvs.chrom = gt.chrom AND snvs.pos = gt.pos AND snvs.alt = gt.alt
 LEFT JOIN clinical.surgeries su ON su.sample_barcode = substring(gt.tumor_pair_barcode from 1 for 15)
 WHERE
+    stp.priority = 1 AND
     (mutect2_call_a OR mutect2_call_b) AND
     --(gt.alt_count_a + gt.ref_count_a) >= 5 AND 
     --(gt.alt_count_b + gt.ref_count_b) >= 5 AND
