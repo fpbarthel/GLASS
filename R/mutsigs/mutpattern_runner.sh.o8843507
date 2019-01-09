@@ -1,0 +1,18 @@
+null device 
+          1 
+
+
+--------------------------------------------------------------------------------
+|  JAX TORQUE EPILOGUE
+|
+|  Job ID: 8843507.helix-master
+|  Exit Status: 0
+|  Requested Resources:
+|      mem=72gb,nodes=1:ppn=12,walltime=70:00:00
+|  Resources Consumed:
+|      cput=00:22:09,mem=36650844kb,vmem=65792444kb,walltime=00:03:14
+|  Walltime accuracy: 0.1%
+|
+| Epilogue Host (TORQUE Mother Superior): helix128
+|
+--------------------------------------------------------------------------------
