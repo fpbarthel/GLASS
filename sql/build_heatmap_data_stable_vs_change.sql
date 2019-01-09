@@ -8,30 +8,30 @@ selected_tumor_pairs AS
 		tumor_pair_barcode,
 		case_barcode,
 		tumor_barcode_a,
-		tumor_barcode_b,
-		row_number() OVER (PARTITION BY case_barcode ORDER BY surgical_interval_mo DESC, portion_a ASC, portion_b ASC, substring(tumor_pair_barcode from 27 for 3) ASC) AS priority
+		tumor_barcode_b--,
+		--row_number() OVER (PARTITION BY case_barcode ORDER BY surgical_interval_mo DESC, portion_a ASC, portion_b ASC, substring(tumor_pair_barcode from 27 for 3) ASC) AS priority
 	FROM analysis.tumor_pairs ps
 	LEFT JOIN analysis.blocklist b1 ON b1.aliquot_barcode = ps.tumor_barcode_a
 	LEFT JOIN analysis.blocklist b2 ON b2.aliquot_barcode = ps.tumor_barcode_b
 	WHERE
-		comparison_type = 'longitudinal' AND
-		sample_type_b <> 'M1' AND 													-- exclude metastatic samples here because this is outside the scope of our study
+	--	comparison_type = 'longitudinal' AND
+		sample_type_b <> 'M1' AND
 		b1.coverage_exclusion = 'allow' AND b2.coverage_exclusion = 'allow' 
 ),
 selected_aliquots AS
 (
-	SELECT tumor_barcode_a AS aliquot_barcode, case_barcode FROM selected_tumor_pairs WHERE priority = 1
+	SELECT tumor_barcode_a AS aliquot_barcode, case_barcode FROM selected_tumor_pairs --WHERE priority = 1
 	UNION
-	SELECT tumor_barcode_b AS aliquot_barcode, case_barcode FROM selected_tumor_pairs WHERE priority = 1
+	SELECT tumor_barcode_b AS aliquot_barcode, case_barcode FROM selected_tumor_pairs --WHERE priority = 1
 ),
 selected_genes AS
 (
 	SELECT sn.gene_symbol, chrom, pos, alt, sn.variant_classification, variant_classification_priority, hgvs_p
 	FROM analysis.snvs sn
-	INNER JOIN analysis.dndscv_gene ds ON ds.gene_symbol = sn.gene_symbol AND (ds.qglobal_cv < 0.10 OR ds.gene_symbol IN ('TERT')) -- ,'IDH2','NOTCH1','PDGFRA','PIK3CG','BRAF','H3F3A'))
+	INNER JOIN analysis.dndscv_gene ds ON ds.gene_symbol = sn.gene_symbol AND (ds.qglobal_cv < 0.01 OR ds.gene_symbol IN ('TERT'))
 	LEFT JOIN analysis.variant_classifications vc ON sn.variant_classification = vc.variant_classification
 	WHERE
-		(sn.gene_symbol NOT IN ('TERT') AND variant_classification_priority IS NOT NULL) OR -- ,'IDH1','IDH2','BRAF','H3F3A') AND variant_classification_priority IS NOT NULL) OR 
+		(sn.gene_symbol NOT IN ('TERT') AND variant_classification_priority IS NOT NULL) OR
 		(sn.gene_symbol = 'TERT' AND sn.variant_classification = '5''Flank' AND lower(sn.pos) IN (1295228,1295250)) OR
 		(sn.gene_symbol = 'IDH1' AND sn.hgvs_p IN ('p.R132C','p.R132G','p.R132H','p.R132S'))
 ),
@@ -62,7 +62,6 @@ gene_pair_coverage AS
 	FROM selected_tumor_pairs stp
 	LEFT JOIN gene_sample_coverage c1 ON c1.aliquot_barcode = stp.tumor_barcode_a
 	LEFT JOIN gene_sample_coverage c2 ON c2.aliquot_barcode = stp.tumor_barcode_b AND c1.gene_symbol = c2.gene_symbol
-	WHERE priority = 1
 ),
 variants_by_case_and_gene AS
 (
@@ -79,12 +78,14 @@ variants_by_case_and_gene AS
 		sg.hgvs_p,
 		(alt_count_a > 0) AS selected_call_a,
 		(alt_count_b > 0) AS selected_call_b,
-		row_number() OVER (PARTITION BY gtc.gene_symbol, gtc.case_barcode ORDER BY mutect2_call_a::integer + mutect2_call_b::integer DESC, variant_classification_priority, mutect2_call_a::integer + mutect2_call_b::integer DESC, read_depth_a + read_depth_b DESC) AS priority
+		lag((alt_count_a > 0)) OVER w = (alt_count_a > 0) OR lag((alt_count_b > 0)) OVER w = (alt_count_b > 0) AS is_same_variant,
+		row_number() OVER w AS priority
 	FROM analysis.master_genotype_comparison gtc
-	INNER JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = gtc.tumor_pair_barcode AND stp.priority = 1
+	INNER JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = gtc.tumor_pair_barcode 
 	INNER JOIN selected_genes sg ON sg.chrom = gtc.chrom AND sg.pos = gtc.pos AND sg.alt = gtc.alt
 	WHERE 
-		(mutect2_call_a OR mutect2_call_b) AND read_depth_a >= 15 AND read_depth_b >= 15
+		(mutect2_call_a OR mutect2_call_b) AND (ref_count_a+alt_count_a) >= 15 AND (ref_count_b+alt_count_b) >= 15
+	WINDOW w AS (PARTITION BY gtc.gene_symbol, gtc.tumor_pair_barcode ORDER BY mutect2_call_a::integer + mutect2_call_b::integer DESC, variant_classification_priority, (ref_count_a+alt_count_a) + (ref_count_b+alt_count_b) DESC)
 ),
 variants_by_case AS
 (
@@ -100,7 +101,7 @@ variants_by_case AS
 		trim(BOTH ', ' FROM string_agg(CASE WHEN selected_call_b AND NOT selected_call_a THEN '+' || gene_symbol || ', ' ELSE '' END, '')) AS target_a,
 		trim(BOTH ', ' FROM string_agg(CASE WHEN selected_call_a AND NOT selected_call_b THEN '-' || gene_symbol || ', ' ELSE '' END, '')) AS target_b
 	FROM variants_by_case_and_gene
-	WHERE priority = 1
+	WHERE priority = 1 OR (priority = 2 AND NOT is_same_variant)
 	GROUP BY case_barcode, tumor_pair_barcode, tumor_barcode_a, tumor_barcode_b
 ),
 driver_status AS
@@ -117,5 +118,20 @@ driver_status AS
 		 WHEN NOT shared AND private_b AND private_b THEN 'Driver switch' END) driver_status,
 		TRIM(BOTH ', ' FROM target_a || ', ' || target_b) AS target
 	FROM variants_by_case
+),
+driver_stability AS
+(
+	SELECT
+		stp.tumor_pair_barcode,
+		stp.case_barcode,
+		stp.tumor_barcode_a,
+		stp.tumor_barcode_b,
+		(CASE WHEN driver_count > 0 THEN driver_count ELSE 0 END) driver_count,
+		(CASE WHEN driver_status IS NOT NULL THEN driver_status ELSE 'Driver null' END) driver_status,
+		(CASE WHEN target <> '' THEN target ELSE NULL END) driver_target
+	FROM driver_status ds
+	RIGHT JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = ds.tumor_pair_barcode
 )
-SELECT * FROM driver_status --driver_status,COUNT(*) FROM driver_status GROUP BY driver_status
+SELECT * FROM driver_stability
+		 
+-- END --
