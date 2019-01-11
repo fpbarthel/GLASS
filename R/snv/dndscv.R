@@ -23,21 +23,13 @@ dnds_all <- res_fraction %>%
   distinct() %>%
   dndscv(refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 500)
 
-#dnds_all_known_genes <- dndscv(qres_all, refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 500, gene_list = known_cancergenes, maxcovs=5)
-
 ###################
 ## Examine results
 ###################
 print(dnds_all$globaldnds)
 print(dnds_all$nbreg$theta)
 
-print(dnds_all_known_genes$globaldnds)
-print(dnds_all_known_genes$nbreg$theta)
-
 sel_cv = dnds_all$sel_cv
-print(head(sel_cv, sum(sel_cv$qglobal_cv < 0.05)), digits = 3)
-
-sel_cv = dnds_all_known_genes$sel_cv
 print(head(sel_cv, sum(sel_cv$qglobal_cv < 0.05)), digits = 3)
 
 ###################
@@ -220,14 +212,16 @@ dnds_neutralitytestr_sample_global %>%
 
 dnds_fraction_global %>%
   filter(name %in% c('wmis','wtru','wall')) %>%
-  mutate(name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
+  mutate(subtype = fct_recode(subtype, "IDHmut-codel" = "IDHmut_codel", "IDHmut-noncodel" = "IDHmut_noncodel", "IDHwt" = "IDHwt_noncodel"),
+         name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
          fraction = factor(fraction, levels = c("P", "S", "R"))) %>%
-  ggplot(aes(x = fraction, y = mle, ymin = cilow, ymax = cihigh)) +
-  geom_pointrange(aes(color = name), position=position_dodge(width = 0.5)) +
+  ggplot(aes(x = name, y = mle, ymin = cilow, ymax = cihigh, color = fraction)) +
+  geom_pointrange(position=position_dodge(width = 0.5)) +
+  scale_color_manual(values = c("P" = "#2fb3ca","S" = "#CA932F", "R" = "#CA2FB4"), drop=F) +
   facet_wrap( ~ subtype) +
   geom_hline(yintercept = 1) +
-  theme_bw() +
-  labs(x = "Variant Fraction", y = "Global dN/dS", color = "Variant Classification")
+  theme_bw(base_size = 18) +
+  labs(x = "Variant Classification", y = "Global dN/dS", color = "Variant Fraction")
 
 ###################
 ## Plot dNdS-CV by subtype - by sample
@@ -235,34 +229,41 @@ dnds_fraction_global %>%
 
 dnds_sample_global %>%
   filter(name %in% c('wmis','wtru','wall')) %>%
-  mutate(name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
+  mutate(subtype = fct_recode(subtype, "IDHmut-codel" = "IDHmut_codel", "IDHmut-noncodel" = "IDHmut_noncodel", "IDHwt" = "IDHwt_noncodel"),
+         name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
          sample_type = factor(sample_type, levels = c("P", "R"))) %>%
-  ggplot(aes(x = sample_type, y = mle, ymin = cilow, ymax = cihigh)) +
-  geom_pointrange(aes(color = name), position=position_dodge(width = 0.5)) +
+  ggplot(aes(x = name, y = mle, ymin = cilow, ymax = cihigh, color = sample_type)) +
+  geom_pointrange(position=position_dodge(width = 0.5)) +
+  scale_color_manual(values = c("P" = "#2fb3ca", "R" = "#CA2FB4"), drop=F) +
   facet_wrap( ~ subtype) +
   geom_hline(yintercept = 1) +
-  theme_bw() +
-  labs(x = "Variant Fraction", y = "Global dN/dS", color = "Variant Classification")
+  theme_bw(base_size = 18) +
+  labs(x = "Variant Classification", y = "Global dN/dS", color = "Sample Type")
 
 ###################
 ## Plot dNdS-CV genes by subtype - fraction
 ###################
 
 dat <- dnds_fraction_sel_cv %>%
+  mutate(subtype = fct_recode(subtype, "IDHmut-codel" = "IDHmut_codel", "IDHmut-noncodel" = "IDHmut_noncodel", "IDHwt" = "IDHwt_noncodel"),
+         fraction = factor(fraction, levels = c("P", "S", "R"))) %>%
   complete(gene_name,fraction,subtype, fill = list(qglobal_cv=1)) %>%
   group_by(fraction,subtype) %>%
   arrange(qglobal_cv) %>%
-  ungroup()
+  ungroup() %>%
+  arrange(fraction)
 
-myplots <- lapply(split(dat, paste(dat$subtype, dat$fraction)), function(df){
+myplots <- lapply(split(dat, paste(dat$subtype, dat$fraction))[c(1,3,2,4,6,5,7,9,8)], function(df){
   df$gene_name = factor(df$gene_name, levels = unique(df$gene_name))
-  p <- ggplot(df[1:6,], aes(x=gene_name, y=-log10(qglobal_cv), fill=fraction), width=0.75) +
+  p <- ggplot(df[1:7,], aes(x=gene_name, y=-log10(qglobal_cv), fill=fraction), width=0.75) +
     geom_bar(stat="identity", position = position_dodge()) + 
-    geom_hline(yintercept = -log10(0.01), color = "red", linetype = 2) +
+    geom_hline(yintercept = -log10(0.05), color = "red", linetype = 2) +
+    labs(x="-log10(FDR)", y="") +
+    guides(fill = F) +
     facet_wrap(~ subtype, scales = "free_y") + 
-    coord_flip() +
-    scale_fill_discrete(drop=F) +
-    theme_bw()
+    coord_flip(ylim = c(0,10)) +
+    scale_fill_manual(values = c("P" = "#2fb3ca","S" = "#CA932F", "R" = "#CA2FB4"), drop=F) +
+    theme_bw() 
   
   return(p)
 })
@@ -274,6 +275,8 @@ do.call(grid.arrange,(c(myplots, ncol=3)))
 ###################
 
 dat <- dnds_sample_sel_cv %>%
+  mutate(subtype = fct_recode(subtype, "IDHmut-codel" = "IDHmut_codel", "IDHmut-noncodel" = "IDHmut_noncodel", "IDHwt" = "IDHwt_noncodel"),
+         sample_type = factor(sample_type, levels = c("P", "R"))) %>%
   complete(gene_name,sample_type,subtype, fill = list(qglobal_cv=1)) %>%
   group_by(sample_type,subtype) %>%
   arrange(qglobal_cv) %>%
@@ -283,10 +286,12 @@ myplots <- lapply(split(dat, paste(dat$subtype, dat$sample_type)), function(df){
   df$gene_name = factor(df$gene_name, levels = unique(df$gene_name))
   p <- ggplot(df[1:9,], aes(x=gene_name, y=-log10(qglobal_cv), fill=sample_type), width=0.75) +
     geom_bar(stat="identity", position = position_dodge()) + 
-    geom_hline(yintercept = -log10(0.01), color = "red", linetype = 2) +
+    geom_hline(yintercept = -log10(0.05), color = "red", linetype = 2) +
+    labs(x="-log10(FDR)", y="") +
+    guides(fill = F) +
     facet_wrap(~ subtype, scales = "free_y") + 
-    coord_flip() +
-    scale_fill_discrete(drop=F) +
+    coord_flip(ylim = c(0,10)) +
+    scale_fill_manual(values = c("P" = "#2fb3ca", "R" = "#CA2FB4"), drop=F) +
     theme_bw()
   
   return(p)
