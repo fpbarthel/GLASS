@@ -154,7 +154,7 @@ cn_1p19q_overlap_df <- as.data.frame(cn_1p19q_overlap)
 cn_1p19q_overlap_df$full_cytoband = paste0(cn_1p19q_overlap_df$chr, cn_1p19q_overlap_df$cytoband)
 cn_1p19q_overlap_df$cytoband = NULL
 
-## Determine the copy number ratio per gene per sample. 
+## Determine the copy number ratio per cytoband per sample. 
 glass_cytoband_ratio = cn_1p19q_overlap_df %>%
   mutate(widths = abs(end-start)) %>% 
   group_by(full_cytoband, sample_id) %>% 
