@@ -195,14 +195,17 @@ dnds_neutralitytestr_fraction_global %>%
 ###################
 
 dnds_neutralitytestr_sample_global %>%
-  filter(name %in% c('wmis','wtru','wall')) %>%
-  mutate(name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
+  filter(name == 'wall') %>%
+  mutate(evolution = fct_recode(evolution, "Neutral" = "N", "Selected" = "S"),
+         subtype = fct_recode(subtype, "IDHmut-codel" = "IDHmut_codel", "IDHmut-noncodel" = "IDHmut_noncodel", "IDHwt" = "IDHwt_noncodel"),
+         name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
          sample_type = factor(sample_type, levels = c("P", "R"))) %>%
-  ggplot(aes(x = sample_type, y = mle, ymin = cilow, ymax = cihigh)) +
-  geom_pointrange(aes(color = name), position=position_dodge(width = 0.5)) +
-  facet_wrap( ~ evolution + subtype) +
+  ggplot(aes(x = subtype, y = mle, ymin = cilow, ymax = cihigh, color = sample_type)) +
+  geom_pointrange(position=position_dodge(width = 0.5)) +
+  scale_color_manual(values = c("P" = "#2fb3ca", "R" = "#CA2FB4"), drop=F) +
+  facet_wrap( ~ evolution) +
   geom_hline(yintercept = 1) +
-  theme_bw() +
+  theme_bw(base_size = 18) +
   labs(x = "Variant Fraction", y = "Global dN/dS", color = "Variant Classification")
 
 
@@ -211,34 +214,34 @@ dnds_neutralitytestr_sample_global %>%
 ###################
 
 dnds_fraction_global %>%
-  filter(name %in% c('wmis','wtru','wall')) %>%
+  filter(name == 'wall') %>%
   mutate(subtype = fct_recode(subtype, "IDHmut-codel" = "IDHmut_codel", "IDHmut-noncodel" = "IDHmut_noncodel", "IDHwt" = "IDHwt_noncodel"),
-         name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
+         #name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
          fraction = factor(fraction, levels = c("P", "S", "R"))) %>%
-  ggplot(aes(x = name, y = mle, ymin = cilow, ymax = cihigh, color = fraction)) +
+  ggplot(aes(x = subtype, y = mle, ymin = cilow, ymax = cihigh, color = fraction)) +
   geom_pointrange(position=position_dodge(width = 0.5)) +
   scale_color_manual(values = c("P" = "#2fb3ca","S" = "#CA932F", "R" = "#CA2FB4"), drop=F) +
-  facet_wrap( ~ subtype) +
+  #facet_wrap( ~ subtype) +
   geom_hline(yintercept = 1) +
   theme_bw(base_size = 18) +
-  labs(x = "Variant Classification", y = "Global dN/dS", color = "Variant Fraction")
+  labs(x = "Subtype", y = "Global dN/dS", color = "Variant Fraction")
 
 ###################
 ## Plot dNdS-CV by subtype - by sample
 ###################
 
 dnds_sample_global %>%
-  filter(name %in% c('wmis','wtru','wall')) %>%
+  filter(name == 'wall') %>%
   mutate(subtype = fct_recode(subtype, "IDHmut-codel" = "IDHmut_codel", "IDHmut-noncodel" = "IDHmut_noncodel", "IDHwt" = "IDHwt_noncodel"),
-         name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
+         #name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
          sample_type = factor(sample_type, levels = c("P", "R"))) %>%
-  ggplot(aes(x = name, y = mle, ymin = cilow, ymax = cihigh, color = sample_type)) +
+  ggplot(aes(x = subtype, y = mle, ymin = cilow, ymax = cihigh, color = sample_type)) +
   geom_pointrange(position=position_dodge(width = 0.5)) +
   scale_color_manual(values = c("P" = "#2fb3ca", "R" = "#CA2FB4"), drop=F) +
-  facet_wrap( ~ subtype) +
+  #facet_wrap( ~ subtype) +
   geom_hline(yintercept = 1) +
   theme_bw(base_size = 18) +
-  labs(x = "Variant Classification", y = "Global dN/dS", color = "Sample Type")
+  labs(x = "Subtype", y = "Global dN/dS", color = "Sample Type")
 
 ###################
 ## Plot dNdS-CV genes by subtype - fraction
@@ -249,21 +252,25 @@ dat <- dnds_fraction_sel_cv %>%
          fraction = factor(fraction, levels = c("P", "S", "R"))) %>%
   complete(gene_name,fraction,subtype, fill = list(qglobal_cv=1)) %>%
   group_by(fraction,subtype) %>%
-  arrange(qglobal_cv) %>%
+  arrange(qglobal_cv, pglobal_cv) %>%
   ungroup() %>%
   arrange(fraction)
 
 myplots <- lapply(split(dat, paste(dat$subtype, dat$fraction))[c(1,3,2,4,6,5,7,9,8)], function(df){
   df$gene_name = factor(df$gene_name, levels = unique(df$gene_name))
   p <- ggplot(df[1:7,], aes(x=gene_name, y=-log10(qglobal_cv), fill=fraction), width=0.75) +
+    geom_bar(aes(y=-log10(pglobal_cv)), fill = "gray90", stat="identity", position = position_dodge()) + 
     geom_bar(stat="identity", position = position_dodge()) + 
     geom_hline(yintercept = -log10(0.05), color = "red", linetype = 2) +
-    labs(x="-log10(FDR)", y="") +
+    labs(y="-log10(FDR)", x="") +
     guides(fill = F) +
     facet_wrap(~ subtype, scales = "free_y") + 
     coord_flip(ylim = c(0,10)) +
     scale_fill_manual(values = c("P" = "#2fb3ca","S" = "#CA932F", "R" = "#CA2FB4"), drop=F) +
-    theme_bw() 
+    theme_bw(base_size = 16) +
+    theme( panel.grid.major = element_blank(),
+           panel.grid.minor = element_blank(),
+           axis.ticks = element_line(size = 0))
   
   return(p)
 })
@@ -279,24 +286,39 @@ dat <- dnds_sample_sel_cv %>%
          sample_type = factor(sample_type, levels = c("P", "R"))) %>%
   complete(gene_name,sample_type,subtype, fill = list(qglobal_cv=1)) %>%
   group_by(sample_type,subtype) %>%
-  arrange(qglobal_cv) %>%
+  arrange(qglobal_cv, pglobal_cv) %>%
   ungroup()
 
 myplots <- lapply(split(dat, paste(dat$subtype, dat$sample_type)), function(df){
   df$gene_name = factor(df$gene_name, levels = unique(df$gene_name))
   p <- ggplot(df[1:9,], aes(x=gene_name, y=-log10(qglobal_cv), fill=sample_type), width=0.75) +
+    geom_bar(aes(y=-log10(pglobal_cv)), fill = "gray90", stat="identity", position = position_dodge()) + 
     geom_bar(stat="identity", position = position_dodge()) + 
     geom_hline(yintercept = -log10(0.05), color = "red", linetype = 2) +
-    labs(x="-log10(FDR)", y="") +
+    labs(x="", y="-log10(FDR)") +
     guides(fill = F) +
     facet_wrap(~ subtype, scales = "free_y") + 
     coord_flip(ylim = c(0,10)) +
     scale_fill_manual(values = c("P" = "#2fb3ca", "R" = "#CA2FB4"), drop=F) +
-    theme_bw()
+    theme_bw(base_size = 16) +
+    theme( panel.grid.major = element_blank(),
+           panel.grid.minor = element_blank(),
+           axis.ticks = element_line(size = 0))
   
   return(p)
 })
 
 do.call(grid.arrange,(c(myplots, ncol=2)))
+
+###################
+## Write to database
+###################
+
+dbWriteTable(con, Id(schema="analysis",table="dnds_sample_global"), dnds_sample_global, append = FALSE)
+dbWriteTable(con, Id(schema="analysis",table="dnds_fraction_global"), dnds_fraction_global, append = FALSE)
+dbWriteTable(con, Id(schema="analysis",table="dnds_sample_sel_cv"), dnds_sample_sel_cv, append = FALSE)
+dbWriteTable(con, Id(schema="analysis",table="dnds_fraction_sel_cv"), dnds_fraction_sel_cv, append = FALSE)
+dbWriteTable(con, Id(schema="analysis",table="dnds_neutralitytestr_fraction_global"), dnds_neutralitytestr_fraction_global, append = FALSE)
+dbWriteTable(con, Id(schema="analysis",table="dnds_neutralitytestr_sample_global"), dnds_neutralitytestr_sample_global, append = FALSE)
 
 ## END ##
