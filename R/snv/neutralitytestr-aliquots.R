@@ -1,6 +1,6 @@
 ##############################################
 # NeutralitytestR applied to each aliquot
-# Updated: 2019.01.10
+# Updated: 2019.01.14
 # Author: Kevin J.
 ##################################################
 
@@ -32,12 +32,14 @@ titan_param = dbReadTable(con,  Id(schema="analysis",table="titan_params"))
 mut_freq = dbReadTable(con,  Id(schema="analysis",table="mutation_freq"))
 neutrality_aliquots = dbReadTable(con,  Id(schema="analysis",table="neutrality_aliquots"))
 neutrality_tumor_pairs = dbReadTable(con,  Id(schema="analysis",table="neutrality_tumor_pairs"))
+aneuploidy = dbReadTable(con,  Id(schema="analysis", table="aneuploidy"))
+
+
 
 # These tables **MAY** change, especially the driver table.
 clinal_tumor_pairs = dbGetQuery(con,"SELECT * FROM analysis.clinical_by_tumor_pair")
 drivers = dbGetQuery(con, "SELECT * FROM analysis.driver_status")
 silver_set = dbGetQuery(con, "SELECT * FROM analysis.silver_set")
-
 
 # Combine with pairs file to access "tumor_barcode".
 titan_info = titan_param %>% 
@@ -51,17 +53,18 @@ titan_info = titan_param %>%
 # all tumors
 neutrality_input_aliquot_mutect2 = read_file("sql/neutralitytestr-input-aliquot-level.sql")
 glass_single_vaf <- dbGetQuery(con, neutrality_input_aliquot_mutect2)
+
 # 514 distinct aliquots.
 n_distinct(glass_single_vaf$aliquot_barcode)
 
 # Determine the number of mutations that are considered subclonal in each tumor.
 aliquot_mutation_counts = glass_single_vaf %>% 
-  filter(vaf > 0.1 & vaf < 0.25) %>% 
+  filter(vaf >= 0.1 & vaf <= 0.25) %>% 
   group_by(aliquot_barcode) %>% 
   summarize(subclonal_mut = n())
 
 # Store results from per-level neutralitytestR.
-aliquot_results = matrix(NA, nrow = length(unique(glass_primary_all$tumor_pair_barcode)), ncol = 12)
+aliquot_results = matrix(NA, nrow = length(unique(glass_single_vaf$tumor_pair_barcode)), ncol = 12)
 colnames(aliquot_results) =  c("aliquot_barcode", "ploidy", "cellularity", "mutation_rate", "model_rsq","model_pval", "area_value", "area_pval","meanDist_value", "meanDist_pval", "Dk_value", "Dk_pval")
 aliquot_results = as.data.frame(aliquot_results)
 
@@ -190,6 +193,11 @@ fisher.test(table(silver_neutrality$idh_codel_subtype, silver_neutrality$evoluti
 ## Survival
 # The status indicator, normally 0=alive, 1=dead.
 silver_neutrality$patient_vital = ifelse(silver_neutrality$case_vital_status=="alive", 0, 1)
+
+# Censor all subjects still alive at 36 months.
+ifelse(silver_neutrality$case_overall_survival_mo>=36, 36, silver_neutrality$case_overall_survival_mo)
+
+
 
 
 # Subset to IDHwt,
@@ -353,8 +361,23 @@ full_test = silver_set %>%
          sample_barcode_b = substr(tumor_barcode_b, 1, 15)) %>% 
   left_join(surgeries_test, by=c("sample_barcode_a" = "sample_barcode")) %>% 
   left_join(surgeries_test, by=c("sample_barcode_b" = "sample_barcode")) %>% 
-  mutate(surgery_pair = paste(surgery_number.x, surgery_number.y, sep="-"))
-table(full_test$surgery_pair)
+  mutate(surgery_pair = paste(surgery_number.x, surgery_number.y, sep="-")) %>% 
+  left_join(clinal_tumor_pairs, by="tumor_pair_barcode") %>% 
+  mutate(case_barcode = substr(tumor_pair_barcode, 1, 12)) %>% 
+  left_join(case_level_subtype, by="case_barcode") %>% 
+  filter(received_tmz == 1, surgery_pair%in%c("1-2", "2-3","3-4"))
+table(full_test$surgery_pair, full_test$hypermutator_status, full_test$idh_codel_subtype)
+
+full_test_IDHwt = full_test %>% 
+  filter(idh_codel_subtype == "IDHwt_noncodel")
+full_test_IDH_noncodel = full_test %>% 
+  filter(idh_codel_subtype == "IDHmut_noncodel")
+full_test_IDH_codel = full_test %>% 
+  filter(idh_codel_subtype == "IDHmut_codel")
+wilcox.test(full_test_IDHwt$surgical_interval~full_test_IDHwt$hypermutator_status)
+wilcox.test(full_test_IDH_noncodel$surgical_interval~full_test_IDH_noncodel$hypermutator_status)
+wilcox.test(full_test_IDH_codel$surgical_interval~full_test_IDH_codel$hypermutator_status)
+
 
 test_sub = test %>% 
   filter(surgery_pair == "1-2")
@@ -366,23 +389,44 @@ test_all_survival <- survfit(Surv(case_overall_survival_mo, rep(1, length(test_s
 ggsurvplot(test_all_survival, data = test_sub, risk.table = TRUE, pval= TRUE, pval.method = TRUE)
 
  ### DRIVER SWITCH
-silver_drivers = drivers %>% 
+
+
+silver_drivers_tmz = drivers %>% 
   inner_join(silver_set, by="tumor_pair_barcode") %>% 
   left_join(clinal_tumor_pairs, by = "tumor_pair_barcode") %>% 
   left_join(case_level_subtype, by="case_barcode") %>% 
-  left_join(cases, by="case_barcode")
+  left_join(cases, by="case_barcode") %>% 
+  filter(received_tmz==1) %>% 
+  mutate(post_recurrence_surv = case_overall_survival_mo-surgical_interval)
   
-silver_drivers_IDHwt = silver_drivers %>% 
+silver_drivers_IDHwt = silver_drivers_tmz %>% 
   filter(idh_codel_subtype %in% c("IDHwt_noncodel"))
-silver_drivers_IDHmut_noncodel = silver_drivers %>% 
+silver_drivers_IDHmut_noncodel = silver_drivers_tmz %>% 
   filter(idh_codel_subtype %in% c("IDHmut_noncodel"))
-silver_drivers_IDHmut_codel = silver_drivers %>% 
+silver_drivers_IDHmut_codel = silver_drivers_tmz %>% 
   filter(idh_codel_subtype %in% c("IDHmut_codel"))
 
 silver_drivers %>% 
   group_by(idh_codel_subtype, driver_stability) %>% 
   summarise(med_int = median(surgical_interval, na.rm = T),
             sample_size = n())
+
+silver_drivers_tmz %>% 
+  group_by(idh_codel_subtype, hypermutator_status) %>% 
+  summarise(med_int = median(surgical_interval, na.rm = T),
+            sample_size = n())
+# Examine hypermutation:
+wilcox.test(silver_drivers_IDHwt$surgical_interval~silver_drivers_IDHwt$hypermutator_status)
+wilcox.test(silver_drivers_IDHmut_noncodel$surgical_interval~silver_drivers_IDHmut_noncodel$hypermutator_status)
+wilcox.test(silver_drivers_IDHmut_codel$surgical_interval~silver_drivers_IDHmut_codel$hypermutator_status)
+
+tmz_post_recur <- survfit(Surv(post_recurrence_surv, patient_vital) ~ silver_drivers_IDHwt,
+                         data = silver_neutrality)
+ggsurvplot(fit_all_recur, data = silver_neutrality, risk.table = TRUE, pval= TRUE)
+fit_codel_recur <- survfit(Surv(case_overall_survival_mo, patient_vital) ~ recurrence_evolution,
+                           data = silver_neutrality_IDHmut_codel)
+
+
 
 kruskal.test(silver_drivers$surgical_interval, as.factor(silver_drivers$driver_stability))
 kruskal.test(silver_drivers_IDHwt$surgical_interval, as.factor(silver_drivers_IDHwt$driver_stability))
@@ -549,6 +593,31 @@ ggplot(plot_neutrality_rsq, aes(x = rsq_time, y = rsq_value, group = tumor_pair_
   geom_point(color="black", size=2) + theme_bw() + ylab("R-squared values") + xlab("") + geom_hline(yintercept = 0.98, linetype="dotted") +
   geom_text(x = 1, y = 0.7, label="P=0.45") + ggtitle("Mutect2, primary_all, recurrence_all (n=167 selected pairs)")
 
+## Compare the number of subclonal mutations in a tumor with the mutational frequency in the recurrence.
+# Synchronous (subclonal mutation rate in primary) vs metachronous mutations (recurrence only mutation rate) 
+# between three subtypes.
+head(aliquot_mutation_counts)
+
+# Step 1: Define query for extracting mutational frequency data by mutation type.
+mut_freq_tumor_type <- dbGetQuery(con, read_file("sql/mutation_freq_private_shared.sql"))
 
 
-
+# Step 2: Define mutation counts by silver set and merge tumor_barcode_b with mut_freq table.
+mut_counts_silver = silver_set %>% 
+  left_join(aliquot_mutation_counts, by=c("tumor_barcode_a" = "aliquot_barcode")) %>% 
+  left_join(aliquot_mutation_counts, by=c("tumor_barcode_b" = "aliquot_barcode")) %>% 
+  select(tumor_pair_barcode:tumor_barcode_b, subclonal_mut_a = subclonal_mut.x, subclonal_mut_b = subclonal_mut.y) %>% 
+  left_join(mut_freq, by=c("tumor_barcode_a" = "aliquot_barcode")) %>% 
+  left_join(mut_freq, by=c("tumor_barcode_b" = "aliquot_barcode")) %>% 
+  mutate_if(bit64::is.integer64, as.double) %>% 
+  left_join(case_level_subtype, by="case_barcode") %>% 
+  left_join(clinal_tumor_pairs, by="tumor_pair_barcode") %>% 
+  select(-tumor_barcode_a.y, -tumor_barcode_b.y) %>% 
+  mutate(hypermutant_manual = ifelse(coverage_adj_mut_freq.y > 10, "hyper", "non-hyper")) %>% 
+  mutate(subclonal_proportion = subclonal_mut_a / mutation_count.x) %>% 
+  left_join(mut_freq_tumor_type, by="tumor_pair_barcode")
+  
+# Step 3: Test whether number of subclonal mutations is associated with recurrence mutation freq.
+ggplot(mut_counts_silver, aes(x=subclonal_proportion*mf_a, mf_b)) + geom_point() + geom_smooth(method='lm',formula=y~x) +
+  facet_grid(hypermutant_manual~idh_codel_subtype, scales = "free") + theme_bw() + xlab("Primary subclonal mut. rate") + ylab("Private to recurrence mut. rate")
+ 
