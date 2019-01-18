@@ -22,31 +22,19 @@ Build a squared gene x subject matrix for heatmap plotting
 WITH
 selected_tumor_pairs AS
 (
-	SELECT
-		tumor_pair_barcode,
-		case_barcode,
-		tumor_barcode_a,
-		tumor_barcode_b,
-		row_number() OVER (PARTITION BY case_barcode ORDER BY surgical_interval_mo DESC, portion_a ASC, portion_b ASC, substring(tumor_pair_barcode from 27 for 3) ASC) AS priority
-	FROM analysis.tumor_pairs ps
-	LEFT JOIN analysis.blocklist b1 ON b1.aliquot_barcode = ps.tumor_barcode_a
-	LEFT JOIN analysis.blocklist b2 ON b2.aliquot_barcode = ps.tumor_barcode_b
-	WHERE
-		comparison_type = 'longitudinal' AND
-		sample_type_b <> 'M1' AND 													-- exclude metastatic samples here because this is outside the scope of our study
-		b1.coverage_exclusion = 'allow' AND b2.coverage_exclusion = 'allow' 
+	SELECT * FROM analysis.silver_set
 ),
 selected_aliquots AS
 (
-	SELECT tumor_barcode_a AS aliquot_barcode, case_barcode FROM selected_tumor_pairs WHERE priority = 1
+	SELECT tumor_barcode_a AS aliquot_barcode, case_barcode FROM selected_tumor_pairs
 	UNION
-	SELECT tumor_barcode_b AS aliquot_barcode, case_barcode FROM selected_tumor_pairs WHERE priority = 1
+	SELECT tumor_barcode_b AS aliquot_barcode, case_barcode FROM selected_tumor_pairs
 ),
 selected_genes AS
 (
-	SELECT sn.gene_symbol, chrom, pos, alt, sn.variant_classification, variant_classification_priority, hgvs_p
+	SELECT DISTINCT sn.gene_symbol, chrom, pos, alt, sn.variant_classification, variant_classification_priority, hgvs_p
 	FROM analysis.snvs sn
-	INNER JOIN analysis.dndscv_gene ds ON ds.gene_symbol = sn.gene_symbol AND (ds.qglobal_cv < 0.10 OR ds.gene_symbol IN ('TERT','IDH2','NOTCH1','PDGFRA','PIK3CG','BRAF','H3F3A'))
+	INNER JOIN analysis.dnds_fraction_sel_cv ds ON ds.gene_symbol = sn.gene_symbol AND (ds.qglobal_cv < 0.10 OR ds.gene_symbol IN ('TERT','IDH2','NOTCH1','PDGFRA','PIK3CG','BRAF','H3F3A'))
 	LEFT JOIN analysis.variant_classifications vc ON sn.variant_classification = vc.variant_classification
 	WHERE
 		(sn.gene_symbol NOT IN ('TERT','IDH1','IDH2','BRAF','H3F3A') AND variant_classification_priority IS NOT NULL) OR 
@@ -83,7 +71,6 @@ gene_pair_coverage AS
 	FROM selected_tumor_pairs stp
 	LEFT JOIN gene_sample_coverage c1 ON c1.aliquot_barcode = stp.tumor_barcode_a
 	LEFT JOIN gene_sample_coverage c2 ON c2.aliquot_barcode = stp.tumor_barcode_b AND c1.gene_symbol = c2.gene_symbol
-	WHERE priority = 1
 ),
 variants_by_case_and_gene AS
 (
@@ -100,10 +87,10 @@ variants_by_case_and_gene AS
 		(alt_count_b::decimal / (alt_count_b+ref_count_b) > 0.05) AS selected_call_b,
 		row_number() OVER (PARTITION BY gtc.gene_symbol, gtc.case_barcode ORDER BY mutect2_call_a::integer + mutect2_call_b::integer = 2, variant_classification_priority, mutect2_call_a::integer + mutect2_call_b::integer DESC, read_depth_a + read_depth_b DESC) AS priority
 	FROM analysis.master_genotype_comparison gtc
-	INNER JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = gtc.tumor_pair_barcode AND stp.priority = 1
+	INNER JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = gtc.tumor_pair_barcode
 	INNER JOIN selected_genes sg ON sg.chrom = gtc.chrom AND sg.pos = gtc.pos AND sg.alt = gtc.alt
 	WHERE
-		(mutect2_call_a OR mutect2_call_b) AND read_depth_a >= 5 AND read_depth_b >= 5
+		(mutect2_call_a OR mutect2_call_b) AND (alt_count_a+ref_count_a) >= 5 AND (alt_count_b+ref_count_b) >= 5
 ),
 squared_variants AS
 (
@@ -132,8 +119,7 @@ SELECT
 	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_a AND NOT selected_call_b 			THEN 'Shed'
 	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_b AND NOT selected_call_a 			THEN 'Acquired'
 	 ELSE NULL END) AS variant_call,
-	(CASE WHEN cov_a >= 5 AND cov_b >= 5 THEN 'Coverage >= 5' ELSE 'Coverage < 5' END) AS covered--,
-	--su.idh_codel_subtype 
+	(CASE WHEN cov_a >= 5 AND cov_b >= 5 THEN 'Coverage >= 5' ELSE 'Coverage < 5' END) AS covered
 FROM squared_variants var
 --LEFT JOIN selected_tumor_pairs stp ON stp.case_barcode = var.case_barcode AND priority = 1
 --LEFT JOIN clinical.surgeries su ON su.sample_barcode = substring(tumor_barcode_a from 1 for 15)

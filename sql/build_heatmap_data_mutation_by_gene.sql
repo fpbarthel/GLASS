@@ -27,9 +27,9 @@ selected_aliquots AS
 ),
 selected_genes AS
 (
-	SELECT sn.gene_symbol, chrom, pos, alt, sn.variant_classification, variant_classification_priority, hgvs_p
+	SELECT DISTINCT sn.gene_symbol, chrom, pos, alt, sn.variant_classification, variant_classification_priority, hgvs_p
 	FROM analysis.snvs sn
-	INNER JOIN analysis.dndscv_gene ds ON ds.gene_symbol = sn.gene_symbol AND (ds.qglobal_cv < 0.10 OR ds.gene_symbol IN ('TERT','IDH2','NOTCH1','PDGFRA','PIK3CG','BRAF','H3F3A'))
+	INNER JOIN analysis.dnds_fraction_sel_cv ds ON ds.gene_symbol = sn.gene_symbol AND (ds.qglobal_cv < 0.10 OR ds.gene_symbol IN ('TERT','IDH2','NOTCH1','PDGFRA','PIK3CG','BRAF','H3F3A'))
 	LEFT JOIN analysis.variant_classifications vc ON sn.variant_classification = vc.variant_classification
 	WHERE
 		(sn.gene_symbol NOT IN ('TERT','IDH1','IDH2','BRAF','H3F3A') AND variant_classification_priority IS NOT NULL) OR 
