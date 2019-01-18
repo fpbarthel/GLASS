@@ -50,17 +50,21 @@ my_theme <- function() {
 setwd(Mutect2dir)
 
 # Create list of names with the ".filtered2.vep_filters.txt". Sample "GLSS-MD-LP03" was removed due to poor quality.
-filenames <- list.files(pattern = "*_filters.txt")
-list_names <-substr(filenames, 1, 22)
+filenames <- list.files(path = "results/mutect2/filters/", pattern = "*_filters.txt")
+list_names <-substr(filenames, 1, 29)
 
 # Load in all of the files, and set list names. Do once because it's slow.
 # These files were made smaller by only presenting the filter column.
-#  mutect2_tbl <- list.files(pattern = "*_filters.txt") %>% 
-#  map(~read_table(., col_names = "filters")) %>% 
-#  set_names(list_names)
+
+mutect2_tbl <- list.files(path = "results/mutect2/filters/", pattern = "*_filters.txt", full.names = TRUE) %>% 
+  map(~read_table(., col_names = "filters")) 
+
+mutect2_tbl <- mutect2_tbl %>% 
+  set_names(list_names)
+
 #       save(mutect2_tbl, file="/Users/johnsk/Documents/mutect2_tbl_filters.RData")
 # Load "mutect2_tbl" file.
-load("/Users/johnsk/Documents/Life-History/mutect2_tbl_filters.RData")
+#load("/Users/johnsk/Documents/Life-History/mutect2_tbl_filters.RData")
 
 # Each variant has M2 filters associated with its call. Some SNV/indels have many filters justifying why 
 # a variant is tossed out. We are interested in the frequency of total filters and solo filters across all cohorts.
@@ -92,11 +96,11 @@ solo_filter_tidy$sample_filter <- paste(solo_filter_tidy$sample_names, solo_filt
 
 # We need to plot total/solo filters by cohort (boxplot).
 all_filters_tidy <- inner_join(total_filter_tidy, solo_filter_tidy, by=c("sample_filter" = "sample_filter"))
-all_filters_tidy$cohort <- NA
-all_filters_tidy$cohort[grepl("HF", all_filters_tidy$sample_names.x)] <- "HF"
-all_filters_tidy$cohort[grepl("HK", all_filters_tidy$sample_names.x)] <- "HK"
-all_filters_tidy$cohort[grepl("GLSS-MD", all_filters_tidy$sample_names.x)] <- "MD-LP"
-all_filters_tidy$cohort[grepl("TCGA", all_filters_tidy$sample_names.x)] <- "TCGA"
+all_filters_tidy$cohort <- sprintf("%s-%s", substr(all_filters_tidy$sample_names.x, 1,7), substr(all_filters_tidy$sample_names.x, 27,29))
+#all_filters_tidy$cohort[grepl("HF", all_filters_tidy$sample_names.x)] <- "HF"
+#all_filters_tidy$cohort[grepl("HK", all_filters_tidy$sample_names.x)] <- "HK"
+#all_filters_tidy$cohort[grepl("GLSS-MD", all_filters_tidy$sample_names.x)] <- "MD-LP"
+#all_filters_tidy$cohort[grepl("TCGA", all_filters_tidy$sample_names.x)] <- "TCGA"
 
 # Create tables to provide metrics about M2 filters.
 total_filters_table <- all_filters_tidy %>% 
@@ -117,10 +121,13 @@ solo_filters_table <- all_filters_tidy %>%
             TotalFilterMax = max(solo_count))
 write.table(solo_filters_table, file = sprintf("%s.%s", "/Users/johnsk/Documents/Life-History/GLASS-WG/data/sequencing-information/M2-filters/m2-solo-filters", "tsv"), sep="\t", row.names = F, col.names = T, quote = F)
 
+all_filters_tidy <- all_filters_tidy %>% group_by(cohort) %>% mutate(Samples = n_distinct(sample_names.x)) %>% ungroup() %>% mutate(cohort = sprintf("%s (n=%s samples)", cohort, Samples))
+
 # Boxplots of total filters by cohort:
-ggplot(all_filters_tidy, aes(x=total_filter, y=total_count, color=cohort))  + facet_grid(~cohort) + 
+ggplot(all_filters_tidy, aes(x=total_filter, y=total_count, color=cohort))  + facet_wrap(~cohort, scales = "free_y") + 
   geom_boxplot() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ylab("Total Filters Applied") +xlab("Filter Type") +
-  ggtitle("Total M2 Filters") 
+  ggtitle("Total M2 Filters") + guides(color=FALSE)
+
 ggplot(all_filters_tidy, aes(x=total_filter, y=total_count, color=cohort))  + facet_grid(~cohort) + 
   geom_boxplot() + theme(axis.text.x = element_text(angle = 45, hjust = 1))  + ylim(0,100000) +
     ylab("Total Filters Applied") +xlab("Filter Type") + ggtitle("Total M2 Filters Zoomed")
