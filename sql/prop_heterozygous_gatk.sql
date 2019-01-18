@@ -1,17 +1,21 @@
 /*
-For each `aliquot_barcode` with segmentation data in the `gatk_seg` table:
-- Quantify the sum of all segment sizes (this should roughly add up to the total genome size, around 3b)
-- Quantify the sum of all *heterozygous* segment sizes
+- For each aliquot in the gatk_seg table, calculate sum of all segment sizes (this should roughly add up to the total genome size, around 3b)
+- Define a heterozygous segment as as segment that has a CallCopyRatioSegments value of zero (hetozygous)
 - Quantify the proportion of heterozygous segments sizes vs non-heterozygous segments
 */
 WITH
-segquant AS
+cnv AS
 (
 	SELECT
 		aliquot_barcode,
 		sum(upper(pos) - lower(pos) -1) AS seg_size,
-		sum(CASE WHEN log2_copy_ratio > log(2.0, 1.0/2.0) AND log2_copy_ratio < log(2.0, 3.0/2.0) THEN (upper(pos) - lower(pos) -1) ELSE 0 END) AS het_size
-	FROM analysis.gatk_seg
-	GROUP BY aliquot_barcode
+		sum(CASE WHEN gs.call = '0' THEN (upper(pos) - lower(pos) -1) ELSE 0 END) AS het_size
+	FROM analysis.gatk_seg gs
+	WHERE chrom NOT IN ('X','Y')
+	GROUP BY 1
 )
-SELECT *, round(het_size::decimal/seg_size,4) AS prop_het FROM segquant ORDER BY 4
+SELECT
+	aliquot_barcode,
+	round(1.0 - het_size::decimal/seg_size,4) AS aneuploidy
+FROM cnv
+ORDER BY 2
