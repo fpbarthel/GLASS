@@ -15,6 +15,7 @@ library(DBI)
 library(neutralitytestr)
 library(survminer)
 library(survival)
+require(alluvial)
 library(ggExtra)
 library(EnvStats)
 
@@ -23,19 +24,18 @@ library(EnvStats)
 con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
 
 # Load additional tables from the database.
-pairs = dbReadTable(con,  Id(schema="analysis",table="pairs"))
+pairs = dbReadTable(con,  Id(schema="analysis", table="pairs"))
 tumor_pairs = dbReadTable(con,  Id(schema="analysis", table="tumor_pairs"))
 aliquots = dbReadTable(con,  Id(schema="biospecimen", table="aliquots"))
 surgeries = dbReadTable(con,  Id(schema="clinical", table="surgeries"))
 cases = dbReadTable(con,  Id(schema="clinical", table="cases"))
-titan_param = dbReadTable(con,  Id(schema="analysis",table="titan_params"))
-mut_freq = dbReadTable(con,  Id(schema="analysis",table="mutation_freq"))
-neutrality_aliquots = dbReadTable(con,  Id(schema="analysis",table="neutrality_aliquots"))
-neutrality_tumor_pairs = dbReadTable(con,  Id(schema="analysis",table="neutrality_tumor_pairs"))
+titan_param = dbReadTable(con,  Id(schema="analysis", table="titan_params"))
+mut_freq = dbReadTable(con,  Id(schema="analysis", table="mutation_freq"))
+aliquot_neutrality = dbReadTable(con,  Id(schema="analysis", table="neutrality_aliquots"))
+clinal_tumor_pairs = dbReadTable(con,  Id(schema="clinical", table="clinical_by_tumor_pair"))  
 
 # These tables **MAY** change, especially the driver table.
-clinal_tumor_pairs = dbGetQuery(con,"SELECT * FROM analysis.clinical_by_tumor_pair")
-drivers = dbGetQuery(con, "SELECT * FROM analysis.driver_status")
+drivers = dbGetQuery(con, "SELECT * FROM analysis.driver_status_snv")
 silver_set = dbGetQuery(con, "SELECT * FROM analysis.silver_set")
 
 # Combine with pairs file to access "tumor_barcode".
@@ -59,27 +59,24 @@ aliquot_mutation_counts = glass_single_vaf %>%
   group_by(aliquot_barcode) %>% 
   summarize(subclonal_mut = n())
 
-# Although all aliquot results are present here, BUT need to filter low subclonal mutation count [AND ploidy > 3].
+# Although all aliquot results are present here, BUT need to filter low subclonal mutation count [purity > 5 AND ploidy > 3].
 # Build tumor pairs from individual aliquots. 
-case_level_subtype = surgeries %>% 
-  select(case_barcode, idh_codel_subtype) %>% 
-  distinct() %>% 
-  filter(!is.na(idh_codel_subtype)) 
+# No longer needed since Floris added appropriate subtype into the picture.
+# case_level_subtype = surgeries %>% 
+#  select(case_barcode, idh_codel_subtype) %>% 
+#  distinct() %>% 
+#  filter(!is.na(idh_codel_subtype)) 
 
 # Combine the neutrality at the aliquot with specific tumor_pairs.
-aliquot_neutrality = neutrality_aliquots
 per_sample_neutrality = tumor_pairs %>% 
   left_join(aliquot_neutrality, by=c("tumor_barcode_a"="aliquot_barcode")) %>% 
   left_join(aliquot_neutrality, by=c("tumor_barcode_b"="aliquot_barcode")) %>% 
-  filter(subclonal_mut.x >= 12, subclonal_mut.y >= 12) %>% 
-  mutate(primary_evolution = ifelse(model_rsq.x > 0.98, "N", "S"), 
-         recurrence_evolution = ifelse(model_rsq.y > 0.98, "N", "S"),
+  filter(subclonal_mut.x >= 12, subclonal_mut.y >= 12, cellularity.x > 0.4, cellularity.y > 0.4, ploidy.x < 3, ploidy.y < 3) %>% 
+  mutate(primary_evolution = ifelse(area_pval.x < 0.05, "S", "N"), 
+         recurrence_evolution = ifelse(area_pval.y < 0.05, "S", "N"),
          evolution_mode = paste(primary_evolution, recurrence_evolution, sep="-")) %>% 
-  left_join(case_level_subtype, by="case_barcode") %>% 
   left_join(drivers, by = "tumor_pair_barcode") %>% 
-  left_join(clinal_tumor_pairs) %>% 
-  mutate(driver_status_revised = recode(driver_status, "Driver gain" = "Driver unstable",
-                                        "Driver loss" = "Driver unstable", "Driver switch" = "Driver unstable", "Driver null" = "Driver stable"))
+  left_join(clinal_tumor_pairs) 
 
 # Create a std. of care treatment group for TMZ (at least 6 cycles).
 per_sample_neutrality$tmz_std_care <- ifelse(per_sample_neutrality$received_tmz_sum_cycles >= 6, "1", "0")
@@ -88,6 +85,25 @@ per_sample_neutrality$tmz_std_care <- ifelse(per_sample_neutrality$received_tmz_
 silver_neutrality = per_sample_neutrality %>% 
   inner_join(silver_set, by="tumor_pair_barcode") %>% 
   left_join(cases, by=c("case_barcode.x"="case_barcode"))
+
+## Color neutral-neutral or selection-selection.
+# Use subtype, driver stability, and evolution pattern.
+neutral_dat = silver_neutrality %>% 
+  select(tumor_pair_barcode, idh_codel_subtype, hypermutator_status, received_tmz, received_rt, primary_evolution, recurrence_evolution) %>% 
+  mutate(idh_codel_subtype = recode(idh_codel_subtype, "IDHmut_codel" = "IDHmut codel", "IDHmut_noncodel" = "IDHmut noncodel", "IDHwt_noncodel" = "IDHwt"),
+         primary_evolution = recode(primary_evolution, "N" = "Neutral", "S" = "Selected"),
+         recurrence_evolution = recode(primary_evolution, "N" = "Neutral", "S" = "Selected"),
+         treatment = ifelse(received_tmz == 1 | received_rt == 1, "Yes", "No"),
+         treatment = ifelse(is.na(treatment), "Unkown", treatment))  %>% 
+  # Maybe add treatment information after first
+  group_by(idh_codel_subtype, primary_evolution, treatment, recurrence_evolution) %>% 
+  summarise(Freq = n())
+# Need to fix the alluvial plot.
+alluvial(neutral_dat[,1:4], freq=neutral_dat$Freq, border=NA,
+         hide = neutral_dat$Freq < quantile(neutral_dat$Freq, .50),
+         col=ifelse(neutral_dat$primary_evolution == "Neutral" & neutral_dat$recurrence_evolution == "Neutral", "red", "gray"),
+         cw = 0.25, axis_labels = c("IDH subtype", "Primary tumor", "Treatment", "Recurrent tumor"))
+
 
 ## Create revised survival variables for Kaplan-Meier curves and log-rank tests.
 # The status indicator, normally 0=alive, 1=dead.
@@ -129,8 +145,7 @@ fisher.test(table(silver_neutrality$idh_codel_subtype, silver_neutrality$s_binar
 # Test by method of evolution at recurrence since this could be explained by other clinical variables.
 ## IDH MUT CODELs.
 wilcox.test(silver_neutrality_IDHmut_codel$surgical_interval~silver_neutrality_IDHmut_codel$recurrence_evolution)
-fisher.test(table(silver_neutrality_IDHmut_codel$recurrence_evolution, silver_neutrality_IDHmut_codel$driver_status))
-fisher.test(table(silver_neutrality_IDHmut_codel$recurrence_evolution, silver_neutrality_IDHmut_codel$driver_stability))
+fisher.test(table(silver_neutrality_IDHmut_codel$recurrence_evolution, silver_neutrality_IDHmut_codel$snv_driver_stability))
 fisher.test(table(silver_neutrality_IDHmut_codel$recurrence_evolution, silver_neutrality_IDHmut_codel$recurrence_location))
 fisher.test(table(silver_neutrality_IDHmut_codel$recurrence_evolution, silver_neutrality_IDHmut_codel$received_tmz))
 # Test errors out because of missingness.
@@ -141,8 +156,7 @@ fisher.test(table(silver_neutrality_IDHmut_codel$recurrence_evolution, silver_ne
 
 # IDH MUT NON-CODELs.
 wilcox.test(silver_neutrality_IDHmut_noncodel$surgical_interval~silver_neutrality_IDHmut_noncodel$recurrence_evolution)
-fisher.test(table(silver_neutrality_IDHmut_noncodel$recurrence_evolution, silver_neutrality_IDHmut_noncodel$driver_status))
-fisher.test(table(silver_neutrality_IDHmut_noncodel$recurrence_evolution, silver_neutrality_IDHmut_noncodel$driver_stability))
+fisher.test(table(silver_neutrality_IDHmut_noncodel$recurrence_evolution, silver_neutrality_IDHmut_noncodel$snv_driver_stability))
 fisher.test(table(silver_neutrality_IDHmut_noncodel$recurrence_evolution, silver_neutrality_IDHmut_noncodel$recurrence_location))
 fisher.test(table(silver_neutrality_IDHmut_noncodel$recurrence_evolution, silver_neutrality_IDHmut_noncodel$received_tmz))
 fisher.test(table(silver_neutrality_IDHmut_noncodel$recurrence_evolution, silver_neutrality_IDHmut_noncodel$tmz_std_care))
@@ -153,8 +167,7 @@ fisher.test(table(silver_neutrality_IDHmut_noncodel$recurrence_evolution, silver
 
 # IDH WT - neutrality is association with surgical interval.
 wilcox.test(silver_neutrality_IDHwt$surgical_interval~silver_neutrality_IDHwt$recurrence_evolution)
-fisher.test(table(silver_neutrality_IDHwt$recurrence_evolution, silver_neutrality_IDHwt$driver_status))
-fisher.test(table(silver_neutrality_IDHwt$recurrence_evolution, silver_neutrality_IDHwt$driver_stability))
+fisher.test(table(silver_neutrality_IDHwt$recurrence_evolution, silver_neutrality_IDHwt$snv_driver_stability))
 fisher.test(table(silver_neutrality_IDHwt$recurrence_evolution, silver_neutrality_IDHwt$recurrence_location))
 fisher.test(table(silver_neutrality_IDHwt$recurrence_evolution, silver_neutrality_IDHwt$received_tmz))
 fisher.test(table(silver_neutrality_IDHwt$recurrence_evolution, silver_neutrality_IDHwt$tmz_std_care))
@@ -174,21 +187,38 @@ silver_neutrality %>%
 kruskal.test(silver_neutrality_IDHmut_codel$surgical_interval, as.factor(silver_neutrality_IDHmut_codel$evolution_mode))
 kruskal.test(silver_neutrality_IDHmut_noncodel$surgical_interval, as.factor(silver_neutrality_IDHmut_noncodel$evolution_mode))
 # Again, evo mode for IDHwt tumors is associated with surgical interval (not progression). Test whether this would be true for surgeries 1-2 only.
-kruskal.test(silver_neutrality_IDHwt$surgical_interval, as.factor(silver_neutrality_IDHwt$evolution_mode))
+# For group N-N only
+kruskal.test(silver_neutrality_IDHwt$surgical_interval, as.factor(silver_neutrality_IDHwt$binary_mode))
 
 
 # IDHwt. Largest group of samples, which is why we would expect an association over the others.
-fisher.test(table(silver_neutrality_IDHwt$evolution_mode, silver_neutrality_IDHwt$driver_stability))
+fisher.test(table(silver_neutrality_IDHwt$evolution_mode, silver_neutrality_IDHwt$snv_driver_stability))
 fisher.test(table(silver_neutrality_IDHwt$evolution_mode, silver_neutrality_IDHwt$recurrence_location))
 fisher.test(table(silver_neutrality_IDHwt$evolution_mode, silver_neutrality_IDHwt$received_tmz))
 fisher.test(table(silver_neutrality_IDHwt$evolution_mode, silver_neutrality_IDHwt$tmz_std_care))
 fisher.test(table(silver_neutrality_IDHwt$evolution_mode, silver_neutrality_IDHwt$received_rt))
 fisher.test(table(silver_neutrality_IDHwt$evolution_mode, silver_neutrality_IDHwt$hypermutator_status))
 fisher.test(table(silver_neutrality_IDHwt$evolution_mode, silver_neutrality_IDHwt$grade_change))
+# Perform test with binary mode for Neutral-Neutral:
+fisher.test(table(silver_neutrality_IDHwt$binary_mode, silver_neutrality_IDHwt$snv_driver_stability))
+fisher.test(table(silver_neutrality_IDHwt$binary_mode, silver_neutrality_IDHwt$recurrence_location))
+fisher.test(table(silver_neutrality_IDHwt$binary_mode, silver_neutrality_IDHwt$received_tmz))
+fisher.test(table(silver_neutrality_IDHwt$binary_mode, silver_neutrality_IDHwt$tmz_std_care))
+fisher.test(table(silver_neutrality_IDHwt$binary_mode, silver_neutrality_IDHwt$received_rt))
+fisher.test(table(silver_neutrality_IDHwt$binary_mode, silver_neutrality_IDHwt$hypermutator_status))
+fisher.test(table(silver_neutrality_IDHwt$binary_mode, silver_neutrality_IDHwt$grade_change))
+# Perform test with binary mode for Selection-Selection:
+fisher.test(table(silver_neutrality_IDHwt$s_binary_mode, silver_neutrality_IDHwt$snv_driver_stability))
+fisher.test(table(silver_neutrality_IDHwt$s_binary_mode, silver_neutrality_IDHwt$recurrence_location))
+fisher.test(table(silver_neutrality_IDHwt$s_binary_mode, silver_neutrality_IDHwt$received_tmz))
+fisher.test(table(silver_neutrality_IDHwt$s_binary_mode, silver_neutrality_IDHwt$tmz_std_care))
+fisher.test(table(silver_neutrality_IDHwt$s_binary_mode, silver_neutrality_IDHwt$received_rt))
+fisher.test(table(silver_neutrality_IDHwt$s_binary_mode, silver_neutrality_IDHwt$hypermutator_status))
+fisher.test(table(silver_neutrality_IDHwt$s_binary_mode, silver_neutrality_IDHwt$grade_change))
 
 
 ## SURVIVAL ANALYSES ##
-# Mode of evolution at recurrence:
+# Mode of evolution at recurrence. For entire cohort, but we know there's an association with subtype.
 fit_all_recur <- survfit(Surv(case_overall_survival_mo, patient_vital) ~ recurrence_evolution,
                data = silver_neutrality)
 ggsurvplot(fit_all_recur, data = silver_neutrality, risk.table = TRUE, pval= TRUE)
@@ -226,7 +256,7 @@ fit_all_mode_post <- survfit(Surv(patient_post_recur_surv, patient_vital) ~ evol
 ggsurvplot(fit_all_mode_post, data = silver_neutrality, risk.table = TRUE, pval= TRUE) 
 fit_all_bi_mode <- survfit(Surv(case_overall_survival_mo, patient_vital) ~ binary_mode,
                         data = silver_neutrality)
-ggsurvplot(fit_all_mode, data = silver_neutrality, risk.table = TRUE, pval= TRUE) 
+ggsurvplot(fit_all_bi_mode, data = silver_neutrality, risk.table = TRUE, pval= TRUE) 
 
 # IDHmut CODEL.
 fit_codel_mode <- survfit(Surv(case_overall_survival_mo, patient_vital) ~ evolution_mode,
@@ -269,9 +299,6 @@ fit_wt_bi_mode_cutoff <- survfit(Surv(case_survival_cutoff, patient_vital_cutoff
 ggsurvplot(fit_wt_bi_mode_cutoff, data = silver_neutrality_IDHwt, risk.table = TRUE, pval= TRUE)
 
 ## Cox proportional hazards model results.
-res_cox_all <- coxph(Surv(case_overall_survival_mo, patient_vital)~ case_age_diagnosis_years + idh_codel_subtype + received_rt, data = silver_neutrality)
-summary(res_cox_all)
-
 res_cox_idh_wt <- coxph(Surv(case_overall_survival_mo, patient_vital)~ case_age_diagnosis_years + binary_mode, data = silver_neutrality_IDHwt)
 summary(res_cox_idh_wt)
 
@@ -439,10 +466,10 @@ fisher.test(table(silver_neutrality_IDHmut_noncodel$driver_stability, silver_neu
 # Silver set visualizations  #
 ##############################
 stacked_driver = silver_neutrality %>% 
-  group_by(idh_codel_subtype, driver_stability) %>%
+  group_by(idh_codel_subtype, snv_driver_stability) %>%
   summarise (n = n()) %>%
   mutate(freq = n / sum(n))
-ggplot(stacked_driver, aes(x=idh_codel_subtype, y=freq, fill=driver_stability)) + geom_bar(stat="identity") +
+ggplot(stacked_driver, aes(x=idh_codel_subtype, y=freq, fill=snv_driver_stability)) + geom_bar(stat="identity") +
   labs(fill="Driver change") + xlab("") + theme_bw()
 
 stacked_neutrality = silver_neutrality %>% 

@@ -16,6 +16,8 @@ library(DBI)
 library(openxlsx)
 library(survminer)
 library(survival)
+library(pheatmap)
+library(RColorBrewer)
 
 ##################################################
 # Establish connection with database.
@@ -32,8 +34,21 @@ subtypes = dbReadTable(con,  Id(schema="clinical", table="subtypes"))
 mut_freq = dbReadTable(con,  Id(schema="analysis",table="mutation_freq"))
 silver_set = dbGetQuery(con, "SELECT * FROM analysis.silver_set")
 clinal_tumor_pairs = dbGetQuery(con,"SELECT * FROM analysis.clinical_by_tumor_pair")
+cnv_by_gene_gatk = dbReadTable(con,  Id(schema="analysis",table="cnv_by_gene_gatk"))
+# cnv_by_gene_gatk = read_csv("/Users/johnsk/Downloads/analysis.cnv_by_gene_gatk_2019-01-19T13_11_45+0000.csv")
+pathway_gene_list = dbReadTable(con,  Id(schema="ref",table="driver_genes"))
+
 # Use TITAN estimates of whole genome doubling (WGD) with ploidy values.
 titan_param = dbReadTable(con,  Id(schema="analysis",table="titan_params"))
+
+# Quickly get the frequency of each gene-level event in the silver set of recurrence.
+cnv_example = cnv_by_gene_gatk %>% 
+  filter(!grepl("-NB-", aliquot_barcode)) %>% 
+  mutate(sample_barcode =  substr(aliquot_barcode, 1, 15)) %>% 
+  inner_join(surgeries, by = "sample_barcode") %>% 
+  inner_join(silver_set, by=c("aliquot_barcode"="tumor_barcode_b")) %>% 
+  group_by(gene_symbol, hlvl_call, idh_codel_subtype) %>% 
+  summarise(alt_breakdown = n()) 
 
 
 # Floris has created two aneuploidy metrics 
@@ -220,6 +235,68 @@ wilcox.test(aneuploidy_pairs_IDHwt$aneuploidy_diff~aneuploidy_pairs_IDHwt$hyperm
 wilcox.test(aneuploidy_pairs_IDH_codel$aneuploidy_diff~aneuploidy_pairs_IDH_codel$hypermutator_status)
 wilcox.test(aneuploidy_pairs_IDH_noncodel$aneuploidy_diff~aneuploidy_pairs_IDH_noncodel$hypermutator_status)
 
+# Test whether the aneuploidy change in IDHmut noncodels is associated with a gain in cell cycle genes.
+cell_cycle_cnv = pathway_gene_list %>% 
+  filter(pathway=="Cell cycle", has_cnv==1)
+cnv_gatk_cell_cycle = cnv_by_gene_gatk %>% 
+  inner_join(cell_cycle_cnv, by="gene_symbol") %>% 
+  select(-pathway, -has_cnv, -has_mut, -wcr) %>% 
+  spread(gene_symbol, hlvl_call) %>% 
+  filter(!grepl("-NB-", aliquot_barcode))
+
+# Need to include mutation information.
+genedata <- dbGetQuery(con, read_file("/Users/johnsk/Documents/Life-History/glass-analyses/scripts/heatmap-mutation.sql"))
+cell_cycle_muts = genedata %>% 
+  filter(gene_symbol %in% c("RB1", "TP53"), variant_call=="R") %>% 
+  select(case_barcode, gene_symbol, variant_classification) %>% 
+  spread(gene_symbol, variant_classification) %>% 
+  select(case_barcode, RB1_mut = RB1, TP53_mut = TP53)
+
+cell_cycle_df_noncodel = aneuploidy_idh_noncodel %>% 
+  select(-tumor_barcode_a.y, -tumor_barcode_b.y) %>% 
+  inner_join(cnv_gatk_cell_cycle, by=c("tumor_barcode_a.x"="aliquot_barcode")) %>% 
+  inner_join(cnv_gatk_cell_cycle, by=c("tumor_barcode_b.x"="aliquot_barcode")) %>% 
+  arrange(idh_codel_subtype, tumor_pair_barcode) %>% 
+  left_join(cell_cycle_muts, by="case_barcode")
+colnames(cell_cycle_df_noncodel) = gsub("\\.x", "_P", colnames(cell_cycle_df_noncodel))
+colnames(cell_cycle_df_noncodel) = gsub("\\.y", "_R", colnames(cell_cycle_df_noncodel)) 
+
+
+cell_cycle_df_noncodel = cell_cycle_df_noncodel %>% 
+  mutate(CCND2 = ifelse(CCND2_R==2 & CCND2_P!=2, "+CCND2", NA),
+         CDK4 = ifelse(CDK4_R==2 & CDK4_P!=2, "+CDK4", NA),
+         CDK6 = ifelse(CDK6_R==2 & CDK6_P!=2, "+CDK6", NA),
+         CDKN2A = ifelse(CDKN2A_R==-2 & CDKN2A_P!=-2, "-CDKN2A", NA),
+         MDM2 = ifelse(MDM2_R==2 & MDM2_P!=2, "+MDM2", NA),
+         MDM4 = ifelse(MDM4_R==2 & MDM4_P!=2, "+MDM4", NA),
+         RB1 = ifelse(RB1_R==-2 & RB1_P!=-2, "-RB1", NA),
+         TP53 = ifelse(TP53_R==-2 & TP53_P!=-2, "-TP53", NA),
+         cell_cycle = ifelse(is.na(CCND2) & is.na(CDK4) & is.na(CDK6) & is.na(CDKN2A) & is.na(MDM2) & is.na(MDM4) & is.na(RB1) & is.na(TP53) & is.na(RB1_mut) & is.na(TP53_mut), "cell_cycle_stable", "cell_cycle_alt"))
+fisher.test(table(cell_cycle_df_noncodel$cell_cycle, cell_cycle_df_noncodel$acquired_aneuploidy))
+wilcox.test(cell_cycle_df_noncodel$aneuploidy_diff~cell_cycle_df_noncodel$cell_cycle)
+
+cell_cycle_df_noncodel %>% 
+  group_by(cell_cycle) %>% 
+  summarise(median_aneu =  median(aneuploidy_diff),
+            mean_aneu = mean(aneuploidy_diff))
+
+
+# Replace column names.
+test2 = (test[ , c(45:52)])
+rownames(test2) = test$tumor_pair_barcode
+test2 = t(test2)
+test3 = (test[ , c(53:60)])
+rownames(test3) = test$tumor_pair_barcode
+test3 = t(test3)
+annotation = data.frame(aneuploidy = as.factor(test$acquired_aneuploidy))
+rownames(annotation) <- colnames(test2)
+
+pheatmap(test2, annotation = annotation, cluster_rows = FALSE, cluster_cols = FALSE, show_colnames = FALSE)
+pheatmap(test3, annotation = annotation, cluster_rows = FALSE, cluster_cols = FALSE, show_colnames = FALSE)
+
+
+# Must be able to enumerate the number of acquireed aneuploidy and cell cycle gain.
+
 
 ### Arm-level ###
              
@@ -237,7 +314,8 @@ arm_level_calls_filtered = arm_level_calls %>%
 arm_level_summary_1 =  arm_level_calls_filtered %>% 
   group_by(aliquot_barcode, arm_call) %>% 
   summarise(events = n()) %>% 
-  filter(arm_call != 0) %>% 
+#  filter(arm_call != 0) %>% 
+#  filter(!is.na(arm_call)) %>% 
   spread(arm_call, events) %>% 
   mutate(sample_barcode = substr(aliquot_barcode, 1, 15)) %>% 
   inner_join(surgeries, by="sample_barcode") %>% 
@@ -271,6 +349,7 @@ arm_level_merge = arm_level_full %>%
   mutate(dataset = "glass") %>% 
   select(aliquot_barcode, sample_barcode, dataset, AS_del, AS_amp, `1p`:`22q`) %>% 
   filter(sample_barcode%in%glioma_dat$sample_barcode) 
+
 # Prepare the Taylor data to be merged with GLASS data.
 taylor_data_merged = glioma_dat %>% 
   mutate(dataset = "taylor") %>% 
@@ -290,8 +369,87 @@ taylor_glass = glioma_dat %>%
 # Plot the AS_amp scores vs. one another.
 cor.test(taylor_glass$AS_amp.x, taylor_glass$AS_amp.y, method = "spearman")
 ggplot(taylor_glass, aes(x = AS_amp.x, y = AS_amp.y)) + geom_point() + theme_bw() +
-  xlab("Taylor - AS score amplification") + ylab("GLASS - AS score amplification") + ggtitle("rho = 0.67, P-val < 1.0E-04 (n=37)") + xlim(0, 39) + ylim(0,39)
+  xlab("Taylor - AS score amplification") + ylab("GLASS - AS score amplification") + ggtitle("rho = 0.70, P-val < 2.4E-10 (n=43)") + xlim(0, 39) + ylim(0,39)
 # Plot the AS_del scores vs. one another.
 cor.test(taylor_glass$AS_del.x, taylor_glass$AS_del.y, method = "spearman")
 ggplot(taylor_glass, aes(x = AS_del.x, y = AS_del.y)) + geom_point() + theme_bw() +
-  xlab("Taylor - AS score deletion") + ylab("GLASS - AS score deletion") + ggtitle("rho = 0.91, P-val < 2.1E-15 (n=37)") + xlim(0, 39) + ylim(0, 39)
+  xlab("Taylor - AS score deletion") + ylab("GLASS - AS score deletion") + ggtitle("rho = 0.90, P-val < 2.2E-16 (n=43)") + xlim(0, 39) + ylim(0, 39)
+
+
+# Produce the same plots as before for aneuploidy_score, but use AS_del and AS_amp data.
+complete_aneuploidy = aneuploidy_pairs %>% 
+  left_join(arm_level_full, by=c("tumor_barcode_a"="aliquot_barcode")) %>% 
+  inner_join(arm_level_full, by=c("tumor_barcode_b"="aliquot_barcode")) %>% 
+  select(tumor_pair_barcode:AS_del.x, idh_codel_subtype:AS_del.y)  %>% 
+  mutate(idh_codel_subtype = recode(idh_codel_subtype, "IDHmut_codel" = "IDHmut codel", "IDHmut_noncodel" = "IDHmut noncodel", "IDHwt_noncodel" = "IDHwt"))
+
+# Create a plot for AneuploidyScore for just the deletions.
+AS_del_plot = complete_aneuploidy %>% 
+  gather(sample, AS_del, c(AS_del.x, AS_del.y)) %>% 
+  mutate(sample =  recode(sample, "AS_del.x" = "primary", "AS_del.y" = "recurrence"))
+ggplot(AS_del_plot, aes(x = sample, y = AS_del, group = tumor_pair_barcode)) +
+  geom_line(linetype="solid", size=1, alpha = 0.3) + ylab("GLASS - Aneuploidy score (deletions)") + xlab("Gold set pairs (n=199)") +
+  geom_point(color="black", size=2) + theme_bw() + facet_grid(~idh_codel_subtype)
+
+# Create a plot for AneuploidyScore for just the amplifications.
+AS_amp_plot = complete_aneuploidy %>% 
+  gather(sample, AS_amp, c(AS_amp.x, AS_amp.y)) %>% 
+  mutate(sample =  recode(sample, "AS_amp.x" = "primary", "AS_amp.y" = "recurrence"))
+ggplot(AS_amp_plot, aes(x = sample, y = AS_amp, group = tumor_pair_barcode)) +
+  geom_line(linetype="solid", size=1, alpha = 0.3) +  ylab("GLASS - Aneuploidy score (amplifications)")+ xlab("Gold set pairs (n=199)") +
+  geom_point(color="black", size=2) + theme_bw() + facet_grid(~idh_codel_subtype)
+
+# Group by IDH subtype.
+AS_pairs_IDHwt = complete_aneuploidy %>% 
+  filter(idh_codel_subtype == "IDHwt")
+AS_pairs_IDH_codel = complete_aneuploidy %>% 
+  filter(idh_codel_subtype == "IDHmut codel")
+AS_pairs_IDH_noncodel = complete_aneuploidy %>% 
+  filter(idh_codel_subtype == "IDHmut noncodel")
+
+# Subtype specific analyses that now have filtered samples for Aneuploidy Score specific to deletions.
+wilcox.test(AS_pairs_IDHwt$AS_del.x, AS_pairs_IDHwt$AS_del.y, paired = TRUE)
+wilcox.test(AS_pairs_IDH_codel$AS_del.x, AS_pairs_IDH_codel$AS_del.y, paired = TRUE)
+wilcox.test(AS_pairs_IDH_noncodel$AS_del.x, AS_pairs_IDH_noncodel$AS_del.y, paired = TRUE)
+
+# And those specific to amplifications.
+wilcox.test(AS_pairs_IDHwt$AS_amp.x, AS_pairs_IDHwt$AS_amp.y, paired = TRUE)
+wilcox.test(AS_pairs_IDH_codel$AS_amp.x, AS_pairs_IDH_codel$AS_amp.y, paired = TRUE)
+wilcox.test(AS_pairs_IDH_noncodel$AS_amp.x, AS_pairs_IDH_noncodel$AS_amp.y, paired = TRUE)
+
+# Generate an ordered heatmap or grid for most commonly altered chromosome arms.
+aneuploidy_heatmap = aneuploidy_pairs %>% 
+  left_join(arm_level_full, by=c("tumor_barcode_a"="aliquot_barcode")) %>% 
+  inner_join(arm_level_full, by=c("tumor_barcode_b"="aliquot_barcode")) %>% 
+  mutate(idh_codel_subtype = recode(idh_codel_subtype, "IDHmut_codel" = "IDHmut codel", "IDHmut_noncodel" = "IDHmut noncodel", "IDHwt_noncodel" = "IDHwt")) %>% 
+  arrange(idh_codel_subtype, tumor_pair_barcode)
+# Replace column names.
+colnames(aneuploidy_heatmap) = gsub("\\.x", "_P", colnames(aneuploidy_heatmap))
+colnames(aneuploidy_heatmap) = gsub("\\.y", "_R", colnames(aneuploidy_heatmap))
+
+# Rough sketch heatmap for the primary and recurrent tumors, separated by a whitespace for the three subtypes.
+pheatmap(aneuploidy_heatmap[ , c(14:52)], cluster_rows = FALSE, cluster_cols = FALSE, gaps_row=c(24,90), show_rownames = FALSE)
+pheatmap(aneuploidy_heatmap[ , c(58:96)], cluster_rows = FALSE, cluster_cols = FALSE, gaps_row=c(24,90), show_rownames = FALSE)
+
+# 
+aneuploidy_heatmap_noncodel_p = aneuploidy_heatmap %>% 
+  filter(idh_codel_subtype=="IDHmut noncodel") %>% 
+  select(-idh_codel_subtype_P, idh_codel_subtype_R) %>% 
+  gather(primary_arm, primary_arm_call, c(`1p_P`:`22q_P`), -c(`1p_R`:`22q_R`)) 
+
+aneuploidy_heatmap_noncodel_r = aneuploidy_heatmap %>% 
+  filter(idh_codel_subtype=="IDHmut noncodel") %>% 
+  select(-idh_codel_subtype_P, idh_codel_subtype_R) %>% 
+  gather(recurrent_arm, recurrent_arm_call, c(`1p_R`:`22q_R`), -c(`1p_P`:`22q_P`)) 
+
+
+# 66 samples that are IDHmut noncodels.
+tmp1 = aneuploidy_heatmap_noncodel_p %>% 
+  group_by(primary_arm, primary_arm_call) %>% 
+  summarise(sample_number =  n()) 
+tmp2 = aneuploidy_heatmap_noncodel_r %>% 
+  group_by(recurrent_arm, recurrent_arm_call) %>% 
+  summarise(sample_number =  n()) 
+
+
+

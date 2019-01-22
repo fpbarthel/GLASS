@@ -58,13 +58,12 @@ drivers_silver = drivers %>%
   left_join(case_level_subtype, by="case_barcode") %>% 
   mutate(idh_codel_subtype = recode(idh_codel_subtype, "IDHmut_codel" = "IDHmut codel", "IDHmut_noncodel" = "IDHmut noncodel", "IDHwt_noncodel" = "IDHwt"))
 
-# There is a significant difference in the number of drivers in the tumor pair.
+
+# There is a significant difference in the number of drivers in the tumor pair. This is probably driven by IDH being counted as driver (every codel/noncodel has +1)
 kruskal.test(as.numeric(drivers_silver$driver_count), as.factor(drivers_silver$idh_codel_subtype))
 ggplot(drivers_silver, aes(x=as.factor(idh_codel_subtype), y=as.numeric(driver_count))) + geom_boxplot() + theme_bw() +
   ylab("Total driver count") + xlab("")
   
-
+# Examine whether there are any particular gains or losses in the non-shared IDHwt tumors.
 no_shared_drivers = drivers_silver %>% 
-  filter(is.na(driver_shared)) %>% 
-
-table(no_shared_drivers$driver_status)
+  filter(is.na(driver_shared)) 
