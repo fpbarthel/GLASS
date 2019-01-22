@@ -185,7 +185,9 @@ cnv_driver_status AS
 		 WHEN NOT shared AND private_a AND NOT private_b THEN 'Driver loss'
 		 WHEN NOT shared AND private_b AND NOT private_a THEN 'Driver gain'
 		 WHEN NOT shared AND private_b AND private_b THEN 'Driver switch' END) driver_status,
-		TRIM(BOTH ', ' FROM target_a || ', ' || target_b) AS target,
+		--TRIM(BOTH ', ' FROM target_a || ', ' || target_b) AS target,
+		target_a,
+		target_b,
 		driver_context_shared,
 		driver_context_change
 	FROM cnv_by_pair
@@ -207,7 +209,8 @@ cnv_driver_stability AS
 		(CASE
 		 WHEN driver_status IN ('Driver switch','Driver loss','Driver gain') THEN 'Driver unstable'
 		 WHEN driver_status IN ('Driver stable') OR driver_status IS NULL THEN 'Driver stable' END) cnv_driver_stability,
-		(CASE WHEN target <> '' THEN target ELSE NULL END) cnv_driver_change,
+		(CASE WHEN target_a <> '' THEN target_a ELSE NULL END) cnv_driver_change_a,
+		(CASE WHEN target_b <> '' THEN target_b ELSE NULL END) cnv_driver_change_b,
 		driver_context_shared AS cnv_driver_context_shared,
 		driver_context_change AS cnv_driver_context_change
 	FROM cnv_driver_status ds

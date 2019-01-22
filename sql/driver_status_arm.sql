@@ -25,7 +25,8 @@ selected_arms AS
 		chrom,
 		pos
 	FROM ref.chr_arms ca
-	WHERE ca.chrom NOT IN ('X','Y') AND ca.arm <> '21p'
+	WHERE --ca.chrom NOT IN ('X','Y') AND ca.arm <> '21p'
+		ca.chrom IN ('7','10','19','20') OR ca.arm IN ('1p','19q','22q','13q') -- define drivers for arm level
 ),
 selected_arms_pairs AS
 (
@@ -118,7 +119,9 @@ cnv_driver_status AS
 		 WHEN NOT shared AND private_a AND NOT private_b THEN 'Driver loss'
 		 WHEN NOT shared AND private_b AND NOT private_a THEN 'Driver gain'
 		 WHEN NOT shared AND private_b AND private_b THEN 'Driver switch' END) driver_status,
-		TRIM(BOTH ', ' FROM target_a || ', ' || target_b) AS target
+		--TRIM(BOTH ', ' FROM target_a || ', ' || target_b) AS target
+		target_a,
+		target_b
 	FROM cnv_by_pair
 ),
 cnv_driver_stability AS
@@ -138,7 +141,8 @@ cnv_driver_stability AS
 		(CASE
 		 WHEN driver_status IN ('Driver switch','Driver loss','Driver gain') THEN 'Driver unstable'
 		 WHEN driver_status IN ('Driver stable') OR driver_status IS NULL THEN 'Driver stable' END) arm_driver_stability,
-		(CASE WHEN target <> '' THEN target ELSE NULL END) arm_driver_change
+		(CASE WHEN target_a <> '' THEN target_a ELSE NULL END) arm_driver_change_a,
+		(CASE WHEN target_b <> '' THEN target_b ELSE NULL END) arm_driver_change_b
 	FROM cnv_driver_status ds
 	RIGHT JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = ds.tumor_pair_barcode
 )
