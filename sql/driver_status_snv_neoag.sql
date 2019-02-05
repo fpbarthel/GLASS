@@ -83,7 +83,8 @@ variants_by_case_and_gene AS
 		gtc.alt,
 		gtc.variant_classification,
 		sg.hgvs_p,
-		nm.aa_change,
+		pv.mutation AS aa_change,
+		pv.netmhcpan_mt_score,
 		--mutect2_call_a AS selected_call_a,
 		--mutect2_call_b AS selected_call_b,
 		--lag(mutect2_call_a) OVER w = mutect2_call_a OR lag(mutect2_call_b) OVER w = mutect2_call_b AS is_same_variant,
@@ -97,13 +98,27 @@ variants_by_case_and_gene AS
 	FROM analysis.master_genotype_comparison gtc
 	INNER JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = gtc.tumor_pair_barcode 
 	INNER JOIN selected_genes sg ON sg.chrom = gtc.chrom AND sg.pos = gtc.pos AND sg.alt = gtc.alt
-	INNER JOIN neoag_mutation nm ON nm.chrom = gtc.chrom AND nm.pos = gtc.pos AND nm.alt = gtc.alt
+	LEFT JOIN analysis.pvacseq_fraction pv ON pv.tumor_pair_barcode = gtc.tumor_pair_barcode AND pv.chrom = gtc.chrom AND pv.pos = gtc.pos AND pv.alt = gtc.alt
 	WHERE 
 		(mutect2_call_a OR mutect2_call_b) AND 
 		(ref_count_a+alt_count_a) >= 15 AND
 		(ref_count_b+alt_count_b) >= 15
-	WINDOW w AS (PARTITION BY gtc.gene_symbol, gtc.tumor_pair_barcode ORDER BY mutect2_call_a::integer + mutect2_call_b::integer DESC, variant_classification_priority, (ref_count_a+alt_count_a) + (ref_count_b+alt_count_b) DESC)
+	WINDOW w AS (PARTITION BY gtc.gene_symbol, gtc.tumor_pair_barcode ORDER BY mutect2_call_a::integer + mutect2_call_b::integer DESC, variant_classification_priority, (ref_count_a+alt_count_a) + (ref_count_b+alt_count_b) DESC, netmhcpan_mt_score ASC)
 ),
+variants_agg AS
+(
+	SELECT
+		gene_symbol, case_barcode, tumor_pair_barcode, tumor_barcode_a, tumor_barcode_b, chrom, pos, alt, variant_classification, hgvs_p, aa_change, netmhcpan_mt_score,
+		aa_change IS NOT NULL AS is_immunogenic,
+		(CASE
+		 WHEN selected_call_b AND selected_call_a THEN 'S'
+		 WHEN selected_call_a AND NOT selected_call_b THEN 'P'
+		 WHEN selected_call_b AND NOT selected_call_a THEN 'R' END) fraction
+	FROM variants_by_case_and_gene
+	WHERE priority = 1
+)
+SELECT * FROM variants_agg
+/*,
 sign_genes_by_subtype AS
 (
 	SELECT DISTINCT gene_symbol, subtype 
@@ -193,8 +208,7 @@ driver_stability AS
 		driver_evolution AS snv_driver_evolution
 	FROM driver_status ds
 	RIGHT JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = ds.tumor_pair_barcode
-)
-SELECT * FROM variants_by_case_and_gene
+)*/
 --SELECT * FROM driver_stability ORDER BY 1
 			 
 --SELECT * FROM variants_by_case
