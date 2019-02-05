@@ -1,3 +1,12 @@
+
+## To get paper figures, run:
+##   - Section titled: "DB connection"
+##   - Section titled: "Run dNdS for all samples in cohort"
+##   - Section titled: "Run dNdS seperately for private/shared variants and IDH status"
+##   - Section titled: "Plot dNdS-CV by subtype - by fraction
+##   - Section titled: "Plot dNdS-CV genes by subtype - fraction"
+
+
 library(dndscv)
 library(tidyverse)
 library(DBI)
