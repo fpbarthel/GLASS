@@ -149,9 +149,20 @@ rel_contribution_pairs <- rel_contribution_pairs[-which(is.na(rel_contribution_p
 whole_dataset_dif <- rel_contribution_pairs[,34:63] - rel_contribution_pairs[,4:33]
 whole_dataset_means <- apply(whole_dataset_dif,2,mean)
 whole_dataset_sds <- apply(whole_dataset_dif,2,sd)
+names(whole_dataset_means) = names(whole_dataset_sds) = gsub("_b", "", names(whole_dataset_means))
+
+#P-values through paired t-test
+whole_dataset_pairs <- split.default(rel_contribution_pairs[4:63], gsub("\\D+","",names(rel_contribution_pairs[4:63])))
+whole_dataset_p <- lapply(whole_dataset_pairs,function(x)wilcox.test(x[,1],x[,2],paired=T)$p.value)
+whole_dataset_p <- unlist(whole_dataset_p)
+names(whole_dataset_p) <- paste("Signature.",names(whole_dataset_p),sep="")
+whole_dataset_q <- p.adjust(whole_dataset_p,method="bonferroni")
+whole_dataset_p <- whole_dataset_p[names(whole_dataset_means)]
+whole_dataset_q <- whole_dataset_q[names(whole_dataset_means)]
 
 signatures <- gsub("_b","",gsub("Signature.","",names(whole_dataset_means)))
-plot_whole_dataset <- data.frame(whole_dataset_means,whole_dataset_sds,signatures)
+sig_tag <- ifelse(whole_dataset_q<0.05,"sig","no")
+plot_whole_dataset <- data.frame(whole_dataset_means,whole_dataset_sds,whole_dataset_p,whole_dataset_q,sig_tag,signatures)
 plot_whole_dataset[,"signatures"] <- factor(plot_whole_dataset[,"signatures"],levels = signatures)
 
 #Comparison 2: idh wt noncodels
@@ -159,9 +170,20 @@ idhwt_noncodels <- rel_contribution_pairs[which(rel_contribution_pairs[,"idh_cod
 idhwt_noncodels_dif <- idhwt_noncodels[,34:63] - idhwt_noncodels[,4:33]
 idhwt_noncodels_means <- apply(idhwt_noncodels_dif,2,mean)
 idhwt_noncodels_sds <- apply(idhwt_noncodels_dif,2,sd)
+names(idhwt_noncodels_means) = names(idhwt_noncodels_sds) = gsub("_b", "", names(idhwt_noncodels_means))
+
+#P-values through paired t-test
+idhwt_noncodels_pairs <- split.default(idhwt_noncodels[4:63], gsub("\\D+","",names(idhwt_noncodels[4:63])))
+idhwt_noncodels_p <- lapply(idhwt_noncodels_pairs,function(x)wilcox.test(x[,1],x[,2],paired=T)$p.value)
+idhwt_noncodels_p <- unlist(idhwt_noncodels_p)
+names(idhwt_noncodels_p) <- paste("Signature.",names(idhwt_noncodels_p),sep="")
+idhwt_noncodels_q <- p.adjust(idhwt_noncodels_p,method="bonferroni")
+idhwt_noncodels_p <- idhwt_noncodels_p[names(idhwt_noncodels_means)]
+idhwt_noncodels_q <- idhwt_noncodels_q[names(idhwt_noncodels_means)]
 
 signatures <- gsub("_b","",gsub("Signature.","",names(idhwt_noncodels_means)))
-plot_idhwt_noncodels <- data.frame(idhwt_noncodels_means,idhwt_noncodels_sds,signatures)
+sig_tag <- ifelse(idhwt_noncodels_q<0.05,"sig","no")
+plot_idhwt_noncodels <- data.frame(idhwt_noncodels_means,idhwt_noncodels_sds,idhwt_noncodels_p,idhwt_noncodels_q,sig_tag,signatures)
 plot_idhwt_noncodels[,"signatures"] <- factor(plot_idhwt_noncodels[,"signatures"],levels = signatures)
 
 
@@ -170,21 +192,43 @@ idhmut_noncodels <- rel_contribution_pairs[which(rel_contribution_pairs[,"idh_co
 idhmut_noncodels_dif <- idhmut_noncodels[,34:63] - idhmut_noncodels[,4:33]
 idhmut_noncodels_means <- apply(idhmut_noncodels_dif,2,mean)
 idhmut_noncodels_sds <- apply(idhmut_noncodels_dif,2,sd)
+names(idhmut_noncodels_means) = names(idhmut_noncodels_sds) = gsub("_b", "", names(idhmut_noncodels_means))
+
+#P-values through paired t-test
+idhmut_noncodels_pairs <- split.default(idhmut_noncodels[4:63], gsub("\\D+","",names(idhmut_noncodels[4:63])))
+idhmut_noncodels_p <- lapply(idhmut_noncodels_pairs,function(x)wilcox.test(x[,1],x[,2],paired=T)$p.value)
+idhmut_noncodels_p <- unlist(idhmut_noncodels_p)
+names(idhmut_noncodels_p) <- paste("Signature.",names(idhmut_noncodels_p),sep="")
+idhmut_noncodels_q <- p.adjust(idhmut_noncodels_p,method="bonferroni")
+idhmut_noncodels_p <- idhmut_noncodels_p[names(idhmut_noncodels_means)]
+idhmut_noncodels_q <- idhmut_noncodels_q[names(idhmut_noncodels_means)]
 
 signatures <- gsub("_b","",gsub("Signature.","",names(idhmut_noncodels_means)))
-plot_idhmut_noncodels <- data.frame(idhmut_noncodels_means,idhmut_noncodels_sds,signatures)
+sig_tag <- ifelse(idhmut_noncodels_q<0.05,"sig","no")
+plot_idhmut_noncodels <- data.frame(idhmut_noncodels_means,idhmut_noncodels_sds,idhmut_noncodels_p,idhmut_noncodels_q,sig_tag,signatures)
 plot_idhmut_noncodels[,"signatures"] <- factor(plot_idhmut_noncodels[,"signatures"],levels = signatures)
-
 
 #Comparison 4: idh mut codels
 idhmut_codels <- rel_contribution_pairs[which(rel_contribution_pairs[,"idh_codel_subtype"]=="IDHmut_codel"),]
 idhmut_codels_dif <- idhmut_codels[,34:63] - idhmut_codels[,4:33]
 idhmut_codels_means <- apply(idhmut_codels_dif,2,mean)
 idhmut_codels_sds <- apply(idhmut_codels_dif,2,sd)
+names(idhmut_codels_means) = names(idhmut_codels_sds) = gsub("_b", "", names(idhmut_codels_means))
+
+#P-values through paired t-test
+idhmut_codels_pairs <- split.default(idhmut_codels[4:63], gsub("\\D+","",names(idhmut_codels[4:63])))
+idhmut_codels_p <- lapply(idhmut_codels_pairs,function(x)wilcox.test(x[,1],x[,2],paired=T)$p.value)
+idhmut_codels_p <- unlist(idhmut_codels_p)
+names(idhmut_codels_p) <- paste("Signature.",names(idhmut_codels_p),sep="")
+idhmut_codels_q <- p.adjust(idhmut_codels_p,method="bonferroni")
+idhmut_codels_p <- idhmut_codels_p[names(idhmut_codels_means)]
+idhmut_codels_q <- idhmut_codels_q[names(idhmut_codels_means)]
 
 signatures <- gsub("_b","",gsub("Signature.","",names(idhmut_codels_means)))
-plot_idhmut_codels <- data.frame(idhmut_codels_means,idhmut_codels_sds,signatures)
+sig_tag <- ifelse(idhmut_codels_q<0.05,"sig","no")
+plot_idhmut_codels <- data.frame(idhmut_codels_means,idhmut_codels_sds,idhmut_codels_p,idhmut_codels_q,sig_tag,signatures)
 plot_idhmut_codels[,"signatures"] <- factor(plot_idhmut_codels[,"signatures"],levels = signatures)
+
 
 #Faceted barplot
 analysis_type <- c(rep("Whole dataset",nrow(plot_whole_dataset)),
@@ -192,17 +236,18 @@ analysis_type <- c(rep("Whole dataset",nrow(plot_whole_dataset)),
 				 rep("IDHmut noncodel",nrow(plot_idhmut_noncodels)),
 				 rep("IDHmut codel",nrow(plot_idhmut_codels)))
 colnames(plot_whole_dataset) = colnames(plot_idhwt_noncodels) = 
-colnames(plot_idhmut_noncodels) = colnames(plot_idhmut_codels) = c("means","sds","Signatures")
+colnames(plot_idhmut_noncodels) = colnames(plot_idhmut_codels) = c("means","sds","p-values","corrected_p_values","significance","Signatures")
 plot_results <- rbind(plot_whole_dataset, plot_idhwt_noncodels, plot_idhmut_noncodels, plot_idhmut_codels)
 plot_results <- cbind(plot_results,analysis_type)
 plot_results[,"analysis_type"] <- factor(plot_results[,"analysis_type"],levels = c("Whole dataset","IDHwt noncodel","IDHmut noncodel","IDHmut codel"))
 
-pdf("/projects/varnf/GLASS/Figures/signatures/test/pri_recur_sig_differences.pdf")
-ggplot(data=plot_results, aes(x=Signatures,y=means,width=1)) +
+pdf("/projects/varnf/GLASS/Figures/signatures/test/pri_recur_sig_differences_color.pdf")
+ggplot(data=plot_results, aes(x=Signatures,y=means,width=1,fill=significance)) +
 geom_bar(stat="identity",position="identity",size=0.2)+
 geom_errorbar(aes(ymin=means-sds, ymax=means+sds), width=.2,
                  position=position_dodge(.9)) +
 facet_grid(analysis_type ~ .) +
+scale_fill_manual(values=c("black","red")) +
 ylab("Relative contribution") + guides(fill=FALSE) +
 theme_bw()+
 theme(axis.title.y = element_text(size = 12, 
@@ -215,6 +260,8 @@ dev.off()
 
 #Signature 16 significance test in codels:
 wilcox.test(idhmut_codels[,"Signature.16_a"],idhmut_codels[,"Signature.16_b"],paired=TRUE)		#0.08
+wilcox.test(idhwt_noncodels[,"Signature.16_a"],idhwt_noncodels[,"Signature.16_b"],paired=TRUE)		#0.08
+wilcox.test(idhmut_noncodels[,"Signature.11_a"],idhmut_noncodels[,"Signature.11_b"],paired=TRUE)		#0.08
 
 #Cluster differences
 whole_dataset_mat <- rel_contribution_pairs[,34:63] - rel_contribution_pairs[,4:33]
