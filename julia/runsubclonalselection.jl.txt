@@ -1,0 +1,43 @@
+using ArgParse
+using SubClonalSelection
+
+
+s = ArgParseSettings()
+@add_arg_table s begin
+    "--readdepth", "-d"
+        help = "Mean read depth"
+        arg_type=Float64
+    "--minvaf", "-v"
+       	help = "Minimum VAF"
+       	arg_type=Float64
+    "--fmin", "-f"
+        help = "Minimum VAFs to model"
+       	arg_type=Float64
+    "--mincellularity", "-m"
+        help = "Min cellularity"
+       	arg_type=Float64
+    "--maxcellularity", "-x"
+        help = "Max cellularity"
+       	arg_type=Float64
+    "--ploidy", "-l"
+        help = "Ploidy"
+        arg_type=Float64
+    "--maxiterations", "-i"
+        help = "Max iterations"
+        arg_type=Int
+    "--nparticles", "-p"
+        help = "Number of particles"
+       	arg_type=Int
+    "--resultsdirectory", "-r"
+        help = "Results directory"
+    "--name", "-n"
+        help = "Name for run"
+    "file"
+        help = "Directory and file name conatining VAFs"
+        required = true
+    
+end
+
+args = parse_args(s)
+
+out = fitABCmodels(args["file"], args["name"], read_depth = args["readdepth"], resultsdirectory = args["resultsdirectory"], minvaf = args["minvaf"], fmin = args["fmin"], ploidy = args["ploidy"], maxiterations = args["maxiterations"], nparticles = args["nparticles"], mincellularity = args["mincellularity"], maxcellularity = args["maxcellularity"], Nmaxinf = 10^6, save = true, adaptpriors = true)

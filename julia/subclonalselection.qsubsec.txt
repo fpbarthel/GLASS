@@ -1,0 +1,46 @@
+# This script runs a single sample through subclonalselection
+# Georgette Tanner & ALastair Droop, 2019-01-11
+
+
+section('subclonalselection-{SAMPLE}-{FRACTION}-{RUN}', description='Run sample {SAMPLE} through subclonalselection.')
+limits(h_rt='48:00:00', h_vmem='16G')
+options('V', 'cwd', 'notify')
+outputs('{LOG_DIR}')
+
+# Load the metadata file:
+metadata = dict()
+try:
+    metadata_file = open('{METADATA_DIR}/{METADATA_FILE}', 'rt')
+    headers = metadata_file.readline()
+    for metadata_line in metadata_file.readlines():
+        metadata_data = metadata_line.strip().split('\t')
+        metadata[metadata_data[1]] = metadata_data
+except FileNotFoundError as err:
+    message('ERROR: metadata file "{METADATA_FILE}" does not exist')
+    raise
+except Exception as err: raise
+
+# Check that the given SAMPLE is present in the metadata dictionary:
+if '{SAMPLE}' not in metadata.keys(): raise Exception('Sample {SAMPLE} not in metadata')
+
+# Check number of suclonal VAFs
+if '{FRACTION}' == 'shared': NUM = int(metadata['{SAMPLE}'][3])
+elif '{FRACTION}' == 'private': NUM = int(metadata['{SAMPLE}'][5])
+elif '{FRACTION}' == 'all': NUM = int(metadata['{SAMPLE}'][7])
+
+if NUM<25 :
+    command('echo "Sample {SAMPLE}_{FRACTION} has less than 25 subclonal VAFs"', name = 'quit')
+elif metadata['{SAMPLE}'][14]=='-':
+    command('echo "Sample {SAMPLE}_{FRACTION} has no minimum VAF given - assuming non suitable sample"', name = 'quit')
+else:
+
+    # Extract values:
+    read_depth = float(metadata['{SAMPLE}'][8])
+    min_vaf = float(metadata['{SAMPLE}'][14])
+    f_min = float(metadata['{SAMPLE}'][14])
+    ploidy = int(metadata['{SAMPLE}'][13])
+    min_cellularity = float(metadata['{SAMPLE}'][11])
+    max_cellularity = float(metadata['{SAMPLE}'][12])
+
+    # Build the command to submit:
+    command('{JULIA_EXEC} {JULIA_SCRIPT} {VAF_FILE} --name {SAMPLE}_{FRACTION}_{RUN} --resultsdirectory {OUTPUT_DIR} --readdepth %s  --maxiterations {ITERATIONS} --nparticles 500 --minvaf %s --fmin %s --ploidy %s --mincellularity %s --maxcellularity %s' % (read_depth, min_vaf, f_min, ploidy, min_cellularity, max_cellularity), name='run_julia')
