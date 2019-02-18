@@ -226,10 +226,11 @@ dnds_fraction_global %>%
   filter(name == 'wall') %>%
   mutate(subtype = fct_recode(subtype, "IDHmut-codel" = "IDHmut_codel", "IDHmut-noncodel" = "IDHmut_noncodel", "IDHwt" = "IDHwt_noncodel"),
          #name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
-         fraction = factor(fraction, levels = c("P", "S", "R"))) %>%
+         fraction = factor(fraction, levels = c("P", "S", "R")),
+         fraction = fct_recode(fraction, "Primary only" = "P", "Shared" = "S", "Recurrence only" = "R")) %>%
   ggplot(aes(x = subtype, y = mle, ymin = cilow, ymax = cihigh, color = fraction)) +
   geom_pointrange(position=position_dodge(width = 0.5)) +
-  scale_color_manual(values = c("P" = "#2fb3ca","S" = "#CA932F", "R" = "#CA2FB4"), drop=F) +
+  scale_color_manual(values = c("Primary only" = "#CA2FB4", "Shared" = "#CA932F", "Recurrence only" = "#2fb3ca"), drop=F) +
   #facet_wrap( ~ subtype) +
   geom_hline(yintercept = 1) +
   theme_bw(base_size = 18) +
@@ -243,10 +244,11 @@ dnds_sample_global %>%
   filter(name == 'wall') %>%
   mutate(subtype = fct_recode(subtype, "IDHmut-codel" = "IDHmut_codel", "IDHmut-noncodel" = "IDHmut_noncodel", "IDHwt" = "IDHwt_noncodel"),
          #name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
-         sample_type = factor(sample_type, levels = c("P", "R"))) %>%
+         sample_type = factor(sample_type, levels = c("P", "R")),
+         sample_type = fct_recode(sample_type, "Primary" = "P", "Recurrence" = "R")) %>%
   ggplot(aes(x = subtype, y = mle, ymin = cilow, ymax = cihigh, color = sample_type)) +
   geom_pointrange(position=position_dodge(width = 0.5)) +
-  scale_color_manual(values = c("P" = "#2fb3ca", "R" = "#CA2FB4"), drop=F) +
+  scale_color_manual(values = c("Primary" = "#a6611a", "Recurrence" = "#018571"), drop=F) +
   #facet_wrap( ~ subtype) +
   geom_hline(yintercept = 1) +
   theme_bw(base_size = 18) +

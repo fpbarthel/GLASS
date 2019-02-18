@@ -1,6 +1,6 @@
 ##################################################
 # Visualize aneuploidy results based on GATK CNV
-# Updated: 2019.01.16
+# Updated: 2019.01.30
 # Author: Kevin J.
 ##################################################
 
@@ -33,7 +33,7 @@ cases = dbReadTable(con,  Id(schema="clinical", table="cases"))
 subtypes = dbReadTable(con,  Id(schema="clinical", table="subtypes"))
 mut_freq = dbReadTable(con,  Id(schema="analysis",table="mutation_freq"))
 silver_set = dbGetQuery(con, "SELECT * FROM analysis.silver_set")
-clinal_tumor_pairs = dbGetQuery(con,"SELECT * FROM analysis.clinical_by_tumor_pair")
+clinal_tumor_pairs = dbReadTable(con,  Id(schema="clinical", table="clinical_by_tumor_pair"))  
 cnv_by_gene_gatk = dbReadTable(con,  Id(schema="analysis",table="cnv_by_gene_gatk"))
 # cnv_by_gene_gatk = read_csv("/Users/johnsk/Downloads/analysis.cnv_by_gene_gatk_2019-01-19T13_11_45+0000.csv")
 pathway_gene_list = dbReadTable(con,  Id(schema="ref",table="driver_genes"))
@@ -49,7 +49,6 @@ cnv_example = cnv_by_gene_gatk %>%
   inner_join(silver_set, by=c("aliquot_barcode"="tumor_barcode_b")) %>% 
   group_by(gene_symbol, hlvl_call, idh_codel_subtype) %>% 
   summarise(alt_breakdown = n()) 
-
 
 # Floris has created two aneuploidy metrics 
 # 1. to represent the fraction of the genome with copy number alterations 
@@ -123,14 +122,24 @@ aneuploidy_pairs_filtered = aneuploidy_pairs %>%
   mutate(aneuploidy_diff = aneuploidy_b - aneuploidy_a) %>% 
   left_join(clinal_tumor_pairs, by="tumor_pair_barcode") %>%
   # Relabel subtypes for aesthetics.
-  mutate(idh_codel_subtype = recode(idh_codel_subtype, "IDHmut_codel" = "IDHmut codel", "IDHmut_noncodel" = "IDHmut noncodel", "IDHwt_noncodel" = "IDHwt"))
+  mutate(idh_codel_subtype = recode(idh_codel_subtype, "IDHmut_codel" = "IDHmut codel", "IDHmut_noncodel" = "IDHmut noncodel", "IDHwt_noncodel" = "IDHwt")) %>% 
+  mutate(treatment = ifelse(received_tmz == 1 | received_rt == 1, "YES", "NO"),
+         treatment = ifelse(is.na(treatment), NA, treatment))
 
+
+silver_set_inter_gold = silver_set %>% 
+  inner_join(tumor_blocklist, by=c("tumor_barcode_a"="aliquot_barcode")) %>% 
+  inner_join(tumor_blocklist, by=c("tumor_barcode_b"="aliquot_barcode")) %>% 
+  # Note db introduced some trailing whitespace.
+  filter(cnv_exclusion.x %in%c("allow ", "review")) %>% 
+  filter(cnv_exclusion.y %in% c("allow ", "review"))
 
 # Define aneuploidy pairs by IDH subtype.
 aneuploidy_pairs_IDHwt = aneuploidy_pairs_filtered %>% 
   filter(idh_codel_subtype == "IDHwt")
 aneuploidy_pairs_IDH_codel = aneuploidy_pairs_filtered %>% 
   filter(idh_codel_subtype == "IDHmut codel")
+# There are 6 samples that were listed as "block" for either the primary or the recurrence.
 aneuploidy_pairs_IDH_noncodel = aneuploidy_pairs_filtered %>% 
   filter(idh_codel_subtype == "IDHmut noncodel")
 
@@ -150,17 +159,23 @@ wilcox.test(aneuploidy_pairs_IDH_noncodel$aneuploidy_score_a, aneuploidy_pairs_I
 
 # Combine the aneuploidy values for each tumor pair.
 aneuploid_plot_value = aneuploidy_pairs_filtered %>% 
-  gather(sample, aneuploidy, c(aneuploidy_a, aneuploidy_b)) 
-ggplot(aneuploid_plot_value, aes(x = sample, y = aneuploidy, group = tumor_pair_barcode)) +
-  geom_line(linetype="solid", size=1, alpha = 0.3) + ylab("GLASS - aneuploidy value") + xlab("Gold set pairs (n=197)") +
-  geom_point(color="black", size=2) + theme_bw() + facet_grid(~idh_codel_subtype)
+  gather(sample, aneuploidy, c(aneuploidy_a, aneuploidy_b)) %>% 
+  mutate(sample = recode(sample,  "aneuploidy_a" = "Primary",  "aneuploidy_b" = "Recurrence"))
+pdf(file = "/Users/johnsk/Documents/aneuploidy-value-n197-test.pdf", height = 4, width = 8, bg = "transparent", useDingbats = FALSE)
+ggplot(aneuploid_plot_value, aes(x = sample, y = aneuploidy, group = tumor_pair_barcode, color = sample)) +
+  geom_line(linetype="solid", size=1, alpha = 0.3, color ="black") + ylab("Aneuploidy value") + xlab("") + theme_bw() +
+  geom_point(size=2) + scale_color_manual(values = c("Primary" = "#a6611a", "Recurrence" = "#018571"), name = "Sample Type") + facet_grid(~idh_codel_subtype)
+dev.off()
 
 # Combine the aneuploidy scores for each tumor pair.
 aneuploid_plot_score = aneuploidy_pairs_filtered %>% 
-  gather(sample, aneuploidy_score, c(aneuploidy_score_a, aneuploidy_score_b)) 
-ggplot(aneuploid_plot_score, aes(x = sample, y = aneuploidy_score, group = tumor_pair_barcode)) +
-  geom_line(linetype="solid", size=1, alpha = 0.3) + ylab("GLASS - aneuploidy score") + xlab("Gold set pairs (n=197)") +
-  geom_point(color="black", size=2) + theme_bw() + facet_grid(~idh_codel_subtype)
+  gather(sample, aneuploidy_score, c(aneuploidy_score_a, aneuploidy_score_b)) %>% 
+  mutate(sample = recode(sample,  "aneuploidy_score_a" = "Primary",  "aneuploidy_score_b" = "Recurrence"))
+pdf(file = "/Users/johnsk/Documents/aneuploidy-score-n197.pdf", height = 4, width = 8, bg = "transparent", useDingbats = FALSE)
+ggplot(aneuploid_plot_score, aes(x = sample, y = aneuploidy_score, group = tumor_pair_barcode, color=sample)) +
+  geom_line(linetype="solid", size=1, alpha = 0.3, color ="black") + ylab("Aneuploidy score") + xlab("") + theme_bw() +
+  geom_point(size=2) + scale_color_manual(values = c("Primary" = "#a6611a", "Recurrence" = "#018571"), name = "Sample Type") + facet_grid(~idh_codel_subtype)
+dev.off()
 
 # Inspect TITAN ploidy distribution.
 ggplot(titan_param, aes(x=ploidy)) + geom_histogram() + theme_bw()
@@ -190,40 +205,52 @@ aneuploidy_idh_noncodel = aneuploidy_pairs_IDH_noncodel %>%
          # summary(aneuploidy_idh_noncodel$aneuploidy_diff) = 0.12980, upper quartile vs. bottom three quartiles.
          # I tried mean as well as median for thresholds. Mean or upper quartile seem most appropriate based on distribution.
          acquired_aneuploidy = ifelse(aneuploidy_diff > 0.12980, 1, 0),
+         aneuploidy_levels = ntile(aneuploidy_diff, 3),
          patient_vital = ifelse(case_vital_status=="alive", 0, 1))
 
 # NOTE: Make sure you are using the gold set (Or silver set filtered through for CN allow|review.
-ggplot(aneuploidy_idh_noncodel, aes(aneuploidy_diff)) + geom_histogram() + theme_bw() + geom_vline(xintercept = 0.12980, color="red") +
-  xlab("Aneuploidy value difference") + ggtitle("Gold set (n=65)")
+ggplot(aneuploidy_idh_noncodel, aes(x="IDHmut-noncodel", y=aneuploidy_diff)) + geom_boxplot(outlier.shape = NA) +  
+  geom_jitter(aes(colour = as.factor(aneuploidy_idh_noncodel$acquired_aneuploidy)), alpha=0.5, 
+              position=position_jitter(w=0.1)) + theme_bw() + geom_hline(yintercept = 0.12980, color="red", alpha=0.8) +
+  xlab("") + ylab("Aneuploidy value difference") + ggtitle("n=65") + scale_color_discrete(name = "Acquired aneuploidy")
+
+ggplot(aneuploidy_idh_noncodel, aes(x=aneuploidy_diff)) + geom_density()
+
 
 # Overall survival (months) with the designation of "acquired_aneuploidy".
-noncodel_aneuploidy_surv <- survfit(Surv(case_overall_survival_mo, patient_vital) ~ acquired_aneuploidy,
+noncodel_aneuploidy_surv <- survfit(Surv(case_overall_survival_mo, patient_vital) ~ factor(aneuploidy_levels),
                                     data = aneuploidy_idh_noncodel)
-ggsurvplot(noncodel_aneuploidy_surv, data = aneuploidy_idh_noncodel, risk.table = TRUE, pval= TRUE) + ggtitle("Overall survival (high aneuploidy, Gold set)")
+ggsurvplot(noncodel_aneuploidy_surv, data = aneuploidy_idh_noncodel, risk.table = FALSE, pval= TRUE, pval.method = FALSE, pval.coord = c(150, 0.75), 
+           surv.median.line = "v", palette = c("#39CD99", "#396DCD", "#CD4F39"), legend = "none") 
 
 # Post recurrence survival (months) with the designation of "acquired_aneuploidy".
-noncodel_aneuploidy_post_recur <- survfit(Surv(post_recurrence_surv, patient_vital) ~ acquired_aneuploidy,
+noncodel_aneuploidy_post_recur <- survfit(Surv(post_recurrence_surv, patient_vital) ~ factor(aneuploidy_levels),
                                           data = aneuploidy_idh_noncodel)
-ggsurvplot(noncodel_aneuploidy_post_recur, data = aneuploidy_idh_noncodel, risk.table = TRUE, pval= TRUE) + ggtitle("Post recurrence survival (high aneuploidy, Gold set)")
+ggsurvplot(noncodel_aneuploidy_post_recur, data = aneuploidy_idh_noncodel, ylab = "Post-recurrence survival \n probability", risk.table = FALSE, pval= TRUE, pval.method = FALSE, pval.coord = c(100, 0.75),
+           surv.median.line = "v", palette = c("#39CD99", "#396DCD", "#CD4F39"), legend = "none", legend.labs =c("aneuploidy tertile 1", "aneuploidy tertile 2", "aneuploidy tertile 3")) 
 
+
+aneuploidy_idh_noncodel_treated = aneuploidy_idh_noncodel %>% 
+  filter(received_tmz==1 | received_alkylating_agent==1)
 # Overall survival (months) with the designation of "acquired_aneuploidy".
-cox_fit_noncodel_1 = coxph(Surv(case_overall_survival_mo, patient_vital) ~ aneuploidy_diff, data= aneuploidy_idh_noncodel)
+cox_fit_noncodel_1 = coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + aneuploidy_diff + received_tmz, data= aneuploidy_idh_noncodel)
 summary(cox_fit_noncodel_1)
 # aneuploidy_diff treated as a continuous variable.
-cox_fit_noncodel_2 = coxph(Surv(case_overall_survival_mo, patient_vital) ~ acquired_aneuploidy, data= aneuploidy_idh_noncodel)
+cox_fit_noncodel_2 = coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + aneuploidy_levels + hypermutator_status, data= aneuploidy_idh_noncodel)
 summary(cox_fit_noncodel_2)
 
 # Post recurrence survival (months) with the designation of "acquired_aneuploidy".
-cox_fit_noncodel_3 = coxph(Surv(post_recurrence_surv, patient_vital) ~ aneuploidy_diff, data= aneuploidy_idh_noncodel)
+cox_fit_noncodel_3 = coxph(Surv(post_recurrence_surv, patient_vital) ~case_age_diagnosis_years + aneuploidy_diff + hypermutator_status, data= aneuploidy_idh_noncodel)
 summary(cox_fit_noncodel_3)
 # aneuploidy_diff treated as a continuous variable.
-cox_fit_noncodel_4 = coxph(Surv(post_recurrence_surv, patient_vital) ~ acquired_aneuploidy, data= aneuploidy_idh_noncodel)
+cox_fit_noncodel_4 = coxph(Surv(post_recurrence_surv, patient_vital) ~ case_age_diagnosis_years + aneuploidy_levels + hypermutator_status, data= aneuploidy_idh_noncodel)
 summary(cox_fit_noncodel_4)
 
 # Is there an association between patients that received TMZ and aneuploidy difference (across all three subtypes)?
 wilcox.test(aneuploidy_pairs_IDHwt$aneuploidy_diff~aneuploidy_pairs_IDHwt$received_tmz)
 wilcox.test(aneuploidy_pairs_IDH_codel$aneuploidy_diff~aneuploidy_pairs_IDH_codel$received_tmz)
 wilcox.test(aneuploidy_pairs_IDH_noncodel$aneuploidy_diff~aneuploidy_pairs_IDH_noncodel$received_tmz)
+wilcox.test(aneuploidy_pairs_IDH_noncodel$aneuploidy_diff~aneuploidy_pairs_IDH_noncodel$treatment)
 
 # Is aneuploidy_difference between tumor_a and tumor_b related with radiation therapy?
 wilcox.test(aneuploidy_pairs_IDHwt$aneuploidy_diff~aneuploidy_pairs_IDHwt$received_rt)
@@ -237,12 +264,19 @@ wilcox.test(aneuploidy_pairs_IDH_noncodel$aneuploidy_diff~aneuploidy_pairs_IDH_n
 
 # Test whether the aneuploidy change in IDHmut noncodels is associated with a gain in cell cycle genes.
 cell_cycle_cnv = pathway_gene_list %>% 
-  filter(pathway=="Cell cycle", has_cnv==1)
+  filter(pathway=="Cell cycle")
 cnv_gatk_cell_cycle = cnv_by_gene_gatk %>% 
   inner_join(cell_cycle_cnv, by="gene_symbol") %>% 
   select(-pathway, -has_cnv, -has_mut, -wcr) %>% 
   spread(gene_symbol, hlvl_call) %>% 
-  filter(!grepl("-NB-", aliquot_barcode))
+  filter(!grepl("-NB-", aliquot_barcode)) 
+
+# Restrict to genes involved in the cell cycle genes.
+cnv_gatk_cell_cycle = cnv_by_gene_gatk %>% 
+  filter(gene_symbol%in%c("CDKN2A","MDM4","MDM2","CDK4","CCND2","CDK6","RB1")) %>% 
+  select(-wcr) %>% 
+  spread(gene_symbol, hlvl_call) %>%  
+  filter(!grepl("-NB-", aliquot_barcode)) 
 
 # Need to include mutation information.
 genedata <- dbGetQuery(con, read_file("/Users/johnsk/Documents/Life-History/glass-analyses/scripts/heatmap-mutation.sql"))
@@ -261,7 +295,7 @@ cell_cycle_df_noncodel = aneuploidy_idh_noncodel %>%
 colnames(cell_cycle_df_noncodel) = gsub("\\.x", "_P", colnames(cell_cycle_df_noncodel))
 colnames(cell_cycle_df_noncodel) = gsub("\\.y", "_R", colnames(cell_cycle_df_noncodel)) 
 
-
+# Tally whether a sample had a gain or loss of high-level copy number event.
 cell_cycle_df_noncodel = cell_cycle_df_noncodel %>% 
   mutate(CCND2 = ifelse(CCND2_R==2 & CCND2_P!=2, "+CCND2", NA),
          CDK4 = ifelse(CDK4_R==2 & CDK4_P!=2, "+CDK4", NA),
@@ -270,11 +304,15 @@ cell_cycle_df_noncodel = cell_cycle_df_noncodel %>%
          MDM2 = ifelse(MDM2_R==2 & MDM2_P!=2, "+MDM2", NA),
          MDM4 = ifelse(MDM4_R==2 & MDM4_P!=2, "+MDM4", NA),
          RB1 = ifelse(RB1_R==-2 & RB1_P!=-2, "-RB1", NA),
-         TP53 = ifelse(TP53_R==-2 & TP53_P!=-2, "-TP53", NA),
-         cell_cycle = ifelse(is.na(CCND2) & is.na(CDK4) & is.na(CDK6) & is.na(CDKN2A) & is.na(MDM2) & is.na(MDM4) & is.na(RB1) & is.na(TP53) & is.na(RB1_mut) & is.na(TP53_mut), "cell_cycle_stable", "cell_cycle_alt"))
+         cell_cycle = ifelse(is.na(CCND2) & is.na(CDK4) & is.na(CDK6) & is.na(CDKN2A) & is.na(MDM2) & is.na(MDM4) & is.na(RB1) & is.na(RB1_mut) & is.na(TP53_mut), "cell_cycle_stable", "cell_cycle_alt"))
+# Slight differences in the portions, P = 0.04.
 fisher.test(table(cell_cycle_df_noncodel$cell_cycle, cell_cycle_df_noncodel$acquired_aneuploidy))
+# For those samples that have a a new alteration in the cell cycle there is increased aneuploidy.
 wilcox.test(cell_cycle_df_noncodel$aneuploidy_diff~cell_cycle_df_noncodel$cell_cycle)
+# How many samples do have a change in cell cycle?
+table(cell_cycle_df_noncodel$cell_cycle)
 
+# Summarise the aneuploidy level by stability of cell cycle alteratons.
 cell_cycle_df_noncodel %>% 
   group_by(cell_cycle) %>% 
   summarise(median_aneu =  median(aneuploidy_diff),
@@ -323,7 +361,7 @@ arm_level_summary_1 =  arm_level_calls_filtered %>%
 
 # Reduce set to only those arm-level analyses considered by Taylor et al.
 arm_level_summary2 = arm_level_calls_filtered %>% 
-  select(-chrom) %>% 
+  select(-chrom, -arm_num_seg, -arm_cr_wmean, -arm_cr_wsd) %>% 
   spread(arm, arm_call) %>% 
   select(aliquot_barcode, `1p`, `1q`, `2p`, `2q`, `3p`, `3q`, `4p`, `4q`, `5p`, `5q`, `6p`, `6q`, `7p`, `7q`, `8p`,
          `8q`, `9p`, `9q`, `10p`,`10q`, `11p`, `11q`, `12p`, `12q`, `13q`, `14q`, `15q`, `16q`, `16p`, `17p`, `17q`,
@@ -341,6 +379,8 @@ arm_level_full = arm_level_summary_1 %>%
   mutate(AS_amp = ifelse(is.na(AS_amp), 0, AS_amp),
          AS_del = ifelse(is.na(AS_del), 0, AS_del))
   
+# Get the primary
+
 # Write out table to be used in downstream analyses or uploaded as a table to the database.
 # write.table(arm_level_full, file = "/Users/johnsk/Documents/glass-arm-level-20190116.txt", sep="\t", row.names = F, col.names = T, quote = F)
 

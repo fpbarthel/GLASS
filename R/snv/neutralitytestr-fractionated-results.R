@@ -1,6 +1,6 @@
 ##############################################
 # Analyze results from neutralitytestR applied to fractionated mutations
-# Updated: 2019.01.16
+# Updated: 2019.01.26
 # Author: Kevin J.
 ##################################################
 

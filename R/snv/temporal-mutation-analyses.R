@@ -22,6 +22,7 @@ cases = dbReadTable(con,  Id(schema="clinical",table="cases"))
 surgeries = dbReadTable(con,  Id(schema="clinical",table="surgeries"))
 mut_freq = dbReadTable(con,  Id(schema="analysis",table="mutation_freq"))
 tumor_mut_compare = dbReadTable(con,  Id(schema="analysis",table="tumor_mut_comparison_anno"))
+silver_set = dbGetQuery(con, "SELECT * FROM analysis.silver_set")
 
 ## Define query for extracting mutational frequency data.
 optimal_mut_freq = "WITH
