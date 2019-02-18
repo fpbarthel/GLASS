@@ -37,6 +37,7 @@ cosmic_order = colnames(cancer_signatures)[hclust_cosmic[["order"]]]
 #Optimal contribution of COSMIC signatures to 96 mutational profiles
 individual_fit <- fit_to_signatures(mut_mat, cancer_signatures)
 individual_contribution <- individual_fit[["contribution"]]
+write.table(individual_contribution, "/projects/varnf/GLASS/analysis/signatures/absolute_contributions_by_private_shared.txt",sep="\t",quote=F,row.names=T)
 contribution_sums <- apply(individual_contribution,2,sum)
 individual_contribution <- apply(individual_contribution,1,function(x)x/contribution_sums)
 
@@ -167,6 +168,7 @@ mut_count <- apply(mut_mat,2,sum)
 
 individual_fit <- fit_to_signatures(mut_mat, cancer_signatures)
 individual_contribution <- individual_fit[["contribution"]]
+write.table(individual_contribution, "/projects/varnf/GLASS/analysis/signatures/absolute_contributions_by_sample.txt",sep="\t",quote=F,row.names=T)
 contribution_sums <- apply(individual_contribution,2,sum)
 individual_contribution <- apply(individual_contribution,1,function(x)x/contribution_sums)
 
