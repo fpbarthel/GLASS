@@ -30,6 +30,9 @@ cluster_json:     "conf/cluster.json"
 #workdir:          "/fastscratch/verhaak-lab/TCGA-WG"
 
 gnomad_vcf:       "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/af-only-gnomad.raw.sites.b37.vcf.gz"
+funcotator_dir:   "/projects/verhaak-lab/verhaak_ref/funcotator/funcotator_dataSources.v1.6.20190124s"
+
+## gatk Funcotator --variant variants.vcf --reference /projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/human_g1k_v37_decoy.fasta --ref-version hg19 --data-sources-path /projects/verhaak-lab/verhaak_ref/funcotator/funcotator_dataSources.v1.6.20190124s --output variants.funcotated.maf --output-file-format MAF --transcript-selection-mode CANONICAL --annotation-default Center:jax.org
 
 ## Mutect2 settings
 mutect2:
@@ -37,10 +40,15 @@ mutect2:
   gnomad_vcf:       "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/af-only-gnomad.raw.sites.b37.vcf.gz"
   ## Tiny VCF
   tiny_vcf:         "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/Mutect2/GetPileupSummaries/small_exac_common_3_b37.vcf.gz"
+  ## Given alleles list
+  given_alleles:    "/projects/verhaak-lab/verhaak_ref/hotspot_idh1_tert_grc37.vcf.gz"
+  ## WGS scatter intervals
+  wgs_scatterdir:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50"
   ## Based on GATK best practices RNAseq 04/05/18
   ## https://software.broadinstitute.org/gatk/documentation/article.php?id=3891
   ## Calculate af-of-alleles: 1/(2*123136) = 0.00000406055 (6 sign. digits)
   af_of_alleles_not_in_resource: 0.00000406055
+
 
 ## GATK CNV settings
 cnv:
@@ -79,9 +87,6 @@ gdc_token:        "/home/barthf/gdc-user-token.2018-05-23T11_13_25-04_00.txt"
 
 ## Temporary directory
 tempdir:          "/fastscratch/verhaak-lab/temp"
-
-## WGS scatter intervals
-wgs_scatterdir:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/scattered_wgs_intervals/scatter-50"
 
 ## SV mask
 svmask_lumpy:     "/projects/barthf/GLASS-WG/data/ref/human_g1k_v37_decoy_svmask_lumpy.bed"
