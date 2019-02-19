@@ -319,6 +319,7 @@ rule filtermutect:
         tab = lambda wildcards: expand("results/mutect2/contamination/{pair_barcode}.contamination.txt", pair_barcode = manifest.getPairsByCase(wildcards.case_barcode)),
         seg = lambda wildcards: expand("results/mutect2/contamination/{pair_barcode}.segmentation.txt", pair_barcode = manifest.getPairsByCase(wildcards.case_barcode))
     output:
+        stats = protected("results/mutect2/m2filter/{case_barcode}.filterstats.tsv"),
         vcf = protected("results/mutect2/m2filter/{case_barcode}.filtered.vcf.gz"),
         tbi = protected("results/mutect2/m2filter/{case_barcode}.filtered.vcf.gz.tbi")
     params:
@@ -341,6 +342,7 @@ rule filtermutect:
             -V {input.vcf} \
             {params.tseg} \
             {params.ttab} \
+            --stats {output.stats} \
             -O {output.vcf} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
             > {log} 2>&1"
