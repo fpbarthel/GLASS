@@ -180,7 +180,20 @@ class ManifestHandler:
         Subset by selected aliquots only
         """
         return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["sample_type"] in ["NB","NM"] ]) & set(self.getSelectedAliquots()))
-    
+
+    def getPONAliquotsByBatch(self, aliquot_batch):
+        """
+        Returns a list of aliquots given a batch
+        """
+        return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["aliquot_batch"] in aliquot_batch and al["sample_type"] in ["NB","NM"]]) & set(self.getSelectedAliquots()))
+
+    def parseBatch(self, batch_str):
+        parser = batch_str.split('-')
+        if(len(parser) == 2):
+            return ["{}-{}-{}".format(parser[0], parser[1], platf) for platf in ["WGS", "WXS"]]
+        elif(len(parser) == 3):
+            return "{}-{}-{}".format(parser[0], parser[1], parser[2])
+        
     def getRGIDs(self, aliquot_barcode):
         """
         Returns a list of RGIDs given an aliquot barcode
@@ -227,6 +240,18 @@ class ManifestHandler:
         """
         return [p["normal_barcode"] for (barcode, p) in self.pairs.items() if barcode == pair_barcode][0]
 
+    def getTumorByCase(self, case_barcode):
+        """
+        Returns a tumor aliquot ID given a case ID
+        """
+        return [aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["case_barcode"] == case_barcode and al["sample_type"] not in ["NB","NM"]]
+
+    def getNormalByCase(self, case_barcode):
+        """
+        Returns a normal aliquot ID given a case ID
+        """
+        return [aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["case_barcode"] == case_barcode and al["sample_type"] in ["NB","NM"]]
+
     def getMatchedNormal(self, aliquot_barcode):
         """
         Returns a matching normal aliquot ID given a tumor ID. Only the first match is returned. If no match, return None.
@@ -253,6 +278,16 @@ class ManifestHandler:
         """
         return self.aliquots[aliquot_barcode]["aliquot_batch"]
 
+    def getBatchByCase(self, case_barcode):
+        """
+        Returns batch of given aliquot
+        """
+        batches = list(set([al["aliquot_batch"] for (aliquot_barcode, al) in self.aliquots.items() if al["case_barcode"] == case_barcode]))
+        if(len(batches) == 1):
+            return batches[0]
+        elif(len(batches) == 2):
+            return batches[0][0:7]
+
     def getSex(self, aliquot_barcode):
         """
         Returns sex of given aliquot
@@ -271,6 +306,12 @@ class ManifestHandler:
         """
         return self.pairs
     
+    def getPairsByCase(self, case_barcode):
+        """
+        Returns all pairs for a given case barcode
+        """
+        return [pair_barcode for (pair_barcode, p) in self.pairs.items() if p["case_barcode"] == case_barcode]
+
     def getRGIDsNotInAliquot(self, aliquot_barcode):
         """
         Returns a list of RGIDs NOT in a given aliquot barcode
