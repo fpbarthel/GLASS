@@ -185,7 +185,7 @@ class ManifestHandler:
         """
         Returns a list of aliquots given a batch
         """
-        return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["aliquot_batch"] in aliquot_batch and al["sample_type"] in ["NB","NM"]]) & set(self.getSelectedAliquots()))
+        return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["aliquot_batch"] is not None and al["aliquot_batch"] in aliquot_batch and al["sample_type"] in ["NB","NM"]]) & set(self.getSelectedAliquots()))
 
     def parseBatch(self, batch_str):
         parser = batch_str.split('-')
@@ -244,13 +244,13 @@ class ManifestHandler:
         """
         Returns a tumor aliquot ID given a case ID
         """
-        return [aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["case_barcode"] == case_barcode and al["sample_type"] not in ["NB","NM"]]
+        return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["case_barcode"] == case_barcode and al["sample_type"] not in ["NB","NM"]]) & set(self.getSelectedAliquots()))
 
     def getNormalByCase(self, case_barcode):
         """
         Returns a normal aliquot ID given a case ID
         """
-        return [aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["case_barcode"] == case_barcode and al["sample_type"] in ["NB","NM"]]
+        return list(set([aliquot_barcode for (aliquot_barcode, al) in self.aliquots.items() if al["case_barcode"] == case_barcode and al["sample_type"] in ["NB","NM"]]) & set(self.getSelectedAliquots()))
 
     def getMatchedNormal(self, aliquot_barcode):
         """
@@ -282,7 +282,7 @@ class ManifestHandler:
         """
         Returns batch of given aliquot
         """
-        batches = list(set([al["aliquot_batch"] for (aliquot_barcode, al) in self.aliquots.items() if al["case_barcode"] == case_barcode]))
+        batches = list(set([al["aliquot_batch"] for (aliquot_barcode, al) in self.aliquots.items() if al["aliquot_batch"] is not None and al["case_barcode"] == case_barcode and aliquot_barcode in self.getSelectedAliquots()]))
         if(len(batches) == 1):
             return batches[0]
         elif(len(batches) == 2):
