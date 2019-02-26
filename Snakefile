@@ -45,12 +45,10 @@ WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in ran
 ## We do not want the additional DAG processing if not from source
 #if(config["from_source"]):
 #    include: "snakemake/download.smk"
-#include: "snakemake/align.smk"
-
-#include: "snakemake/mutect2-post.smk"
+include: "snakemake/align.smk"
 
 # include: "snakemake/haplotype-map.smk"
-# include: "snakemake/fingerprinting.smk"
+include: "snakemake/fingerprinting.smk"
 # include: "snakemake/telseq.smk"
 include: "snakemake/mutect2.smk"
 include: "snakemake/mutect2-post.smk"
@@ -60,8 +58,8 @@ include: "snakemake/mutect2-post.smk"
 # include: "snakemake/delly.smk"
 # include: "snakemake/manta.smk"
 include: "snakemake/cnv.smk"
-include: "snakemake/cnv-post.smk"
-include: "snakemake/pyclone.smk"
+#include: "snakemake/cnv-post.smk"
+#include: "snakemake/pyclone.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Haplotype map creation rule
@@ -174,8 +172,7 @@ rule varscan2:
 
 rule cnv:
     input:
-        expand("results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png", aliquot_barcode = manifest.getSelectedAliquots()),
-        expand("results/cnv/plotmodeledsegments/{aliquot_barcode}/{aliquot_barcode}.modeled.png", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/cnv/plots/{aliquot_barcode}.pdf", aliquot_barcode = manifest.getSelectedAliquots()),
         expand("results/cnv/callsegments/{aliquot_barcode}.called.seg", aliquot_barcode = manifest.getSelectedAliquots())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -203,7 +200,7 @@ rule pyclone:
 
 rule fingerprint:
    input:
-       #expand("results/fingerprinting/sample/{aliquot_barcode}.crosscheck_metrics", aliquot_barcode = manifest.getSelectedAliquots()),
+       expand("results/fingerprinting/sample/{aliquot_barcode}.crosscheck_metrics", aliquot_barcode = manifest.getSelectedAliquots()),
        expand("results/fingerprinting/case/{case_barcode}.crosscheck_metrics", case_barcode = manifest.getSelectedCases())
        #"results/fingerprinting/GLASS.crosscheck_metrics",
        
