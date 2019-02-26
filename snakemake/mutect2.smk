@@ -18,7 +18,7 @@
 
 rule callpon:
     input:
-        bam = "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam",
+        bam = ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"),
         intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir = config["mutect2"]["wgs_scatterdir"], interval = wildcards.interval)
     output:
         vcf = temp("results/mutect2/callpon/{aliquot_barcode}/{aliquot_barcode}.{interval}.pon.vcf"),
@@ -138,11 +138,12 @@ rule createpon:
 
 rule callsnv:
     input:
-        tumor = lambda wildcards: expand("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam", aliquot_barcode = manifest.getTumorByCase(wildcards.case_barcode)),
-        normal = lambda wildcards: expand("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam", aliquot_barcode = manifest.getNormalByCase(wildcards.case_barcode)),
-        pon = lambda wildcards: "results/mutect2/pon/{aliquot_batch}.vcf".format(aliquot_batch = manifest.getBatchByCase(wildcards.case_barcode)),
-        intervallist = lambda wildcards: "{dir}/{interval}/scattered.interval_list".format(dir = config["mutect2"]["wgs_scatterdir"], interval = wildcards.interval),
-        orientation_priors = lambda wildcards: expand("results/mutect2/filterorientation/{aliquot_barcode}.priors.tsv", aliquot_barcode = manifest.getTumorByCase(wildcards.case_barcode)),
+        tumor = lambda wildcards: ancient(expand("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam", aliquot_barcode = manifest.getTumorByCase(wildcards.case_barcode))),
+        normal = lambda wildcards: ancient(expand("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam", aliquot_barcode = manifest.getNormalByCase(wildcards.case_barcode))),
+        pon = lambda wildcards: ancient("results/mutect2/pon/{aliquot_batch}.vcf".format(aliquot_batch = manifest.getBatchByCase(wildcards.case_barcode))),
+        ponidx = lambda wildcards: ancient("results/mutect2/pon/{aliquot_batch}.vcf.idx".format(aliquot_batch = manifest.getBatchByCase(wildcards.case_barcode))),
+        intervallist = lambda wildcards: ancient("{dir}/{interval}/scattered.interval_list".format(dir = config["mutect2"]["wgs_scatterdir"], interval = wildcards.interval)),
+        orientation_priors = lambda wildcards: ancient(expand("results/mutect2/filterorientation/{aliquot_barcode}.priors.tsv", aliquot_barcode = manifest.getTumorByCase(wildcards.case_barcode))),
     output:
         vcf = temp("results/mutect2/m2vcf-scatter/{case_barcode}.{interval}.vcf"),
         idx = temp("results/mutect2/m2vcf-scatter/{case_barcode}.{interval}.vcf.idx"),
@@ -250,7 +251,7 @@ rule mergem2bam:
 
 rule pileupsummaries:
     input:
-        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
         temp("results/mutect2/pileupsummaries/{aliquot_barcode}.pileupsummaries.txt")
     params:
@@ -315,7 +316,7 @@ rule calculatecontamination:
 
 rule filtermutect:
     input:
-        vcf = "results/mutect2/m2vcf/{case_barcode}.vcf",
+        vcf = ancient("results/mutect2/m2vcf/{case_barcode}.vcf"),
         tab = lambda wildcards: expand("results/mutect2/contamination/{pair_barcode}.contamination.txt", pair_barcode = manifest.getPairsByCase(wildcards.case_barcode)),
         seg = lambda wildcards: expand("results/mutect2/contamination/{pair_barcode}.segmentation.txt", pair_barcode = manifest.getPairsByCase(wildcards.case_barcode))
     output:
@@ -353,7 +354,7 @@ rule filtermutect:
 
 rule collectartifacts:
     input:
-        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
     output:
         tab = temp("results/mutect2/artifacts/{aliquot_barcode}.alt.tsv"),
         ref = temp("results/mutect2/artifacts/{aliquot_barcode}.ref.metrics"),
