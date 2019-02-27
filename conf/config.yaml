@@ -75,6 +75,14 @@ cnv:
 
   maf90_threshold: 0.485
 
+sequenza:
+  gc_ref: "/projects/verhaak-lab/verhaak_ref/sequenza/g1k_v37_decoy.gc1000Base.txt.gz"
+  min_mapq: 20
+  bin_size: 1000
+  kmin: 10
+  break_method: "het"
+
+
 
 ## HTML dir
 # @sbamin helix ~/ has 50GB limit. multiqc and fastqc files may grow in size.

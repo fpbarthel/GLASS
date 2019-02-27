@@ -352,6 +352,42 @@
         "mem" : 12,
         "walltime" : "2:00:00"
     },
+    "bam2seqz" :
+    {
+        "ppn" : 24,
+        "mem" : 48,
+        "walltime" : "72:00:00",
+        "name" : "{rule}.{wildcards.pair_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
+    },
+    "seqz_binning" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "2:00:00",
+        "name" : "{rule}.{wildcards.pair_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
+    },
+    "mergeseqz" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "2:00:00",
+        "name" : "{rule}.{wildcards.pair_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
+    },
+    "seqzR" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "2:00:00",
+        "name" : "{rule}.{wildcards.pair_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
+    },
     "combinetracks" :
     {
         "ppn" : 2,

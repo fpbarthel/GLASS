@@ -45,7 +45,7 @@ WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in ran
 ## We do not want the additional DAG processing if not from source
 #if(config["from_source"]):
 #    include: "snakemake/download.smk"
-include: "snakemake/align.smk"
+#include: "snakemake/align.smk"
 
 # include: "snakemake/haplotype-map.smk"
 include: "snakemake/fingerprinting.smk"
@@ -58,6 +58,7 @@ include: "snakemake/mutect2-post.smk"
 # include: "snakemake/delly.smk"
 # include: "snakemake/manta.smk"
 include: "snakemake/cnv.smk"
+include: "snakemake/sequenza.smk"
 #include: "snakemake/cnv-post.smk"
 #include: "snakemake/pyclone.smk"
 
@@ -118,6 +119,10 @@ rule m2db:
         "results/mutect2/consensusvcf/consensus.normalized.sorted.funcotated.tsv",
         expand("results/mutect2/geno2db/{case_barcode}.info.tsv", case_barcode = manifest.getSelectedCases()),
         expand("results/mutect2/geno2db/{case_barcode}.geno.tsv", case_barcode = manifest.getSelectedCases())
+
+rule sequenza:
+    input:
+        expand("results/sequenza/mergeseqz/{pair_barcode}.small.seqz.gz", pair_barcode = manifest.getSelectedPairs())
 
 # rule mutect2post:
 # 	input:
