@@ -62,6 +62,9 @@ class ManifestHandler:
         
         n_aliquots = len(self.aliquots)
         n_aliquots_selected = len(self.selected_aliquots)
+
+        n_cases = len(list(set([s[0:12] for s in self.aliquots])))
+        n_cases_selected = len(list(set([s[0:12] for s in self.selected_aliquots])))
         
         n_pairs = len(self.pairs)
         n_pairs_selected = len(self.selected_pairs)
@@ -70,6 +73,7 @@ class ManifestHandler:
         s += "Found {} of {} possible source BAM files.\n".format(n_source_bam_found, n_source_bam)
         s += "Found {} of {} possible realigned BAM files.\n".format(n_aligned_bam_found, n_aligned_bam)
         s += "Selected {} of {} total aliquots.\n".format(n_aliquots_selected, n_aliquots)
+        s += "Selected {} of {} total cases.\n".format(n_cases_selected, n_cases)
         s += "Selected {} of {} possible pairs.\n".format(n_pairs_selected, n_pairs)
         return(s)
         
