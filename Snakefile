@@ -122,7 +122,8 @@ rule m2db:
 
 rule sequenza:
     input:
-        expand("results/sequenza/mergeseqz/{pair_barcode}.small.seqz.gz", pair_barcode = manifest.getSelectedPairs())
+        expand("results/sequenza/mergeseqz/{pair_barcode}.small.seqz.gz", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/sequenza/seqzR/{pair_barcode}/{pair_barcode}_cellularity.ploidy.txt", pair_barcode = manifest.getSelectedPairs())
 
 # rule mutect2post:
 # 	input:

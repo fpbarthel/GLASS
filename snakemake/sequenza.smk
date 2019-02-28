@@ -103,14 +103,12 @@ rule mergeseqz:
 
 rule seqzR:
     input:
-        "results/sequenza/mergeseqz/{pair_barcode}.small.seqz"
+        "results/sequenza/mergeseqz/{pair_barcode}.small.seqz.gz"
     output:
-        rds = "results/sequenza/seqzR/{pair_barcode}.sequenza_gcnorm.rds",
-        pdf = "results/sequenza/seqzR/{pair_barcode}.sequenza_gcnorm.pdf"#,
-        #rds = "results/sequenza/seqzR/{pair_barcode}.sequenza_extract_data.rds",
-        #rds = "results/sequenza/seqzR/{pair_barcode}.sequenza_fit_data.rds",
-        #rds = "results/sequenza/seqzR/{pair_barcode}.cellularity.ploidy.txt"
+        "results/sequenza/seqzR/{pair_barcode}/{pair_barcode}_cellularity.ploidy.txt"
     params:
+        prefix = "{pair_barcode}",
+        outdir = "results/sequenza/seqzR/{pair_barcode}",
         kmin = config["sequenza"]["kmin"],
         break_method = config["sequenza"]["break_method"]
     threads:
@@ -122,6 +120,6 @@ rule seqzR:
     message:
         "Run sequenza R"
     script:
-        "../R/snakemake/sequenza.R"
+        "../R/snakemake/runSeqz.R"
 
 ## END ##
