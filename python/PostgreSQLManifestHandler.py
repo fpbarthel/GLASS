@@ -92,8 +92,10 @@ class PostgreSQLManifestHandler(ManifestHandler):
         self.readgroups = res
     
     def initPairs(self):
-        q = "SELECT pair_barcode, tumor_barcode, normal_barcode \
-             FROM analysis.pairs;"
+        q = "SELECT pair_barcode, tumor_barcode, normal_barcode, case_barcode \
+             FROM analysis.pairs pa \
+             INNER JOIN biospecimen.aliquots AS al ON al.aliquot_barcode = pa.tumor_barcode \
+             INNER JOIN biospecimen.samples AS s ON s.sample_barcode = al.sample_barcode;"
         
         res = self.query(q, cursor_factory = psycopg2.extras.RealDictCursor)
         

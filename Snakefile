@@ -47,21 +47,21 @@ WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in ran
 #    include: "snakemake/download.smk"
 #include: "snakemake/align.smk"
 
-#include: "snakemake/mutect2-post.smk"
-
 # include: "snakemake/haplotype-map.smk"
-# include: "snakemake/fingerprinting.smk"
+include: "snakemake/fingerprinting.smk"
 # include: "snakemake/telseq.smk"
-# include: "snakemake/mutect2.smk"
+include: "snakemake/mutect2.smk"
+include: "snakemake/mutect2-post.smk"
 # include: "snakemake/varscan2.smk"
 # include: "snakemake/cnvnator.smk"
 # include: "snakemake/lumpy.smk"
 # include: "snakemake/delly.smk"
 # include: "snakemake/manta.smk"
-#include: "snakemake/cnv.smk"
-include: "snakemake/cnv-post.smk"
-include: "snakemake/pyclone.smk"
+include: "snakemake/cnv.smk"
+include: "snakemake/sequenza.smk"
 include: "snakemake/optitype.smk"
+#include: "snakemake/cnv-post.smk"
+#include: "snakemake/pyclone.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Haplotype map creation rule
@@ -111,44 +111,56 @@ rule qc:
 
 rule mutect2:
     input:
-        expand("results/mutect2/vcf2maf/{pair_barcode}.final.maf", pair_barcode = manifest.getSelectedPairs())#,
+        expand("results/mutect2/m2filter/{case_barcode}.filtered.vcf.gz", case_barcode = manifest.getSelectedCases())
+        #expand("results/mutect2/vcf2maf/{pair_barcode}.final.maf", pair_barcode = manifest.getSelectedPairs())#,
     	#expand("results/mutect2/final/{pair_barcode}.final.vcf", pair_barcode = manifest.getSelectedPairs())
 
-rule mutect2post:
-	input:
-		expand("results/mutect2/m2post/{pair_barcode}.normalized.sorted.vcf.gz", pair_barcode = manifest.getSelectedPairs())
-
-rule genotypefreebayes:
+rule m2db:
     input:
-        expand("results/mutect2/freebayes/{aliquot_barcode}.normalized.sorted.vcf.gz", aliquot_barcode = manifest.getSelectedAliquots())
+        "results/mutect2/consensusvcf/consensus.normalized.sorted.funcotated.tsv",
+        expand("results/mutect2/geno2db/{case_barcode}.info.tsv", case_barcode = manifest.getSelectedCases()),
+        expand("results/mutect2/geno2db/{case_barcode}.geno.tsv", case_barcode = manifest.getSelectedCases())
 
-rule massfreebayes:
+rule sequenza:
     input:
-        expand("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.sorted.vcf.gz", batch = [str(i) for i in range(2,6)], aliquot_barcode = manifest.getSelectedAliquots())
+        expand("results/sequenza/mergeseqz/{pair_barcode}.small.seqz.gz", pair_barcode = manifest.getSelectedPairs()),
+        expand("results/sequenza/seqzR/{pair_barcode}/{pair_barcode}_cellularity.ploidy.txt", pair_barcode = manifest.getSelectedPairs())
 
-rule genotypevcf2vcf:
-    input:
-        expand("results/mutect2/genotypes/{aliquot_barcode}.normalized.sorted.vcf.gz", aliquot_barcode = manifest.getSelectedAliquots())
+# rule mutect2post:
+# 	input:
+# 		expand("results/mutect2/m2post/{pair_barcode}.normalized.sorted.vcf.gz", pair_barcode = manifest.getSelectedPairs())
 
-rule finalfreebayes:
-    input:
-        expand("results/mutect2/batches2db/{aliquot_barcode}.normalized.sorted.tsv", aliquot_barcode = manifest.getSelectedAliquots())
+# rule genotypefreebayes:
+#     input:
+#         expand("results/mutect2/freebayes/{aliquot_barcode}.normalized.sorted.vcf.gz", aliquot_barcode = manifest.getSelectedAliquots())
 
-rule preparem2pon:
-    input:
-        expand("results/mutect2/mergepon/{aliquot_barcode}.pon.vcf", aliquot_barcode = manifest.getPONAliquots())
+# rule massfreebayes:
+#     input:
+#         expand("results/mutect2/freebayes/batch{batch}/{aliquot_barcode}.normalized.sorted.vcf.gz", batch = [str(i) for i in range(2,6)], aliquot_barcode = manifest.getSelectedAliquots())
 
-rule genodb:
-    input:
-        expand("results/mutect2/geno2db/{aliquot_barcode}.normalized.sorted.tsv", aliquot_barcode = manifest.getSelectedAliquots())
+# rule genotypevcf2vcf:
+#     input:
+#         expand("results/mutect2/genotypes/{aliquot_barcode}.normalized.sorted.vcf.gz", aliquot_barcode = manifest.getSelectedAliquots())
+
+# rule finalfreebayes:
+#     input:
+#         expand("results/mutect2/batches2db/{aliquot_barcode}.normalized.sorted.tsv", aliquot_barcode = manifest.getSelectedAliquots())
+
+# rule preparem2pon:
+#     input:
+#         expand("results/mutect2/mergepon/{aliquot_barcode}.pon.vcf", aliquot_barcode = manifest.getPONAliquots())
+
+# rule genodb:
+#     input:
+#         expand("results/mutect2/geno2db/{aliquot_barcode}.normalized.sorted.tsv", aliquot_barcode = manifest.getSelectedAliquots())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## PON rule (Mutect2)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule mutect2pon:
-    input:
-    	"results/mutect2/pon/pon.vcf"
+# rule mutect2pon:
+#     input:
+#     	"results/mutect2/pon/pon.vcf"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## HLAtyping rule (OptiType)
@@ -175,69 +187,8 @@ rule varscan2:
 
 rule cnv:
     input:
-        expand("results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png", aliquot_barcode = manifest.getSelectedAliquots()),
-        expand("results/cnv/plotmodeledsegments/{aliquot_barcode}/{aliquot_barcode}.modeled.png", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/cnv/plots/{aliquot_barcode}.pdf", aliquot_barcode = manifest.getSelectedAliquots()),
         expand("results/cnv/callsegments/{aliquot_barcode}.called.seg", aliquot_barcode = manifest.getSelectedAliquots())
-        
-        #expand("results/cnv/acs_convert/{pair_barcode}.acs.seg", pair_barcode = manifest.getSelectedPairs()),
-        #expand("results/cnv/gistic_convert/{pair_barcode}.gistic2.seg", pair_barcode = manifest.getSelectedPairs()),
-        
-        #expand("results/cnv/absolute/{pair_barcode}/{pair_barcode}.ABSOLUTE_plot.pdf", pair_barcode = manifest.getSelectedPairs()),
-        #expand("results/cnv/combinetracks/{pair_barcode}.final.seg", pair_barcode = manifest.getSelectedPairs()),
-        #expand("results/cnv/acs_convert/{pair_barcode}/{pair_barcode}.ABSOLUTE_plot.pdf", pair_barcode = manifest.getSelectedPairs())
-        #expand("results/cnv/callsegments/{pair_barcode}.called.seg", pair_barcode = manifest.getSelectedPairs()),
-        #expand("results/cnv/plotmodeledsegments/{pair_barcode}/{pair_barcode}.modeled.png", pair_barcode = manifest.getSelectedPairs()),
-        #expand("results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoised.png", aliquot_barcode = manifest.getSelectedAliquots()),
-
-rule titancna:
-    input:
-        #expand("results/cnv/titan/{pair_barcode}/{pair_barcode}.optimalClusters.txt", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/cnv/titanfinal/seg/{pair_barcode}.seg.txt", pair_barcode = manifest.getSelectedPairs())
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Call SV using Delly
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule delly:
-    input:
-        expand("results/delly/filter/{pair_barcode}.prefilt.bcf", pair_barcode = manifest.getSelectedPairs())
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Call SV using LUMPY-SV
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule lumpy:
-    input:
-        expand("results/lumpy/svtyper/{pair_barcode}.dict.svtyper.vcf", pair_barcode = manifest.getSelectedPairs()),
-        #expand("results/lumpy/libstat/{pair_barcode}.libstat.pdf", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/lumpy/filter/{pair_barcode}.dict.svtyper.filtered.vcf", pair_barcode = manifest.getSelectedPairs())
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Call SV using Manta
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule manta:
-    input:
-        expand("results/manta/{pair_barcode}/results/variants/somaticSV.vcf.gz", pair_barcode = manifest.getSelectedPairs())
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Call CNV using Manta
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule cnvnator:
-    input:
-        expand("results/cnvnator/vcf/{aliquot_barcode}.call.vcf", aliquot_barcode = manifest.getSelectedAliquots())
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Call SVs using all callers
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule svdetect:
-    input:
-        expand("results/lumpy/svtyper/{pair_barcode}.dict.svtyper.vcf", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/lumpy/libstat/{pair_barcode}.libstat.pdf", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/delly/call/{pair_barcode}.vcf.gz", pair_barcode = manifest.getSelectedPairs()),
-        expand("results/manta/{pair_barcode}/results/variants/somaticSV.vcf.gz", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Estimate TL using telseq
@@ -264,7 +215,7 @@ rule pyclone:
 
 rule fingerprint:
    input:
-       #expand("results/fingerprinting/sample/{aliquot_barcode}.crosscheck_metrics", aliquot_barcode = manifest.getSelectedAliquots()),
+       expand("results/fingerprinting/sample/{aliquot_barcode}.crosscheck_metrics", aliquot_barcode = manifest.getSelectedAliquots()),
        expand("results/fingerprinting/case/{case_barcode}.crosscheck_metrics", case_barcode = manifest.getSelectedCases())
        #"results/fingerprinting/GLASS.crosscheck_metrics",
        

@@ -1,34 +1,4 @@
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Preprocess intervals
-## See: https://software.broadinstitute.org/gatk/documentation/article?id=11682
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-# rule preprocessintervals:
-#   output:
-
-#   params:
-#         mem = CLUSTER_META["preprocessintervals"]["mem"],
-#         intervals = lambda wildcards: config["cnv"]["intervals_wes"] if manifest.isExome(wildcards.aliquot_barcode) else config["cnv"]["intervals_wgs"]
-#     threads:
-#         CLUSTER_META["preprocessintervals"]["ppn"]
-#     log:
-#         "logs/cnv/preprocessintervals/{aliquot_barcode}.log"
-#     conda:
-#         "../envs/gatk4.yaml"
-#     benchmark:
-#         "benchmarks/cnv/preprocessintervals/{aliquot_barcode}.txt"
-#     message:
-#         "Preprocess intervals\n"
-#         "Sample: {wildcards.aliquot_barcode}"
-#     shell:
-#         "gatk --java-options -Xmx{params.mem}g CollectReadCounts \
-#             -I {input} \
-#             -L {params.intervals} \
-#             --interval-merging-rule OVERLAPPING_ONLY \
-#             -O {output} \
-#             > {log} 2>&1"
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Collect read counts
 ## See: https://software.broadinstitute.org/gatk/documentation/article?id=11682
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -124,7 +94,7 @@ def selectGCAnnotation(is_exome, chromosomes):
 
 rule createcnvpon:
     input:
-        lambda wildcards: expand("results/cnv/readcounts/{aliquot_barcode}.{chromosomes}.counts.hdf5", aliquot_barcode = manifest.getPONAliquotsByBatchAndSex(wildcards.aliquot_batch, wildcards.sex if wildcards.sex != "NA" else None), chromosomes = wildcards.chromosomes)
+        lambda wildcards: ancient(expand("results/cnv/readcounts/{aliquot_barcode}.{chromosomes}.counts.hdf5", aliquot_barcode = manifest.getPONAliquotsByBatchAndSex(wildcards.aliquot_batch, wildcards.sex if wildcards.sex != "NA" else None), chromosomes = wildcards.chromosomes))
     output:
         "results/cnv/createcnvpon/{aliquot_batch}.{chromosomes}.{sex}.pon.hdf5"
     params:
@@ -165,8 +135,8 @@ def getSexString(manifest, aliquot_barcode, chromosomes):
 
 rule denoisereadcounts:
     input:
-        sample = lambda wildcards: "results/cnv/readcounts/{aliquot_barcode}.{chromosomes}.counts.hdf5".format(aliquot_barcode = wildcards.aliquot_barcode, chromosomes = wildcards.chromosomes),
-        pon =  lambda wildcards: "results/cnv/createcnvpon/{aliquot_batch}.{chromosomes}.{sex}.pon.hdf5".format(aliquot_batch = manifest.getBatch(wildcards.aliquot_barcode), chromosomes = wildcards.chromosomes, sex = getSexString(manifest, wildcards.aliquot_barcode, wildcards.chromosomes))
+        sample = lambda wildcards: ancient("results/cnv/readcounts/{aliquot_barcode}.{chromosomes}.counts.hdf5".format(aliquot_barcode = wildcards.aliquot_barcode, chromosomes = wildcards.chromosomes)),
+        pon =  lambda wildcards: ancient("results/cnv/createcnvpon/{aliquot_batch}.{chromosomes}.{sex}.pon.hdf5".format(aliquot_batch = manifest.getBatch(wildcards.aliquot_barcode), chromosomes = wildcards.chromosomes, sex = getSexString(manifest, wildcards.aliquot_barcode, wildcards.chromosomes)))
     output:
         standardized = "results/cnv/denoisereadcounts/{aliquot_barcode}.{chromosomes}.standardizedCR.tsv",
         denoised = "results/cnv/denoisereadcounts/{aliquot_barcode}.{chromosomes}.denoisedCR.tsv"
@@ -276,7 +246,7 @@ rule plotcr:
 rule modelsegments:
     input:
         denoised = "results/cnv/mergedenoisedreadcounts/{aliquot_barcode}.denoisedCR.tsv",
-        counts = "results/cnv/hets/{aliquot_barcode}.allelicCounts.tsv"
+        counts = ancient("results/cnv/hets/{aliquot_barcode}.allelicCounts.tsv")
     output:
         "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelBegin.seg",
         "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.seg",
@@ -353,10 +323,10 @@ rule plotmodeledsegments:
         hets = "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.hets.tsv",
         segments = "results/cnv/modelsegments/{aliquot_barcode}/{aliquot_barcode}.modelFinal.seg"
     output:
-        "results/cnv/plotmodeledsegments/{aliquot_barcode}/{aliquot_barcode}.modeled.png"
+        "results/cnv/plotmodeledsegments/{aliquot_barcode}.modeled.png"
     params:
         mem = CLUSTER_META["plotmodeledsegments"]["mem"],
-        outputdir = "results/cnv/plotmodeledsegments/{aliquot_barcode}",
+        outputdir = "results/cnv/plotmodeledsegments",
         outputprefix = "{aliquot_barcode}"
     threads:
         CLUSTER_META["plotmodeledsegments"]["ppn"]
@@ -379,5 +349,23 @@ rule plotmodeledsegments:
             --output {params.outputdir} \
             --output-prefix {params.outputprefix} \
             > {log} 2>&1"
+
+rule combinecnvplots:
+    input:
+        ms      = "results/cnv/plotmodeledsegments/{aliquot_barcode}.modeled.png",
+        cr      = "results/cnv/plotcr/{aliquot_barcode}/{aliquot_barcode}.denoisedLimit4.png"
+    output:
+        "results/cnv/plots/{aliquot_barcode}.pdf"
+    threads:
+        CLUSTER_META["combinecnvplots"]["ppn"]
+    log:
+        "logs/cnv/combinecnvplots/{aliquot_barcode}.log"
+    benchmark:
+        "benchmarks/cnv/combinecnvplots/{aliquot_barcode}.txt"
+    message:
+        "Plot GATK CNV results\n"
+        "Aliquot: {wildcards.aliquot_barcode}"
+    shell:
+        "/opt/software/helix/ImageMagick/7.0.7-26/bin/montage {input.cr} {input.ms} -tile 1x2 -geometry +0+0 {output}"
 
 ## END ##

@@ -6,8 +6,7 @@ library(shiny)
 
 con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
 
-q <- "SELECT gene_name AS gene_symbol FROM analysis.dndscv_gene
-      WHERE qglobal_cv < 0.30"
+q <- "SELECT gene_symbol FROM ref.driver_genes"
 genes <- c(dbGetQuery(con, q)$gene_symbol,"TERT")
 
 q <- "

@@ -6,8 +6,9 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - r-base=3.4.1
-  - bioconductor-variantannotation 
+  - r-base=3.4.3
+  - bioconductor-variantannotation
+  #- bioconductor-rtracklayer
   - r-tidyverse
   #- r-odbc
 #  - icu=58.2=h9c2bf20_1

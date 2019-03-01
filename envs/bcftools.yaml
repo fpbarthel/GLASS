@@ -1,0 +1,33 @@
+name: freebayes
+channels:
+  - bioconda
+  - defaults
+  - conda-forge
+dependencies:
+  - htslib=1.8=1
+  - libdeflate=1.0=h470a237_0
+  - parallel=20160622=1
+  - bcftools=1.9
+#   - perl-threaded=5.22.0=13
+#   - bzip2=1.0.6=h470a237_2
+#   - ca-certificates=2018.8.24=ha4d7672_0
+#   - certifi=2018.8.24=py36_1
+#   - libgcc-ng=7.2.0=hdf63c60_3
+#   - libstdcxx-ng=7.2.0=hdf63c60_3
+#   - openssl=1.0.2o=h470a237_1
+#   - perl=5.26.2=h470a237_0
+#   - curl=7.54.1=0
+#   - krb5=1.13.2=0
+#   - libgcc=5.2.0=0
+#   - libssh2=1.8.0=0
+#   - pip=9.0.1=py36_1
+#   - python=3.6.2=0
+#   - readline=6.2=2
+#   - setuptools=36.4.0=py36_1
+#   - sqlite=3.13.0=0
+#   - tk=8.5.18=0
+#   - wheel=0.29.0=py36_0
+#   - xz=5.2.3=0
+#   - zlib=1.2.11=0
+# prefix: /projects/barthf/opt/miniconda3/envs/freebayes
+
