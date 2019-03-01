@@ -107,6 +107,9 @@ reference_fasta:  "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/hum
 ## Reference dictionary
 reference_dict:   "/projects/verhaak-lab/verhaak_ref/gatk-legacy-bundles/b37/human_g1k_v37_decoy.dict"
 
+#Optitype HLA reference
+hla_ref:   "/projects/verhaak-lab/verhaak_ref/hla_ref/optitype/hla_reference_dna.fasta"
+
 ## Vcf2MAF Perl Script location
 vcf2maf:          "/projects/verhaak-lab/mskcc-vcf2maf-747a1bb/vcf2maf.pl"
 

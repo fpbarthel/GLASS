@@ -61,6 +61,7 @@ WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in ran
 #include: "snakemake/cnv.smk"
 include: "snakemake/cnv-post.smk"
 include: "snakemake/pyclone.smk"
+include: "snakemake/optitype.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Haplotype map creation rule
@@ -148,6 +149,14 @@ rule genodb:
 rule mutect2pon:
     input:
     	"results/mutect2/pon/pon.vcf"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## HLAtyping rule (OptiType)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule call_hla:
+	input:
+		expand("results/optitype/HLA_calls/{aliquot_barcode}/{aliquot_barcode}_result.tsv", aliquot_barcode = manifest.getSelectedAliquots())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SNV rule (VarScan2)
