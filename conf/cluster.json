@@ -976,5 +976,54 @@
         "name" : "{rule}.{wildcards.chr}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.chr}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.chr}.err"
+    },
+    "samtoolsview" :
+    {
+        "ppn" : 8,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.aliquot_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.err"
+    },
+    "samtoolsmerge" :
+    {
+        "ppn" : 8,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.aliquot_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.err"
+    },
+    "samtofastq" :
+    {
+        "ppn" : 8,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.aliquot_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.err"
+    },
+    "razers3" :
+    {
+        "ppn" : 8,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.aliquot_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.err"
+    },
+    "bam2fq" :
+    {
+        "ppn" : 8,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.aliquot_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.err"
+    },
+    "optitype" :
+    {
+        "ppn" : 8,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.aliquot_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.err"
     }
+    
 }

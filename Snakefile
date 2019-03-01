@@ -59,6 +59,7 @@ include: "snakemake/mutect2-post.smk"
 # include: "snakemake/manta.smk"
 include: "snakemake/cnv.smk"
 include: "snakemake/sequenza.smk"
+include: "snakemake/optitype.smk"
 #include: "snakemake/cnv-post.smk"
 #include: "snakemake/pyclone.smk"
 
@@ -160,6 +161,14 @@ rule sequenza:
 # rule mutect2pon:
 #     input:
 #     	"results/mutect2/pon/pon.vcf"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## HLAtyping rule (OptiType)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule call_hla:
+	input:
+		expand("results/optitype/HLA_calls/{aliquot_barcode}/{aliquot_barcode}_result.tsv", aliquot_barcode = manifest.getSelectedAliquots())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SNV rule (VarScan2)
