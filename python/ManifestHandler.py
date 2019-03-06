@@ -314,7 +314,7 @@ class ManifestHandler:
         """
         Returns all pairs for a given case barcode
         """
-        return [pair_barcode for (pair_barcode, p) in self.pairs.items() if p["case_barcode"] == case_barcode]
+        return [pair_barcode for (pair_barcode, p) in self.pairs.items() if p["case_barcode"] == case_barcode and p["tumor_barcode"] in self.getSelectedAliquots() and p["normal_barcode"] in self.getSelectedAliquots()]
 
     def getRGIDsNotInAliquot(self, aliquot_barcode):
         """

@@ -185,6 +185,57 @@ rule callsnv:
             > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Single-sample SNV
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Calls SNVs in a single aliquot rather than a patient
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule sscallsnv:
+    input:
+        tumor = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
+        normal = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
+        pon = lambda wildcards: ancient("results/mutect2/pon/{aliquot_batch}.vcf".format(aliquot_batch = manifest.getBatch(manifest.getTumor(wildcards.pair_barcode)))),
+        ponidx = lambda wildcards: ancient("results/mutect2/pon/{aliquot_batch}.vcf.idx".format(aliquot_batch = manifest.getBatch(manifest.getTumor(wildcards.pair_barcode)))),
+        intervallist = lambda wildcards: ancient("{dir}/{interval}/scattered.interval_list".format(dir = config["mutect2"]["wgs_scatterdir"], interval = wildcards.interval)),
+        orientation_priors = lambda wildcards: ancient("results/mutect2/filterorientation/{aliquot_barcode}.priors.tsv".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)))
+    output:
+        vcf = temp("results/mutect2/ssm2vcf-scatter/{pair_barcode}.{interval}.vcf"),
+        idx = temp("results/mutect2/ssm2vcf-scatter/{pair_barcode}.{interval}.vcf.idx")
+    params:
+        mem = CLUSTER_META["sscallsnv"]["mem"],
+        normal_sample_tag = lambda wildcards: manifest.getRGSampleTagByAliquot(manifest.getNormal(wildcards.pair_barcode))
+    conda:
+        "../envs/gatk4.yaml"
+    threads:
+        CLUSTER_META["sscallsnv"]["ppn"]
+    log:
+        "logs/mutect2/sscallsnv/{pair_barcode}.{interval}.log"
+    benchmark:
+        "benchmarks/mutect2/sscallsnv/{pair_barcode}.{interval}.txt"
+    message:
+        "Single Sample Calling SNVs (Mutect2)\n"
+        "Pair: {wildcards.pair_barcode}\n"
+        "Interval: {wildcards.interval}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g Mutect2 \
+            -R {config[reference_fasta]} \
+            -I {input.tumor} \
+            -I {input.normal} \
+            --orientation-bias-artifact-priors {input.orientation_priors} \
+            -L {input.intervallist} \
+            --normal-sample {params.normal_sample_tag} \
+            --panel-of-normals {input.pon} \
+            --germline-resource {config[mutect2][gnomad_vcf]} \
+            --genotyping-mode GENOTYPE_GIVEN_ALLELES \
+            --genotype-filtered-alleles true \
+            --alleles {config[mutect2][given_alleles]} \
+            --dont-use-soft-clipped-bases true \
+            --standard-min-confidence-threshold-for-calling 20 \
+            -O {output.vcf} \
+            --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
+            > {log} 2>&1"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Merge SNV
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## This is an intermediate "gather" step. Like `callpon`, `callsnv` is run in scatter mode, 
@@ -218,6 +269,38 @@ rule mergesnv:
         "gatk --java-options -Xmx{params.mem}g MergeVcfs \
             {params.input_files} \
             -O {output.vcf} \
+            > {log} 2>&1"
+
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Merge SNV (single sample)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Single sample merge
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule ssmergesnv:
+    input:
+        lambda wildcards: expand("results/mutect2/ssm2vcf-scatter/{pair_barcode}.{interval}.vcf", pair_barcode = wildcards.pair_barcode, interval = WGS_SCATTERLIST)
+    output:
+        protected("results/mutect2/ssm2vcf/{pair_barcode}.vcf")
+    params:
+        mem = CLUSTER_META["ssmergesnv"]["mem"],
+        input_files = lambda _, input: " ".join(["-I " + s for s in input])
+    conda:
+        "../envs/gatk4.yaml"
+    threads:
+        CLUSTER_META["ssmergesnv"]["ppn"]
+    log:
+        "logs/mutect2/ssmergesnv/{pair_barcode}.log"
+    benchmark:
+        "benchmarks/mutect2/ssmergesnv/{pair_barcode}.txt"
+    message:
+        "Single Sample Merging VCF files (M2)\n"
+        "Pair: {wildcards.pair_barcode}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g MergeVcfs \
+            {params.input_files} \
+            -O {output} \
             > {log} 2>&1"
 
 rule mergem2bam:
@@ -343,6 +426,43 @@ rule filtermutect:
             -V {input.vcf} \
             {params.tseg} \
             {params.ttab} \
+            --stats {output.stats} \
+            -O {output.vcf} \
+            --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
+            > {log} 2>&1"
+
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Single sample filter
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule ssfiltermutect:
+    input:
+        vcf = ancient("results/mutect2/ssm2vcf/{pair_barcode}.vcf"),
+        tab = "results/mutect2/contamination/{pair_barcode}.contamination.txt",
+        seg = "results/mutect2/contamination/{pair_barcode}.segmentation.txt"
+    output:
+        stats = protected("results/mutect2/ssm2filter/{pair_barcode}.filterstats.tsv"),
+        vcf = protected("results/mutect2/ssm2filter/{pair_barcode}.filtered.vcf.gz"),
+        tbi = protected("results/mutect2/ssm2filter/{pair_barcode}.filtered.vcf.gz.tbi")
+    params:
+        mem = CLUSTER_META["ssfiltermutect"]["mem"]
+    threads:
+        CLUSTER_META["ssfiltermutect"]["ppn"]
+    conda:
+        "../envs/gatk4.yaml"
+    log:
+        "logs/mutect2/ssfiltermutect/{pair_barcode}.log"
+    benchmark:
+        "benchmarks/mutect2/ssfiltermutect/{pair_barcode}.txt"
+    message:
+        "Single-Sample Filtering Mutect2 calls\n"
+        "Pair: {wildcards.pair_barcode}"
+    shell:    
+        "gatk --java-options -Xmx{params.mem}g FilterMutectCalls \
+            -V {input.vcf} \
+            --tumor-segmentation {input.seg} \
+            --contamination-table {input.tab} \
             --stats {output.stats} \
             -O {output.vcf} \
             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \

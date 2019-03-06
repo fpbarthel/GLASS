@@ -111,13 +111,16 @@ rule qc:
 
 rule mutect2:
     input:
-        expand("results/mutect2/m2filter/{case_barcode}.filtered.vcf.gz", case_barcode = manifest.getSelectedCases())
-        #expand("results/mutect2/vcf2maf/{pair_barcode}.final.maf", pair_barcode = manifest.getSelectedPairs())#,
-    	#expand("results/mutect2/final/{pair_barcode}.final.vcf", pair_barcode = manifest.getSelectedPairs())
+        expand("results/mutect2/m2filter/{case_barcode}.filtered.vcf.gz", case_barcode = manifest.getSelectedCases()),
+        expand("results/mutect2/ssm2filter/{pair_barcode}.filtered.vcf.gz", pair_barcode = manifest.getSelectedPairs())
+
+rule ssmutect2:
+    input:
+        expand("results/mutect2/ssm2filter/{pair_barcode}.filtered.vcf.gz", pair_barcode = manifest.getSelectedPairs())
 
 rule m2db:
     input:
-        "results/mutect2/consensusvcf/consensus.normalized.sorted.funcotated.tsv",
+        #"results/mutect2/consensusvcf/consensus.normalized.sorted.funcotated.tsv",
         expand("results/mutect2/geno2db/{case_barcode}.info.tsv", case_barcode = manifest.getSelectedCases()),
         expand("results/mutect2/geno2db/{case_barcode}.geno.tsv", case_barcode = manifest.getSelectedCases())
 

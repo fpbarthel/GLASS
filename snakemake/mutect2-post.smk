@@ -57,6 +57,57 @@ rule selectvariants:
 
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Single sample Select variants
+## 02/14 remove selectvariants and only drop GTs
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule ssselectvariants:
+    input:
+        ancient("results/mutect2/ssm2filter/{pair_barcode}.filtered.vcf.gz")
+    output:
+        normalized = temp("results/mutect2/ssdropgt/{pair_barcode}.filtered.normalized.vcf.gz"),
+        sortd = temp("results/mutect2/ssdropgt/{pair_barcode}.filtered.normalized.sorted.vcf.gz"),
+        sortdind = temp("results/mutect2/ssdropgt/{pair_barcode}.filtered.normalized.sorted.vcf.gz.tbi"),
+        vcf = temp("results/mutect2/ssdropgt/{pair_barcode}.filtered.normalized.sorted.dropgt.vcf.gz"),
+        tbi = temp("results/mutect2/ssdropgt/{pair_barcode}.filtered.normalized.sorted.dropgt.vcf.gz.tbi")
+    params:
+        mem = CLUSTER_META["ssselectvariants"]["mem"]
+    threads:
+        CLUSTER_META["ssselectvariants"]["ppn"]
+    conda:
+        "../envs/bcftools.yaml"
+    log:
+        "logs/mutect2/ssselectvariants/{pair_barcode}.log"
+    benchmark:
+        "benchmarks/mutect2/ssselectvariants/{pair_barcode}.txt"
+    message:
+        "Single Sample Drop genotypes\n"
+        "Case: {wildcards.pair_barcode}"
+    shell:
+        "bcftools norm \
+            -f {config[reference_fasta]} \
+            --check-ref we \
+            -m-both \
+            {input} | \
+         bcftools view \
+            -Oz \
+            -o {output.normalized} \
+            2>> {log};"
+       
+        "bcftools sort \
+            -Oz \
+            -o {output.sortd} \
+            {output.normalized} \
+            2>> {log};"
+        
+        "bcftools index \
+            -t {output.sortd} \
+            2>> {log};"
+
+        "bcftools view -Oz -G -o {output.vcf} {output.sortd} >> {log} 2>&1;"
+        "bcftools index -t {output.vcf} >> {log} 2>&1;"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Funcotator
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
