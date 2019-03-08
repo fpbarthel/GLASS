@@ -2,7 +2,7 @@ library(shinydashboard)
 library(shiny)
 library(DBI)
 library(tidyverse)
-con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
+con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")
 tables <- dbGetQuery(con, "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_schema != 'pg_catalog' AND table_schema !='information_schema'")
 tables <- rbind(tables, cbind(dbGetQuery(con, "SELECT schemaname AS table_schema, matviewname AS table_name FROM pg_matviews"), table_type = "Materialized View"))
 tables <- tables %>% mutate(table_type = fct_recode(table_type, "View" = "VIEW", "Table" = "BASE TABLE")) %>% arrange(table_name)
@@ -21,10 +21,10 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
-    do.call(tabItems,
+    do.call(tabItems, 
       lapply(tables$table_name, function(table) {
-        tabItem(tabName = table,
-                h2(table), DT::dataTableOutput(outputId = table),
+        tabItem(tabName = table, 
+                h2(sprintf("%s > %s", tables$table_schema[tables$table_name==table], table)), DT::dataTableOutput(outputId = table),
                 downloadButton(sprintf("d%s", table), "Download"))
       })
     )
