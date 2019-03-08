@@ -64,6 +64,30 @@ include: "snakemake/optitype.smk"
 #include: "snakemake/pyclone.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Upload coverage to database
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule cov2db:
+    input:
+        metrics = lambda wildcards: expand("results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt", aliquot_barcode = manifest.getSelectedAliquots())
+    output:
+        tsv = "results/align/wgsmetrics.merged.tsv"
+    params:
+        mem = CLUSTER_META["cov2db"]["mem"]
+    threads:
+        CLUSTER_META["cov2db"]["ppn"]
+    #conda:
+    #    "../envs/r.yaml"
+    log:
+        "logs/align/cov2db/cov2db.log"
+    benchmark:
+        "benchmarks/align/cov2db/cov2db.txt"
+    message:
+        "Merge coverage file and convert to TSV for easy database upload"
+    script:
+        "../R/snakemake/cov2db.R"
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Haplotype map creation rule
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
@@ -86,8 +110,35 @@ rule align:
 
 rule missingmetrics:
     input:
-        expand("results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt", aliquot_barcode = manifest.getSelectedAliquots()),
-        expand("results/align/validatebam/{aliquot_barcode}.ValidateSamFile.txt", aliquot_barcode = manifest.getSelectedAliquots())
+        ancient(expand("results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt", aliquot_barcode = manifest.getSelectedAliquots()))#,
+        #expand("results/align/validatebam/{aliquot_barcode}.ValidateSamFile.txt", aliquot_barcode = manifest.getSelectedAliquots())
+
+rule wgsmetrics:
+    input:
+        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
+    output:
+        "results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt"
+    params:
+        mem = CLUSTER_META["wgsmetrics"]["mem"],
+        walltime = CLUSTER_META["wgsmetrics"]["walltime"]
+    threads:
+        CLUSTER_META["wgsmetrics"]["ppn"]
+    conda:
+        "envs/align.yaml"
+    log:
+        "logs/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.log"
+    benchmark:
+        "benchmarks/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt"
+    message:
+        "Computing WGS Metrics\n"
+        "Sample: {wildcards.aliquot_barcode}"
+    shell:
+        "gatk --java-options -Xmx{params.mem}g CollectWgsMetrics \
+            -R {config[reference_fasta]} \
+            -I {input} \
+            -O {output} \
+            --USE_FAST_ALGORITHM true \
+            > {log} 2>&1"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download only rule
