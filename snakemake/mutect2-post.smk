@@ -108,88 +108,6 @@ rule ssselectvariants:
         "bcftools index -t {output.vcf} >> {log} 2>&1;"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Funcotator
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-# rule vcf2maf:
-#     input:
-#         ancient("results/mutect2/m2filter/{case_barcode}.filtered.vcf.gz")
-#     output:
-#         vcf = "results/mutect2/final/{case_barcode}.final.vcf.gz",
-#         geno = "results/mutect2/final/{case_barcode}.final.dropgeno.vcf.gz",
-#         tbi = "results/mutect2/final/{case_barcode}.final.dropgeno.vcf.gz.tbi"
-#     params:
-#         mem = CLUSTER_META["selectvariants"]["mem"]
-#     threads:
-#         CLUSTER_META["selectvariants"]["ppn"]
-#     conda:
-#         "../envs/gatk4.yaml"
-#     log:
-#         "logs/mutect2/selectvariants/{case_barcode}.log"
-#     benchmark:
-#         "benchmarks/mutect2/selectvariants/{case_barcode}.txt"
-#     message:
-#         "Select PASS calls\n"
-#         "Case: {wildcards.case_barcode}"
-#     shell:
-#         "gatk --java-options -Xmx{params.mem}g SelectVariants \
-#             -V {input} \
-#             -O {output.vcf} \
-#             --exclude-filtered true \
-#             --seconds-between-progress-updates {config[seconds_between_progress_updates]} \
-#             > {log} 2>&1;"
-#         "bcftools view -Oz -G -o {output.geno} {output.vcf} >> {log} 2>&1;"
-#         "bcftools index -t {output.geno} >> {log} 2>&1;"
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## M2-post
-## Use bcftools to post-process mutect final VCF
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-# rule mutect2postprocess:
-#     input:
-#         vcf = "results/mutect2/final/{case_barcode}.final.vcf"
-#     output:
-#         normalized = temp("results/mutect2/m2post/{case_barcode}.normalized.vcf.gz"),
-#         final = protected("results/mutect2/m2post/{case_barcode}.normalized.sorted.vcf.gz"),
-#         tbi = protected("results/mutect2/m2post/{case_barcode}.normalized.sorted.vcf.gz.tbi")
-#     params:
-#         mem = CLUSTER_META["mutect2postprocess"]["mem"]
-#     threads:
-#         CLUSTER_META["mutect2postprocess"]["ppn"]
-#     conda:
-#         "../envs/freebayes.yaml"
-#     log:
-#         "logs/mutect2/mutect2postprocess/{pair_barcode}.log"
-#     benchmark:
-#         "benchmarks/mutect2/mutect2postprocess/{pair_barcode}.txt"
-#     message:
-#         "Post-process Mutect2 calls using bcftools\n"
-#         "Pair barcode: {wildcards.pair_barcode}"
-#     shell:
-#         "bcftools norm \
-#             -f {config[reference_fasta]} \
-#             --check-ref ws \
-#             -m-both \
-#             {input.vcf} | \
-#          vt decompose_blocksub - | \
-#          bcftools norm -d none | \
-#          bcftools view \
-#             -Oz \
-#             -o {output.normalized} \
-#             2>> {log};"
-       
-#         "bcftools sort \
-#             -Oz \
-#             -o {output.final} \
-#             {output.normalized} \
-#             2>> {log};"
-        
-#         "bcftools index \
-#             -t {output.final} \
-#             2>> {log};"
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Merge consensus variant set
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
@@ -319,10 +237,12 @@ rule maf2db:
 
 rule geno2db:
     input:
-        vcf = "results/mutect2/dropgt/{case_barcode}.filtered.normalized.sorted.vcf.gz"
+        vcf = "results/mutect2/dropgt/{case_barcode}.filtered.normalized.sorted.vcf.gz",
+        ssvcf = lambda wildcards: expand("results/mutect2/ssdropgt/{pair_barcode}.filtered.normalized.sorted.vcf.gz", pair_barcode = manifest.getPairsByCase(wildcards.case_barcode))
     output:
         geno = "results/mutect2/geno2db/{case_barcode}.geno.tsv",
-        info = "results/mutect2/geno2db/{case_barcode}.info.tsv"
+        info = "results/mutect2/geno2db/{case_barcode}.info.tsv",
+        mfcov = "results/mutect2/geno2db/{case_barcode}.mfcov.tsv",
     params:
         mem = CLUSTER_META["geno2db"]["mem"]
     threads:
