@@ -40,8 +40,8 @@ ssvcf = lapply(ssvcff, function(fn) {
 names(ssvcf) = sapply(ssvcf, function(v) samples(header(v))[2])
 
 ## remove empty
-idx = which(sapply(ssvcf,length) == 0)
-ssvcf = ssvcf[-idx]
+if(any(sapply(ssvcf,length) == 0))
+  ssvcf = ssvcf[-(which(sapply(ssvcf,length) == 0))]
 
 ssvr = lapply(ssvcf, as, "VRanges")
 message("Loaded ", paste(ssvcff, collapse = ", "))

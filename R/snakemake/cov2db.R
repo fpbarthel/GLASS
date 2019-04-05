@@ -4,12 +4,14 @@
 # Author: Kevin J., FP Barthel
 #######################################################
 
+options(scipen=999)
+
 ## Parse snakemake
 if(exists("snakemake")) {
   files = snakemake@input[["metrics"]]
   outfn = snakemake@output[["tsv"]]
 } else {
-  files = list("results/align/wgsmetrics/GLSS-DK-0012-NB-01D-WXS-ABCB18.WgsMetrics.txt", "results/align/wgsmetrics/GLSS-DK-0003-TP-01D-WXS-E43D26.WgsMetrics.txt")
+  files = list.files("results/align/wgsmetrics", recursive = T, pattern = "WgsMetrics.txt", full.names = T) # list("results/align/wgsmetrics/GLSS-DK-0012-NB-01D-WXS-ABCB18.WgsMetrics.txt", "results/align/wgsmetrics/GLSS-DK-0003-TP-01D-WXS-E43D26.WgsMetrics.txt")
 }
 
 # Necessary packages:
@@ -27,7 +29,8 @@ cov_dat = lapply(files, function(f){
   }
   # Truncate the file name to just the sample_id.
   dat = dat %>%
-    mutate(sample_id = gsub(".WgsMetrics.txt", "", basename(f))) # %>%  
+    mutate(sample_id = gsub(".WgsMetrics.txt", "", basename(f)),
+           high_quality_coverage_count = as.numeric(high_quality_coverage_count)) # %>%  
   #    filter(coverage!="0") # Filter out those bases with `0` coverage.
   
   return(dat)
@@ -39,7 +42,7 @@ glass_cov = data.table::rbindlist(cov_dat)
 # Cumulatively add the number of bases at each level:
 glass_samples_cumulative_cov = glass_cov %>% 
   group_by(sample_id) %>% 
-  mutate(cumulative_coverage = rev(cumsum(rev(as.numeric(high_quality_coverage_count))))) %>% 
+  mutate(cumulative_coverage = rev(cumsum(rev(high_quality_coverage_count)))) %>% 
   select(aliquot_barcode = sample_id, coverage, high_quality_coverage_count, cumulative_coverage)
 
 # Write output as one table or a table for each file:
