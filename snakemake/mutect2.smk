@@ -192,8 +192,8 @@ rule callsnv:
 
 rule sscallsnv:
     input:
-        tumor = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode)),
-        normal = lambda wildcards: "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode)),
+        tumor = lambda wildcards: ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getTumor(wildcards.pair_barcode))),
+        normal = lambda wildcards: ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam".format(aliquot_barcode = manifest.getNormal(wildcards.pair_barcode))),
         pon = lambda wildcards: ancient("results/mutect2/pon/{aliquot_batch}.vcf".format(aliquot_batch = manifest.getBatch(manifest.getTumor(wildcards.pair_barcode)))),
         ponidx = lambda wildcards: ancient("results/mutect2/pon/{aliquot_batch}.vcf.idx".format(aliquot_batch = manifest.getBatch(manifest.getTumor(wildcards.pair_barcode)))),
         intervallist = lambda wildcards: ancient("{dir}/{interval}/scattered.interval_list".format(dir = config["mutect2"]["wgs_scatterdir"], interval = wildcards.interval)),

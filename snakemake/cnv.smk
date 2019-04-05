@@ -311,6 +311,25 @@ rule callsegments:
             --output {output} \
             > {log} 2>&1"
 
+
+rule seg2db:
+    input:
+        seg = lambda wildcards: expand("results/cnv/callsegments/{aliquot_barcode}.called.seg", aliquot_barcode = [aliquot for aliquot in manifest.getSelectedAliquots() if manifest.getBatch(aliquot) is not None])
+    output:
+        tsv = "results/cnv/callsegments.merged.tsv"
+    params:
+        mem = CLUSTER_META["seg2db"]["mem"]
+    threads:
+        CLUSTER_META["seg2db"]["ppn"]
+    log:
+        "logs/cnv/seg2db/seg2db.log"
+    benchmark:
+        "benchmarks/cnv/seg2db/seg2db.txt"
+    message:
+        "Merge seg file and convert to TSV for easy database upload"
+    script:
+        "../R/snakemake/seg2db.R"
+
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Plot modeled segments
 ## Use a guassian-kernel binary-segmentation algorithm to group contiguouis copy ratios into segments

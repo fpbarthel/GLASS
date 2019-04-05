@@ -302,9 +302,18 @@
         "ppn" : 2,
         "mem" : 12,
         "walltime" : "48:00:00",
-        "name" : "{rule}.{wildcards.case_barcode}",
-        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
-        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.out",
+        "stderr" : "logs/drmaa/{rule}.err"
+    },
+    "seg2db" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "48:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.out",
+        "stderr" : "logs/drmaa/{rule}.err"
     },
     "batches2db" :
     {

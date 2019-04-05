@@ -60,7 +60,7 @@ include: "snakemake/mutect2-post.smk"
 include: "snakemake/cnv.smk"
 include: "snakemake/sequenza.smk"
 include: "snakemake/optitype.smk"
-#include: "snakemake/cnv-post.smk"
+include: "snakemake/titan.smk"
 #include: "snakemake/pyclone.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -85,7 +85,7 @@ rule cov2db:
     message:
         "Merge coverage file and convert to TSV for easy database upload"
     script:
-        "../R/snakemake/cov2db.R"
+        "R/snakemake/cov2db.R"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Haplotype map creation rule
@@ -179,6 +179,10 @@ rule sequenza:
     input:
         expand("results/sequenza/mergeseqz/{pair_barcode}.small.seqz.gz", pair_barcode = manifest.getSelectedPairs()),
         expand("results/sequenza/seqzR/{pair_barcode}/{pair_barcode}_cellularity.ploidy.txt", pair_barcode = manifest.getSelectedPairs())
+
+rule titancna:
+    input:
+        expand("results/cnv/titanfinal/seg/{pair_barcode}.seg.txt", pair_barcode = manifest.getSelectedPairs())
 
 # rule mutect2post:
 # 	input:
