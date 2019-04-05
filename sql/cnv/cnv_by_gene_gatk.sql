@@ -20,7 +20,7 @@ selected_genes AS
 gene_seg_intersect AS
 (
     SELECT aliquot_barcode, gene_symbol, gs.chrom, (upper(t0.pos * gs.pos) - lower(t0.pos * gs.pos) -1) AS w, 2^log2_copy_ratio::decimal As cr
-    FROM analysis.gatk_seg gs
+    FROM variants.gatk_seg gs
     INNER JOIN selected_genes t0 ON t0.chrom = gs.chrom AND t0.pos && gs.pos
 ),
 gene_sample_call AS
@@ -47,7 +47,7 @@ seg_stats_optimized AS
 		 ELSE NULL
 		END) AS hlamp_thres
 	FROM analysis.gatk_seg_stats gs
-	LEFT JOIN analysis.taylor_aneuploidy gsa ON gsa.aliquot_barcode = gs.aliquot_barcode
+	LEFT JOIN analysis.gatk_aneuploidy gsa ON gsa.aliquot_barcode = gs.aliquot_barcode
 )
 SELECT
 	gc.aliquot_barcode,

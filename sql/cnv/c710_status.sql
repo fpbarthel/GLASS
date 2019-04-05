@@ -10,11 +10,11 @@ t1 AS
 		arm,
 		arm_call,
 		(CASE
-		 WHEN chrom = '7' THEN arm_call = 1
-		 WHEN chrom = '10' THEN arm_call = -1
+		 WHEN chrom = 7 THEN arm_call = 1
+		 WHEN chrom = 10 THEN arm_call = -1
 		 END) AS bool_call
-	FROM analysis.cnv_by_arm_gatk
-	WHERE chrom IN ('7','10')
+	FROM analysis.gatk_cnv_by_arm
+	WHERE chrom IN (7,10)
 ),
 t2 AS
 (
