@@ -60,6 +60,7 @@ include: "snakemake/mutect2-post.smk"
 include: "snakemake/cnv.smk"
 include: "snakemake/sequenza.smk"
 include: "snakemake/optitype.smk"
+include: "snakemake/pvacseq.smk"
 #include: "snakemake/cnv-post.smk"
 #include: "snakemake/pyclone.smk"
 
@@ -169,6 +170,14 @@ rule sequenza:
 rule call_hla:
 	input:
 		expand("results/optitype/HLA_calls/{aliquot_barcode}/{aliquot_barcode}_result.tsv", aliquot_barcode = manifest.getSelectedAliquots())
+		
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Neoantigen rule (pVACseq)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule call_neoag:
+	input:
+		expand("results/pvacseq/neoantigens/{case_barcode}/MHC_Class_I/{case_barcode}.final.tsv", case_barcode = manifest.getSelectedCases())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## SNV rule (VarScan2)
