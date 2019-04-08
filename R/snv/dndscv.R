@@ -6,7 +6,6 @@
 ##   - Section titled: "Plot dNdS-CV by subtype - by fraction
 ##   - Section titled: "Plot dNdS-CV genes by subtype - fraction"
 
-
 library(dndscv)
 library(tidyverse)
 library(DBI)
@@ -18,7 +17,7 @@ library(ggplot2)
 ## DB connection
 ###################
 
-con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
+con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")
 
 res_fraction <- dbGetQuery(con, read_file("sql/dndscv_input_by_fraction.sql"))
 res_sample <- dbGetQuery(con, read_file("sql/dndscv_input_by_sample.sql"))
@@ -28,7 +27,7 @@ res_sample <- dbGetQuery(con, read_file("sql/dndscv_input_by_sample.sql"))
 ###################
 
 dnds_all <- res_fraction %>%
-  select(-subtype, -fraction, -evolution) %>% 
+  select(case_barcode,chrom,pos,ref,mut) %>% 
   distinct() %>%
   dndscv(refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 500)
 
@@ -49,6 +48,50 @@ sitedn_all <- sitednds(dnds_all)
 recursites = sitedn_all$recursites
 print(head(recursites, 20), digits = 3)
 print(recursites[recursites$qval < 0.05, c("gene","aachange","impact","freq","qval")])
+
+###################
+## Run dNdS seperately for private/shared variants and IDH status
+###################
+
+result_list <- lapply(unique(res_fraction$subtype), function(st) {
+  result_list <- lapply(unique(res_fraction$fraction), function(fr) {
+    message("Computing dNdS for ", fr, " and ", st)
+    qres_subset = res_fraction %>% filter(fraction == fr, subtype == st) %>% select(case_barcode,chrom,pos,ref,mut) %>% distinct()
+    dnds_subset = dndscv(qres_subset, refdb = "hg19", outmats = FALSE, max_coding_muts_per_sample = 500)
+    globaldnds <- cbind(fraction = fr, subtype = st, dnds_subset$globaldnds)
+    sel_cv <- cbind(fraction = fr, subtype = st, dnds_subset$sel_cv[1:50,])
+    list(globaldnds, sel_cv)
+  })
+  res1 <- data.table::rbindlist(lapply(result_list,'[[',1))
+  res2 <- data.table::rbindlist(lapply(result_list,'[[',2))
+  list(res1,res2)
+})
+dnds_fraction_global <- data.table::rbindlist(lapply(result_list,'[[',1))
+dnds_fraction_sel_cv <- data.table::rbindlist(lapply(result_list,'[[',2))
+print(dnds_fraction_global)
+print(dnds_fraction_sel_cv)
+
+###################
+## Run dNdS seperately for all primaries and recurrences and IDH status
+###################
+
+result_list <- lapply(na.omit(unique(res_sample$subtype)), function(st) {
+  result_list <- lapply(unique(res_sample$sample_type), function(sampt) {
+    message("Computing dNdS for ", sampt, " and ", st)
+    qres_subset = res_sample %>% filter(sample_type == sampt, subtype == st) %>% select(aliquot_barcode,chrom,pos,ref,mut) %>% distinct()
+    dnds_subset = dndscv(qres_subset, refdb = "hg19", outmats = FALSE, max_coding_muts_per_sample = 500)
+    globaldnds <- cbind(sample_type = sampt, subtype = st, dnds_subset$globaldnds)
+    sel_cv <- cbind(sample_type = sampt, subtype = st, dnds_subset$sel_cv[1:50,])
+    list(globaldnds, sel_cv)
+  })
+  res1 <- data.table::rbindlist(lapply(result_list,'[[',1))
+  res2 <- data.table::rbindlist(lapply(result_list,'[[',2))
+  list(res1,res2)
+})
+dnds_sample_global <- data.table::rbindlist(lapply(result_list,'[[',1))
+dnds_sample_sel_cv <- data.table::rbindlist(lapply(result_list,'[[',2))
+print(dnds_sample_global)
+print(dnds_sample_sel_cv)
 
 ###################
 ## Run dNdS seperately for neutralitytestr groups - by fraction
@@ -130,50 +173,6 @@ print(dnds_neutralitytestr_sample_global)
 #print(dnds_neutralitytestr_sample_sel_cv)
 
 ###################
-## Run dNdS seperately for private/shared variants and IDH status
-###################
-
-result_list <- lapply(unique(res_fraction$subtype), function(st) {
-  result_list <- lapply(unique(res_fraction$fraction), function(fr) {
-    message("Computing dNdS for ", fr, " and ", st)
-    qres_subset = res_fraction %>% filter(fraction == fr, subtype == st) %>% select(-subtype, -fraction, -evolution) %>% distinct()
-    dnds_subset = dndscv(qres_subset, refdb = "hg19", outmats = FALSE, max_coding_muts_per_sample = 500)
-    globaldnds <- cbind(fraction = fr, subtype = st, dnds_subset$globaldnds)
-    sel_cv <- cbind(fraction = fr, subtype = st, dnds_subset$sel_cv[1:50,])
-    list(globaldnds, sel_cv)
-  })
-  res1 <- data.table::rbindlist(lapply(result_list,'[[',1))
-  res2 <- data.table::rbindlist(lapply(result_list,'[[',2))
-  list(res1,res2)
-})
-dnds_fraction_global <- data.table::rbindlist(lapply(result_list,'[[',1))
-dnds_fraction_sel_cv <- data.table::rbindlist(lapply(result_list,'[[',2))
-print(dnds_fraction_global)
-print(dnds_fraction_sel_cv)
-
-###################
-## Run dNdS seperately for all primaries and recurrences and IDH status
-###################
-
-result_list <- lapply(unique(res_sample$subtype), function(st) {
-  result_list <- lapply(unique(res_sample$sample_type), function(sampt) {
-    message("Computing dNdS for ", sampt, " and ", st)
-    qres_subset = res_sample %>% filter(sample_type == sampt, subtype == st) %>% select(-subtype, -sample_type, -evolution) %>% distinct()
-    dnds_subset = dndscv(qres_subset, refdb = "hg19", outmats = FALSE, max_coding_muts_per_sample = 500)
-    globaldnds <- cbind(sample_type = sampt, subtype = st, dnds_subset$globaldnds)
-    sel_cv <- cbind(sample_type = sampt, subtype = st, dnds_subset$sel_cv[1:50,])
-    list(globaldnds, sel_cv)
-  })
-  res1 <- data.table::rbindlist(lapply(result_list,'[[',1))
-  res2 <- data.table::rbindlist(lapply(result_list,'[[',2))
-  list(res1,res2)
-})
-dnds_sample_global <- data.table::rbindlist(lapply(result_list,'[[',1))
-dnds_sample_sel_cv <- data.table::rbindlist(lapply(result_list,'[[',2))
-print(dnds_sample_global)
-print(dnds_sample_sel_cv)
-
-###################
 ## Cleanup
 ###################
 
@@ -224,8 +223,7 @@ dnds_neutralitytestr_sample_global %>%
 
 dnds_fraction_global %>%
   filter(name == 'wall') %>%
-  mutate(subtype = fct_recode(subtype, "IDHmut-codel" = "IDHmut_codel", "IDHmut-noncodel" = "IDHmut_noncodel", "IDHwt" = "IDHwt_noncodel"),
-         #name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
+  mutate(#name = fct_recode(name, "Missense" = "wmis", "Truncating" = "wtru", "All" = "wall"),
          fraction = factor(fraction, levels = c("P", "S", "R")),
          fraction = fct_recode(fraction, "Primary only" = "P", "Shared" = "S", "Recurrence only" = "R")) %>%
   ggplot(aes(x = subtype, y = mle, ymin = cilow, ymax = cihigh, color = fraction)) +
@@ -259,8 +257,7 @@ dnds_sample_global %>%
 ###################
 
 dat <- dnds_fraction_sel_cv %>%
-  mutate(subtype = fct_recode(subtype, "IDHmut-codel" = "IDHmut_codel", "IDHmut-noncodel" = "IDHmut_noncodel", "IDHwt" = "IDHwt_noncodel"),
-         fraction = factor(fraction, levels = c("P", "S", "R"))) %>%
+  mutate(fraction = factor(fraction, levels = c("P", "S", "R"))) %>%
   complete(gene_name,fraction,subtype, fill = list(qglobal_cv=1)) %>%
   group_by(fraction,subtype) %>%
   arrange(qglobal_cv, pglobal_cv) %>%

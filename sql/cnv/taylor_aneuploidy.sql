@@ -23,8 +23,8 @@ Additionally determines weighted mean and sd of continuous segments so these val
 	- This metric can be used to threshold deep amplifications and deep deletions
 ---
 This code is the source for multiple tables:
-o The `call_arm` table described here is the source for `cnv_by_arm_gatk`
-o The `call_aliquot` table described here summarizes the arm level table and is saved as `taylor_aneuploidy`
+o The `cnv_by_arm` table described here is the source for `gatk_cnv_by_arm`
+o The `aneuploidy` table described here summarizes the arm level table and is saved as `gatk_aneuploidy`
 ---
 */
 WITH
@@ -42,7 +42,7 @@ arrange_segments_by_arm AS
 		row_number() OVER w2 - row_number() OVER w3 AS grp
     FROM analysis.gatk_seg_call gs
 	INNER JOIN ref.chr_arms ca ON ca.chrom = gs.chrom AND ca.pos && gs.pos
-	WHERE gs.chrom NOT IN ('X','Y') AND ca.arm <> '21p'
+	WHERE gs.chrom NOT IN (23,24) AND ca.arm <> '21p'
 	WINDOW w AS (PARTITION BY gs.aliquot_barcode, ca.arm), w2 AS (PARTITION BY gs.aliquot_barcode, ca.arm ORDER BY ca.pos * gs.pos), w3 AS (PARTITION BY gs.aliquot_barcode, ca.arm, gs.cnv_call ORDER BY ca.pos * gs.pos)
 ),
 unfiltered_join_adjacent_segments AS
@@ -56,7 +56,7 @@ unfiltered_join_adjacent_segments AS
 		cnv,
 		COUNT(*) AS num_seg,
 		sum(seg_size * cr) / sum(seg_size) AS wcr,
-		(CASE WHEN COUNT(*) > 1 THEN sqrt( (sum(seg_size * cr^2) - (sum(seg_size * cr)^2)/sum(seg_size)) / (sum(seg_size)-1) ) ELSE 0 END) AS wsd,
+		(CASE WHEN COUNT(*) > 1 AND sum(t1.seg_size * (t1.cr ^ 2::numeric)) > ((sum(t1.seg_size * t1.cr) ^ 2::numeric) / sum(t1.seg_size)) THEN sqrt( (sum(seg_size * cr^2) - (sum(seg_size * cr)^2)/sum(seg_size)) / (sum(seg_size)-1) ) ELSE 0 END) AS wsd,
 		sum(seg_size) AS seg_size,
 		min(arm_size) AS arm_size
 	FROM arrange_segments_by_arm t1
@@ -75,7 +75,7 @@ filtered_join_adjacent_segments AS
 		t1.cnv,
 		COUNT(*) AS fnum_seg,
 		sum(t1.seg_size * cr) / sum(t1.seg_size) AS fwcr,
-		(CASE WHEN COUNT(*) > 1 THEN sqrt( (sum(t1.seg_size * cr^2) - (sum(t1.seg_size * cr)^2)/sum(t1.seg_size)) / (sum(t1.seg_size)-1) ) ELSE 0 END) AS fwsd,
+		(CASE WHEN COUNT(*) > 1 AND sum(t1.seg_size * (t1.cr ^ 2::numeric)) > ((sum(t1.seg_size * t1.cr) ^ 2::numeric) / sum(t1.seg_size)) THEN sqrt( (sum(t1.seg_size * cr^2) - (sum(t1.seg_size * cr)^2)/sum(t1.seg_size)) / (sum(t1.seg_size)-1) ) ELSE 0 END) AS fwsd,
 		sum(t1.seg_size) AS seg_size,
 		min(t1.arm_size) AS arm_size
 	FROM arrange_segments_by_arm t1
@@ -108,7 +108,7 @@ sort_by_longest_segment AS
 	LEFT JOIN filtered_join_adjacent_segments fss ON fss.aliquot_barcode = t2.aliquot_barcode AND fss.chrom = t2.chrom AND fss.arm = t2.arm AND fss.grp = t2.grp AND fss.cnv = t2.cnv
 	WINDOW w AS (PARTITION BY t2.aliquot_barcode, t2.chrom, t2.arm ORDER BY t2.seg_size/t2.arm_size DESC)
 ),
-call_arm AS
+cnv_by_arm AS
 (
 	SELECT
 		aliquot_barcode,
@@ -125,7 +125,7 @@ call_arm AS
 	FROM sort_by_longest_segment t3
 	WHERE partion_id = 1
 ),
-call_aliquot AS
+taylor_aneuploidy AS
 (
 	SELECT
 		aliquot_barcode,
@@ -139,11 +139,26 @@ call_aliquot AS
 		first_value(arm_cr_wmean) OVER w3 AS max_gain_arm_wmean,
 		first_value(arm_cr_wsd) OVER w3 AS max_gain_arm_wsd,
 		row_number() OVER w AS rn
-	FROM call_arm
+	FROM cnv_by_arm
 	WINDOW
 		w  AS (PARTITION BY aliquot_barcode),
 		w2 AS (PARTITION BY aliquot_barcode ORDER BY arm_cr_wmean ASC NULLS LAST),
 		w3 AS (PARTITION BY aliquot_barcode ORDER BY arm_cr_wmean DESC NULLS LAST)
+),
+prop_aneuploidy AS
+(
+	SELECT
+		gs.aliquot_barcode,
+		sum(upper(gs.pos) - lower(gs.pos) - 1) AS seg_size,
+		sum(CASE WHEN gs.cnv_call = '0' THEN upper(gs.pos) - lower(gs.pos) - 1 ELSE 0 END) AS het_size
+	FROM analysis.gatk_seg_call gs
+	WHERE gs.chrom NOT IN (23,24)
+	GROUP BY 1
 )
-SELECT aliquot_barcode,aneuploidy_score,aneuploidy_amp_score,aneuploidy_del_score,max_loss_arm_n,max_loss_arm_wmean,max_loss_arm_wsd,max_gain_arm_n,max_gain_arm_wmean,max_gain_arm_wsd FROM call_aliquot WHERE rn = 1
+--SELECT * FROM cnv_by_arm
+--SELECT aliquot_barcode,aneuploidy_score,aneuploidy_amp_score,aneuploidy_del_score,max_loss_arm_n,max_loss_arm_wmean,max_loss_arm_wsd,max_gain_arm_n,max_gain_arm_wmean,max_gain_arm_wsd FROM aneuploidy WHERE rn = 1
 --SELECT * FROM sort_by_longest_segment
+SELECT ta.aliquot_barcode,round(1.0 - pa.het_size::numeric / pa.seg_size::numeric, 4) AS prop_aneuploidy, aneuploidy_score,aneuploidy_amp_score,aneuploidy_del_score,max_loss_arm_n,max_loss_arm_wmean,max_loss_arm_wsd,max_gain_arm_n,max_gain_arm_wmean,max_gain_arm_wsd
+FROM taylor_aneuploidy ta
+LEFT JOIN prop_aneuploidy pa ON pa.aliquot_barcode = ta.aliquot_barcode
+WHERE rn = 1

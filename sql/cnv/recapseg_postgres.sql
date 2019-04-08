@@ -35,7 +35,7 @@ unfiltered_seg_wmean_wsd AS
 		COUNT(*) AS num_seg,
 		(sum((upper(pos) - lower(pos) -1) * 2^log2_copy_ratio) / sum(upper(pos) - lower(pos) -1) )::decimal AS wmean,
 		(sqrt((sum((upper(pos) - lower(pos) -1) * (2^log2_copy_ratio)^2) - (sum((upper(pos) - lower(pos) -1) * 2^log2_copy_ratio)^2) / sum(upper(pos) - lower(pos) -1)) / (sum(upper(pos) - lower(pos) -1) -1)))::decimal AS wsd
-	FROM analysis.gatk_seg
+	FROM variants.gatk_seg
 	WHERE
 		2^log2_copy_ratio >= 0.9 AND
 		2^log2_copy_ratio <= 1.1
@@ -51,7 +51,7 @@ filtered_seg_wmean_wsd AS
 		COUNT(*) AS fnum_seg,
 		(sum((upper(pos) - lower(pos) -1) * 2^log2_copy_ratio) / sum(upper(pos) - lower(pos) -1))::decimal  AS fwmean,
 		(sqrt((sum((upper(pos) - lower(pos) -1)*(2^log2_copy_ratio)^2) -(sum((upper(pos) - lower(pos) -1)*2^log2_copy_ratio)^2)/sum(upper(pos) - lower(pos) -1))/(sum(upper(pos) - lower(pos) -1) -1)))::decimal AS fwsd
-	FROM analysis.gatk_seg gs
+	FROM variants.gatk_seg gs
 	INNER JOIN unfiltered_seg_wmean_wsd us ON us.aliquot_barcode = gs.aliquot_barcode
 	WHERE
 		2^log2_copy_ratio >= 0.9 AND
@@ -73,7 +73,7 @@ call_cnv AS
 		 WHEN (2^log2_copy_ratio - fwmean) > 2.0 * fwsd THEN 1
 		 ELSE 0
 		 END) cnv_call
-	FROM analysis.gatk_seg gs
+	FROM variants.gatk_seg gs
 	INNER JOIN filtered_seg_wmean_wsd fis ON fis.aliquot_barcode = gs.aliquot_barcode
 ),
 unfiltered_loss_wmean_wsd AS
