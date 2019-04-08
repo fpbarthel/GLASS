@@ -26,7 +26,7 @@
     "revertsam" :
     {
         "ppn" : 4,
-        "mem" : 48,
+        "mem" : 24,
         "walltime" : "72:00:00"
     },
     "bam2ubam" :
@@ -213,16 +213,19 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00"
+        "walltime" : "72:00:00",
+        "name" : "{rule}.{wildcards.pair_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
     },
     "selectvariants" :
     {
         "ppn" : 2,
         "mem" : 12,
         "walltime" : "12:00:00",
-        "name" : "{rule}.{wildcards.case_barcode}",
-        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
-        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
+        "name" : "{rule}.{wildcards.pair_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
     },
     "ssselectvariants" :
     {
@@ -292,10 +295,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "48:00:00",
-        "name" : "{rule}.{wildcards.case_barcode}",
-        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
-        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
+        "walltime" : "48:00:00"
     },
     "cov2db" :
     {
@@ -1078,6 +1078,54 @@
         "name" : "{rule}.{wildcards.aliquot_barcode}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.aliquot_barcode}.err"
+    },
+    "gunzip" :
+    {
+        "ppn" : 4,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.case_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
+    },
+    "vcf_pass" :
+    {
+        "ppn" : 4,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.case_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
+    },
+    "vep_plugins" :
+    {
+        "ppn" : 8,
+        "walltime" : "72:00:00",
+        "name" : "{rule}.{wildcards.case_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
+    },
+    "vcf_extract" :
+    {
+        "ppn" : 4,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.case_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
+    },
+    "pvacseq" :
+    {
+        "ppn" : 8,
+        "mem" : 64,
+        "walltime" : "72:00:00",
+        "name" : "{rule}.{wildcards.case_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
+    },
+    "mergepvac" :
+    {
+        "ppn" : 4,
+        "walltime" : "24:00:00",
+        "name" : "{rule}.{wildcards.case_barcode}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
     }
-    
 }
