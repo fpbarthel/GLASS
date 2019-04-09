@@ -1,6 +1,6 @@
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Snakefile for GLASS-WG pipeline
-## Authors: Floris Barthel, Samir Amin
+## Authors: Floris Barthel, Samir Amin, Frederick Varn
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 import os

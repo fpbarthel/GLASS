@@ -159,6 +159,6 @@ rule mergepvac:
         "Sample: {wildcards.case_barcode}"
     shell:
     	"""
-		cat {input} | head -1 > {output}
-		tail -n+2 -q {input} >> {output}
-        """
+    	set +o pipefail; cat {input} | head -1 > {output}
+    	tail -n+2 -q {input} >> {output} 2>{log}
+    	"""
