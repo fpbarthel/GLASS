@@ -1,6 +1,6 @@
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Snakefile for GLASS-WG pipeline
-## Authors: Floris Barthel, Samir Amin
+## Authors: Floris Barthel, Samir Amin, Frederick Varn
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 import os
@@ -62,32 +62,7 @@ include: "snakemake/sequenza.smk"
 include: "snakemake/optitype.smk"
 include: "snakemake/pvacseq.smk"
 #include: "snakemake/cnv-post.smk"
-include: "snakemake/titan.smk"
 #include: "snakemake/pyclone.smk"
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Upload coverage to database
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-
-rule cov2db:
-    input:
-        metrics = lambda wildcards: expand("results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt", aliquot_barcode = manifest.getSelectedAliquots())
-    output:
-        tsv = "results/align/wgsmetrics.merged.tsv"
-    params:
-        mem = CLUSTER_META["cov2db"]["mem"]
-    threads:
-        CLUSTER_META["cov2db"]["ppn"]
-    #conda:
-    #    "../envs/r.yaml"
-    log:
-        "logs/align/cov2db/cov2db.log"
-    benchmark:
-        "benchmarks/align/cov2db/cov2db.txt"
-    message:
-        "Merge coverage file and convert to TSV for easy database upload"
-    script:
-        "R/snakemake/cov2db.R"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Haplotype map creation rule
@@ -112,35 +87,8 @@ rule align:
 
 rule missingmetrics:
     input:
-        ancient(expand("results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt", aliquot_barcode = manifest.getSelectedAliquots()))#,
-        #expand("results/align/validatebam/{aliquot_barcode}.ValidateSamFile.txt", aliquot_barcode = manifest.getSelectedAliquots())
-
-rule wgsmetrics:
-    input:
-        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
-    output:
-        "results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt"
-    params:
-        mem = CLUSTER_META["wgsmetrics"]["mem"],
-        walltime = CLUSTER_META["wgsmetrics"]["walltime"]
-    threads:
-        CLUSTER_META["wgsmetrics"]["ppn"]
-    conda:
-        "envs/align.yaml"
-    log:
-        "logs/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.log"
-    benchmark:
-        "benchmarks/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt"
-    message:
-        "Computing WGS Metrics\n"
-        "Sample: {wildcards.aliquot_barcode}"
-    shell:
-        "gatk --java-options -Xmx{params.mem}g CollectWgsMetrics \
-            -R {config[reference_fasta]} \
-            -I {input} \
-            -O {output} \
-            --USE_FAST_ALGORITHM true \
-            > {log} 2>&1"
+        expand("results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/align/validatebam/{aliquot_barcode}.ValidateSamFile.txt", aliquot_barcode = manifest.getSelectedAliquots())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download only rule
@@ -164,16 +112,13 @@ rule qc:
 
 rule mutect2:
     input:
-        expand("results/mutect2/m2filter/{case_barcode}.filtered.vcf.gz", case_barcode = manifest.getSelectedCases()),
-        expand("results/mutect2/ssm2filter/{pair_barcode}.filtered.vcf.gz", pair_barcode = manifest.getSelectedPairs())
-
-rule ssmutect2:
-    input:
-        expand("results/mutect2/ssm2filter/{pair_barcode}.filtered.vcf.gz", pair_barcode = manifest.getSelectedPairs())
+        expand("results/mutect2/m2filter/{case_barcode}.filtered.vcf.gz", case_barcode = manifest.getSelectedCases())
+        #expand("results/mutect2/vcf2maf/{pair_barcode}.final.maf", pair_barcode = manifest.getSelectedPairs())#,
+    	#expand("results/mutect2/final/{pair_barcode}.final.vcf", pair_barcode = manifest.getSelectedPairs())
 
 rule m2db:
     input:
-        #"results/mutect2/consensusvcf/consensus.normalized.sorted.funcotated.tsv",
+        "results/mutect2/consensusvcf/consensus.normalized.sorted.funcotated.tsv",
         expand("results/mutect2/geno2db/{case_barcode}.info.tsv", case_barcode = manifest.getSelectedCases()),
         expand("results/mutect2/geno2db/{case_barcode}.geno.tsv", case_barcode = manifest.getSelectedCases())
 
@@ -181,10 +126,6 @@ rule sequenza:
     input:
         expand("results/sequenza/mergeseqz/{pair_barcode}.small.seqz.gz", pair_barcode = manifest.getSelectedPairs()),
         expand("results/sequenza/seqzR/{pair_barcode}/{pair_barcode}_cellularity.ploidy.txt", pair_barcode = manifest.getSelectedPairs())
-
-rule titancna:
-    input:
-        expand("results/cnv/titanfinal/seg/{pair_barcode}.seg.txt", pair_barcode = manifest.getSelectedPairs())
 
 # rule mutect2post:
 # 	input:
