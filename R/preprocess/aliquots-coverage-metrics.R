@@ -5,7 +5,7 @@
 #######################################################
 
 # Directory for GLASS analysis.
-mybasedir = '/Volumes/fastscratch/verhaak-lab/GLASS-WG'
+mybasedir = '/Volumes/verhaak-lab/GLASS-analysis/'
 datadir  = 'results/align/wgsmetrics/'
 pattern   = '.WgsMetrics.txt$'
 
@@ -51,10 +51,10 @@ glass_samples_cumulative_cov = glass_cov %>%
   group_by(sample_id) %>% 
   mutate(cumulative_coverage = rev(cumsum(rev(high_quality_coverage_count)))) %>% 
   # Make sure colnames are formatting right.
-  select(aliquot_barcode = sample_id, coverage, high_quality_coverage_count, cumulative_coverage) %>% 
-  filter(!grepl("GLSS-CU-00", aliquot_barcode))
+  select(aliquot_barcode = sample_id, coverage, high_quality_coverage_count, cumulative_coverage) 
+  
 
-# Total number should be 885.
+# Total number should be 1166 (2019.03.08).
 n_distinct(glass_samples_cumulative_cov$aliquot_barcode)
 
 # Write output as one table or a table for each file:
