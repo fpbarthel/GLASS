@@ -5,7 +5,7 @@ rule pyclone_tsv:
     PyClone TSV rule
     """
     output:
-        tsv = "results/pyclone/mytsv/{aliquot_barcode}.tsv"
+        tsv = "results/pyclone/tsv/{aliquot_barcode}.tsv"
     params:
         mem = CLUSTER_META["pyclone_tsv"]["mem"]
     threads:
@@ -20,14 +20,14 @@ rule pyclone_tsv:
         "Create PyClone input TSV file\n"
         "Aliquot: {wildcards.aliquot_barcode}"
     script:
-        "../R/snv/pyclone_create_tsv.R"
+        "../R/snakemake/pyclone_create_tsv.R"
 
 rule pyclone_setup:
     """
     PyClone setup
     """
     input:
-        lambda wildcards: expand("results/pyclone/mytsv/{barcode}.tsv", barcode = manifest.getPyCloneAliquots(wildcards.case_barcode, wildcards.analysis_type))
+        lambda wildcards: expand("results/pyclone/tsv/{barcode}.tsv", barcode = manifest.getPyCloneAliquots(wildcards.case_barcode, wildcards.analysis_type))
     output:
         "results/pyclone/run/{case_barcode}-{analysis_type}/config.yaml"
     params:
@@ -121,7 +121,7 @@ rule pyclone_plot_loci:
             --burnin 1000 \
             --thin 1 \
             --min_cluster_size 2 \
-            --max_clusters 6 \
+            --max_clusters 12 \
             > {log} 2>&1"
 
 rule pyclone_plot_clusters:
@@ -157,7 +157,7 @@ rule pyclone_plot_clusters:
             --burnin 1000 \
             --thin 1 \
             --min_cluster_size 2 \
-            --max_clusters 6 \
+            --max_clusters 12 \
             > {log} 2>&1"
 
 rule pyclone_build_table:
@@ -190,7 +190,7 @@ rule pyclone_build_table:
             --config_file {input.conf} \
             --out_file {output} \
             --table_type {wildcards.table_type} \
-            --max_clusters 6 \
+            --max_clusters 12 \
             --burnin 1000 \
             --thin 1 \
             > {log} 2>&1"
