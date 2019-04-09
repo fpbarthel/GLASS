@@ -587,4 +587,38 @@ rule fastqc_bam:
             {input} \
             > {log} 2>&1"
 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Get genic coverage given a BAM file
+## URL: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule gencode_coverage:
+    input:
+        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
+    output:
+        "results/align/gencode-coverage/{aliquot_barcode}.gencode-coverage.tsv"
+    params:
+        mem = CLUSTER_META["gencode_coverage"]["mem"]
+    conda:
+        "../envs/align.yaml"
+    threads:
+        CLUSTER_META["gencode_coverage"]["ppn"]
+    log:
+        "logs/align/gencode-coverage/{aliquot_barcode}.log"
+    benchmark:
+        "benchmarks/align/gencode-coverage/{aliquot_barcode}.txt"
+    message:
+        "Computing coverage using flattened gencode GTF\n"
+        "Sample: {wildcards.aliquot_barcode}"
+    shell:"""
+        module load samtools;
+        module load bedtools;
+        samtools view -q 10 -b {input} | 
+            bedtools coverage -a {config[gencode_gtf_flat]} -b stdin -d | 
+            bedtools groupby -i stdin -g 1,2,3,4,5 -c 7 -o sum | 
+            bedtools groupby -i stdin -g 5 -c 4,6 -o sum,sum
+            1> {output}
+            2> {log}
+        """
+
 ## END ##

@@ -110,37 +110,41 @@ rule align:
           for aliquot_barcode, readgroups in manifest.getSelectedReadgroupsByAliquot().items()
           for readgroup in readgroups]
 
-rule missingmetrics:
+rule gencode:
     input:
-        ancient(expand("results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt", aliquot_barcode = manifest.getSelectedAliquots()))#,
-        #expand("results/align/validatebam/{aliquot_barcode}.ValidateSamFile.txt", aliquot_barcode = manifest.getSelectedAliquots())
+        expand("results/align/gencode-coverage/{aliquot_barcode}.gencode-coverage.tsv", aliquot_barcode = [f for f in manifest.getSelectedAliquots() if manifest.isExome(f)])
 
-rule wgsmetrics:
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Get genic coverage given a BAM file
+## URL: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule gencode_coverage:
     input:
-        ancient("results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam")
+        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
     output:
-        "results/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt"
+        "results/align/gencode-coverage/{aliquot_barcode}.gencode-coverage.tsv"
     params:
-        mem = CLUSTER_META["wgsmetrics"]["mem"],
-        walltime = CLUSTER_META["wgsmetrics"]["walltime"]
+        mem = CLUSTER_META["gencode_coverage"]["mem"]
+    #conda:
+    #    "envs/align.yaml"
     threads:
-        CLUSTER_META["wgsmetrics"]["ppn"]
-    conda:
-        "envs/align.yaml"
+        CLUSTER_META["gencode_coverage"]["ppn"]
     log:
-        "logs/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.log"
+        "logs/align/gencode-coverage/{aliquot_barcode}.log"
     benchmark:
-        "benchmarks/align/wgsmetrics/{aliquot_barcode}.WgsMetrics.txt"
+        "benchmarks/align/gencode-coverage/{aliquot_barcode}.txt"
     message:
-        "Computing WGS Metrics\n"
+        "Computing coverage using flattened gencode GTF\n"
         "Sample: {wildcards.aliquot_barcode}"
     shell:
-        "gatk --java-options -Xmx{params.mem}g CollectWgsMetrics \
-            -R {config[reference_fasta]} \
-            -I {input} \
-            -O {output} \
-            --USE_FAST_ALGORITHM true \
-            > {log} 2>&1"
+        "set +o pipefail; /opt/software/helix/samtools/1.8/bin/samtools view -q 10 -b {input} | \
+            /opt/software/helix/BEDtools/2.27.0/bin/bedtools coverage -a {config[gencode_gtf_flat]} -b stdin -d -sorted -g {config[bedtools_genome]} | \
+            /opt/software/helix/BEDtools/2.27.0/bin/bedtools groupby -i stdin -g 1,2,3,4,5 -c 7 -o sum | \
+            sort -k5,5 | \
+            /opt/software/helix/BEDtools/2.27.0/bin/bedtools groupby -i stdin -g 5 -c 4,6 -o sum,sum | \
+            awk -F\"[+\\t]\" 'BEGIN {{OFS=\"\\t\"}}{{for(i=1;i<(NF-1);i++){{split($i,g,\".\"); print g[1],$(NF-1),$NF}}}}' \
+            > {output} 2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download only rule
