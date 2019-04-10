@@ -107,11 +107,11 @@ rule vcf_extract:
 
 rule pvacseq:
     input:
-        "results/pvacseq/vep/{case_barcode}.filtered.passed.vep.onesamp.vcf"
+        vcf = "results/pvacseq/vep/{case_barcode}.filtered.passed.vep.onesamp.vcf",
+        hla = lambda wildcards: expand("results/optitype/HLA_calls/{normals}/{normals}_result.tsv", normals = manifest.getNormalByCase(wildcards.case_barcode))
     output:
         "results/pvacseq/neoag_frag/{case_barcode}_{epitope_lengths}/MHC_Class_I/{case_barcode}_{epitope_lengths}.final.tsv"
     params:
-    	normal				= lambda wildcards: manifest.getNormalByCase(wildcards.case_barcode)[0],
     	sample_name 		= "{case_barcode}",
         algorithm 			= "NetMHCpan",
     	output_dir 			= "results/pvacseq/neoag_frag/{case_barcode}_{epitope_lengths}/",
@@ -129,9 +129,9 @@ rule pvacseq:
     shell:
     	"""
     	module load python/2.7.13
-    	allele=`cut -f2- results/optitype/HLA_calls/{params.normal}/{params.normal}_result.tsv | rev | cut -f3- | rev | sed -n '2p' | awk '{{for(i=1;i<=NF;i++)sub("^", "HLA-", $i)}}; 1' | sed 'y/ /,/'`
+    	allele=`tail -n+2 -q {input.hla} | cat | rev | sort -k2r | cut -f3- | rev | cut -f2- | head -1 | awk '{{for(i=1;i<=NF;i++)sub("^", "HLA-", $i)}}; 1' | sed 'y/ /,/'`
 		(pvacseq run \
-		{input} \
+		{input.vcf} \
 		{params.sample_name}_{wildcards.epitope_lengths} \
 		$allele \
 		{params.algorithm} \
