@@ -63,7 +63,7 @@ include: "snakemake/optitype.smk"
 include: "snakemake/pvacseq.smk"
 #include: "snakemake/cnv-post.smk"
 include: "snakemake/titan.smk"
-#include: "snakemake/pyclone.smk"
+include: "snakemake/pyclone.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Upload coverage to database
@@ -112,7 +112,7 @@ rule align:
 
 rule gencode:
     input:
-        expand("results/align/gencode-coverage/{aliquot_barcode}.gencode-coverage.tsv", aliquot_barcode = [f for f in manifest.getSelectedAliquots() if manifest.isExome(f)])
+        expand("results/align/gencode-coverage/{aliquot_barcode}.gencode-coverage.tsv", aliquot_barcode = manifest.getSelectedAliquots())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Get genic coverage given a BAM file
@@ -276,9 +276,9 @@ rule telseq:
 
 rule pyclone:
     input:
-        lambda wildcards: expand("results/pyclone/run/{pyclone_short_name}/plots/loci/{plot_type}.pdf", pyclone_short_name = manifest.getPyCloneShortNames(), plot_type = ['density','parallel_coordinates','scatter','similarity_matrix','vaf_parallel_coordinates','vaf_scatter']),
-        lambda wildcards: expand("results/pyclone/run/{pyclone_short_name}/plots/clusters/{plot_type}.pdf", pyclone_short_name = manifest.getPyCloneShortNames(), plot_type = ['density','parallel_coordinates','scatter']),
-        lambda wildcards: expand("results/pyclone/run/{pyclone_short_name}/tables/{table_type}.tsv", pyclone_short_name = manifest.getPyCloneShortNames(), table_type = ['cluster','loci'])
+        lambda wildcards: expand("results/pyclone/run/{pyclone_short_name}/plots/loci/{plot_type}.pdf", pyclone_short_name = manifest.getPyCloneCases(), plot_type = ['density','parallel_coordinates','scatter','similarity_matrix','vaf_parallel_coordinates','vaf_scatter']),
+        lambda wildcards: expand("results/pyclone/run/{pyclone_short_name}/plots/clusters/{plot_type}.pdf", pyclone_short_name = manifest.getPyCloneCases(), plot_type = ['density','parallel_coordinates','scatter']),
+        lambda wildcards: expand("results/pyclone/run/{pyclone_short_name}/tables/{table_type}.tsv", pyclone_short_name = manifest.getPyCloneCases(), table_type = ['cluster','loci'])
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Fingerprinting pipeline

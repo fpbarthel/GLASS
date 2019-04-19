@@ -27,25 +27,24 @@ rule pyclone_setup:
     PyClone setup
     """
     input:
-        lambda wildcards: expand("results/pyclone/tsv/{barcode}.tsv", barcode = manifest.getPyCloneAliquots(wildcards.case_barcode, wildcards.analysis_type))
+        lambda wildcards: expand("results/pyclone/tsv/{barcode}.tsv", barcode = manifest.getPyCloneAliquots(wildcards.case_barcode))
     output:
-        "results/pyclone/run/{case_barcode}-{analysis_type}/config.yaml"
+        "results/pyclone/run/{case_barcode}/config.yaml"
     params:
         mem = CLUSTER_META["pyclone_setup"]["mem"],
-        samples = lambda wildcards: " ".join(manifest.getPyCloneAliquots(wildcards.case_barcode, wildcards.analysis_type)),
-        purity = lambda wildcards: " ".join(manifest.getPyClonePurity(wildcards.case_barcode, wildcards.analysis_type)),
-        workdir = "results/pyclone/run/{case_barcode}-{analysis_type}"
+        samples = lambda wildcards: " ".join(manifest.getPyCloneAliquots(wildcards.case_barcode)),
+        purity = lambda wildcards: " ".join(manifest.getPyClonePurity(wildcards.case_barcode)),
+        workdir = "results/pyclone/run/{case_barcode}"
     threads:
         CLUSTER_META["pyclone_setup"]["ppn"]
     conda:
         "../envs/pyclone.yaml"
     log:
-        "logs/pyclone/setup/{case_barcode}.{analysis_type}.log"
+        "logs/pyclone/setup/{case_barcode}.log"
     benchmark:
-        "benchmarks/pyclone/setup/{case_barcode}.{analysis_type}.txt"
+        "benchmarks/pyclone/setup/{case_barcode}.txt"
     message:
         "Setup PyClone\n"
-        "Analysis type: {wildcards.analysis_type}\n"
         "Case: {wildcards.case_barcode}"
     shell:
         "PyClone setup_analysis \
@@ -64,10 +63,10 @@ rule pyclone_run:
     PyClone run
     """
     input:
-        "results/pyclone/run/{case_barcode}-{analysis_type}/config.yaml"
+        "results/pyclone/run/{case_barcode}/config.yaml"
     output:
-        "results/pyclone/run/{case_barcode}-{analysis_type}/trace/alpha.tsv.bz2",
-        "results/pyclone/run/{case_barcode}-{analysis_type}/trace/labels.tsv.bz2"
+        "results/pyclone/run/{case_barcode}/trace/alpha.tsv.bz2",
+        "results/pyclone/run/{case_barcode}/trace/labels.tsv.bz2"
     params:
         mem = CLUSTER_META["pyclone_run"]["mem"]
     threads:
@@ -75,12 +74,11 @@ rule pyclone_run:
     conda:
         "../envs/pyclone.yaml"
     log:
-        "logs/pyclone/run/{case_barcode}.{analysis_type}.log"
+        "logs/pyclone/run/{case_barcode}.log"
     benchmark:
-        "benchmarks/pyclone/run/{case_barcode}.{analysis_type}.txt"
+        "benchmarks/pyclone/run/{case_barcode}.txt"
     message:
         "Run PyClone\n"
-        "Analysis type: {wildcards.analysis_type}\n"
         "Case: {wildcards.case_barcode}"
     shell:
         "PyClone run_analysis \
@@ -93,11 +91,11 @@ rule pyclone_plot_loci:
     PyClone plot loci
     """
     input:
-        conf = "results/pyclone/run/{case_barcode}-{analysis_type}/config.yaml",
-        alpha = "results/pyclone/run/{case_barcode}-{analysis_type}/trace/alpha.tsv.bz2",
-        levels = "results/pyclone/run/{case_barcode}-{analysis_type}/trace/labels.tsv.bz2"
+        conf = "results/pyclone/run/{case_barcode}/config.yaml",
+        alpha = "results/pyclone/run/{case_barcode}/trace/alpha.tsv.bz2",
+        levels = "results/pyclone/run/{case_barcode}/trace/labels.tsv.bz2"
     output:
-        "results/pyclone/run/{case_barcode}-{analysis_type}/plots/loci/{plot_type}.pdf"
+        "results/pyclone/run/{case_barcode}/plots/loci/{plot_type}.pdf"
     params:
         mem = CLUSTER_META["pyclone_plot_loci"]["mem"]
     threads:
@@ -105,12 +103,11 @@ rule pyclone_plot_loci:
     conda:
         "../envs/pyclone.yaml"
     log:
-        "logs/pyclone/plot_loci/{case_barcode}.{analysis_type}.{plot_type}.log"
+        "logs/pyclone/plot_loci/{case_barcode}.{plot_type}.log"
     benchmark:
-        "benchmarks/pyclone/plot_loci/{case_barcode}.{analysis_type}.{plot_type}.txt"
+        "benchmarks/pyclone/plot_loci/{case_barcode}.{plot_type}.txt"
     message:
         "Plotting loci (PyClone)\n"
-        "Analysis type: {wildcards.analysis_type}\n"
         "Case: {wildcards.case_barcode}\n"
         "Plot type: {wildcards.plot_type}"
     shell:
@@ -129,11 +126,11 @@ rule pyclone_plot_clusters:
     PyClone plot clusters
     """
     input:
-        conf = "results/pyclone/run/{case_barcode}-{analysis_type}/config.yaml",
-        alpha = "results/pyclone/run/{case_barcode}-{analysis_type}/trace/alpha.tsv.bz2",
-        levels = "results/pyclone/run/{case_barcode}-{analysis_type}/trace/labels.tsv.bz2"
+        conf = "results/pyclone/run/{case_barcode}/config.yaml",
+        alpha = "results/pyclone/run/{case_barcode}/trace/alpha.tsv.bz2",
+        levels = "results/pyclone/run/{case_barcode}/trace/labels.tsv.bz2"
     output:
-        "results/pyclone/run/{case_barcode}-{analysis_type}/plots/clusters/{plot_type}.pdf"
+        "results/pyclone/run/{case_barcode}/plots/clusters/{plot_type}.pdf"
     params:
         mem = CLUSTER_META["pyclone_plot_clusters"]["mem"]
     threads:
@@ -141,12 +138,11 @@ rule pyclone_plot_clusters:
     conda:
         "../envs/pyclone.yaml"
     log:
-        "logs/pyclone/plot_clusters/{case_barcode}.{analysis_type}.{plot_type}.log"
+        "logs/pyclone/plot_clusters/{case_barcode}.{plot_type}.log"
     benchmark:
-        "benchmarks/pyclone/plot_clusters/{case_barcode}.{analysis_type}.{plot_type}.txt"
+        "benchmarks/pyclone/plot_clusters/{case_barcode}.{plot_type}.txt"
     message:
         "Plotting clusters (PyClone)\n"
-        "Analysis type: {wildcards.analysis_type}\n"
         "Case: {wildcards.case_barcode}\n"
         "Plot type: {wildcards.plot_type}"
     shell:
@@ -165,11 +161,11 @@ rule pyclone_build_table:
     PyClone build table
     """
     input:
-        conf = "results/pyclone/run/{case_barcode}-{analysis_type}/config.yaml",
-        alpha = "results/pyclone/run/{case_barcode}-{analysis_type}/trace/alpha.tsv.bz2",
-        levels = "results/pyclone/run/{case_barcode}-{analysis_type}/trace/labels.tsv.bz2"
+        conf = "results/pyclone/run/{case_barcode}/config.yaml",
+        alpha = "results/pyclone/run/{case_barcode}/trace/alpha.tsv.bz2",
+        levels = "results/pyclone/run/{case_barcode}/trace/labels.tsv.bz2"
     output:
-        "results/pyclone/run/{case_barcode}-{analysis_type}/tables/{table_type}.tsv"
+        "results/pyclone/run/{case_barcode}/tables/{table_type}.tsv"
     params:
         mem = CLUSTER_META["pyclone_build_table"]["mem"]
     threads:
@@ -177,12 +173,11 @@ rule pyclone_build_table:
     conda:
         "../envs/pyclone.yaml"
     log:
-        "logs/pyclone/build_table/{case_barcode}.{analysis_type}.{table_type}.log"
+        "logs/pyclone/build_table/{case_barcode}.{table_type}.log"
     benchmark:
-        "benchmarks/pyclone/build_table/{case_barcode}.{analysis_type}.{table_type}.txt"
+        "benchmarks/pyclone/build_table/{case_barcode}.{table_type}.txt"
     message:
         "Building table (PyClone)\n"
-        "Analysis type: {wildcards.analysis_type}\n"
         "Case: {wildcards.case_barcode}\n"
         "Table type: {wildcards.table_type}"
     shell:

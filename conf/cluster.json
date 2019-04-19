@@ -820,18 +820,18 @@
         "mem" : 12,
         "walltime" : "2:00:00",
         "name" : "{rule}",
-        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.out",
-        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
     },
     "pyclone_run" :
     {
         "ppn" : 2,
         "mem" : 12,
-        "queu" : "long",
-        "walltime" : "480:00:00",
+        "queu" : "batch",
+        "walltime" : "72:00:00",
         "name" : "{rule}",
-        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.out",
-        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
     },
     "pyclone_build_table" :
     {
@@ -839,8 +839,8 @@
         "mem" : 12,
         "walltime" : "72:00:00",
         "name" : "{rule}",
-        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.{wildcards.table_type}.out",
-        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.{wildcards.table_type}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.table_type}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.table_type}.err"
     },
     "pyclone_plot_loci" :
     {
@@ -848,8 +848,8 @@
         "mem" : 12,
         "walltime" : "72:00:00",
         "name" : "{rule}",
-        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.{wildcards.plot_type}.out",
-        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.{wildcards.plot_type}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.plot_type}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.plot_type}.err"
     },
     "pyclone_plot_clusters" :
     {
@@ -857,8 +857,8 @@
         "mem" : 12,
         "walltime" : "72:00:00",
         "name" : "{rule}",
-        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.{wildcards.plot_type}.out",
-        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.analysis_type}.{wildcards.plot_type}.err"
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.plot_type}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.{wildcards.plot_type}.err"
     },
     "cnvnator_tree" :
     {
