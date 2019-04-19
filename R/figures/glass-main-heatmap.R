@@ -24,6 +24,7 @@ puridata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_purity.sql"))
 drivdata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_drivers.sql"))
 
 ########################
+
 # Data pre-processing: transform data into a form that can be ingested and used by ggplot plotting engine
 ########################
 
