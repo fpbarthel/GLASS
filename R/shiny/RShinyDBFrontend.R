@@ -3,11 +3,13 @@ library(shiny)
 library(DBI)
 library(tidyverse)
 con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")
-tables <- dbGetQuery(con, "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_schema != 'pg_catalog' AND table_schema !='information_schema'")
-mviews <- dbGetQuery(con, "SELECT schemaname AS table_schema, matviewname AS table_name FROM pg_matviews")
-if(nrow(mviews) > 0)
-  tables <- rbind(tables, cbind(mviews, table_type = "Materialized View"))
-tables <- tables %>% mutate(table_type = fct_recode(table_type, "View" = "VIEW", "Table" = "BASE TABLE")) %>% arrange(table_name)
+views  <- dbGetQuery(con, "SELECT schemaname AS table_schema, viewname AS table_name, 'View' AS table_type FROM pg_views WHERE viewowner = 'verhaak-lab' AND schemaname != 'pg_catalog' AND schemaname !='information_schema'")
+tables <- dbGetQuery(con, "SELECT schemaname AS table_schema, tablename AS table_name, 'Table' AS table_type FROM pg_tables WHERE tableowner = 'verhaak-lab' AND schemaname != 'pg_catalog' AND schemaname !='information_schema'")
+mviews <- dbGetQuery(con, "SELECT schemaname AS table_schema, matviewname AS table_name, 'Materialized View' AS table_type FROM pg_matviews WHERE matviewowner = 'verhaak-lab'")
+#if(nrow(mviews) > 0)
+#  tables <- rbind(tables, cbind(mviews, table_type = "Materialized View"))
+#tables <- tables %>% mutate(table_type = fct_recode(table_type, "View" = "VIEW", "Table" = "BASE TABLE")) %>% arrange(table_name)
+tables <- rbind(tables,views,mviews)
 
 ui <- dashboardPage(
   dashboardHeader(),

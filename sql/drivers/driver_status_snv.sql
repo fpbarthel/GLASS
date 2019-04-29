@@ -4,21 +4,9 @@ Determine driver changes between selected primary and recurrences
 WITH
 selected_tumor_pairs AS
 (
-	SELECT
-		tumor_pair_barcode,
-		ps.case_barcode,
-		idh_codel_subtype,
-		tumor_barcode_a,
-		tumor_barcode_b--,
-		--row_number() OVER (PARTITION BY case_barcode ORDER BY surgical_interval_mo DESC, portion_a ASC, portion_b ASC, substring(tumor_pair_barcode from 27 for 3) ASC) AS priority
-	FROM analysis.tumor_pairs ps
-	LEFT JOIN analysis.blocklist b1 ON b1.aliquot_barcode = ps.tumor_barcode_a
-	LEFT JOIN analysis.blocklist b2 ON b2.aliquot_barcode = ps.tumor_barcode_b
-	LEFT JOIN clinical.subtypes cs ON cs.case_barcode = ps.case_barcode
-	WHERE
-	--	comparison_type = 'longitudinal' AND
-		sample_type_b <> 'M1' AND
-		b1.coverage_exclusion = 'allow' AND b2.coverage_exclusion = 'allow' 
+	SELECT tumor_pair_barcode,ss.case_barcode,tumor_barcode_a,tumor_barcode_b,idh_codel_subtype
+	FROM analysis.silver_set ss
+	INNER JOIN clinical.subtypes st ON st.case_barcode = ss.case_barcode
 ),
 selected_aliquots AS
 (
@@ -28,14 +16,15 @@ selected_aliquots AS
 ),
 selected_genes AS
 (
-	SELECT DISTINCT sn.gene_symbol, chrom, pos, alt, sn.variant_classification, variant_classification_priority, hgvs_p
-	FROM analysis.snvs sn
-	INNER JOIN analysis.dnds_fraction_sel_cv ds ON ds.gene_symbol = sn.gene_symbol AND (ds.qglobal_cv < 0.05 OR ds.gene_symbol IN ('TERT'))
-	LEFT JOIN analysis.variant_classifications vc ON sn.variant_classification = vc.variant_classification
+	SELECT DISTINCT sn.gene_symbol, chrom, pos, alt, sn.variant_classification, variant_classification_priority, protein_change
+	FROM variants.anno sn
+	INNER JOIN ref.driver_genes ds ON ds.gene_symbol = sn.gene_symbol
+	LEFT JOIN variants.variant_classifications vc ON sn.variant_classification = vc.variant_classification
 	WHERE
-		(sn.gene_symbol NOT IN ('TERT','IDH1') AND variant_classification_priority IS NOT NULL) OR
+		has_mut IS TRUE AND
+		((sn.gene_symbol NOT IN ('TERT','IDH1') AND variant_classification_priority IS NOT NULL) OR
 		(sn.gene_symbol = 'TERT' AND sn.variant_classification = '5''Flank' AND lower(sn.pos) IN (1295228,1295250)) OR
-		(sn.gene_symbol = 'IDH1' AND sn.hgvs_p IN ('p.R132C','p.R132G','p.R132H','p.R132S'))
+		(sn.gene_symbol = 'IDH1' AND sn.protein_change IN ('p.R132C','p.R132G','p.R132H','p.R132S')))
 ),
 selected_genes_samples AS
 (
@@ -44,14 +33,19 @@ selected_genes_samples AS
 ),
 gene_sample_coverage AS
 (
-	SELECT
+	/*SELECT
 		gene_symbol,
 		sg.aliquot_barcode,
 		sg.case_barcode,
 		round(median(alt_count + ref_count)) AS median_cov
 	FROM analysis.full_genotypes fgt
 	INNER JOIN selected_genes_samples sg ON fgt.aliquot_barcode = sg.aliquot_barcode AND fgt.chrom = sg.chrom AND fgt.start = sg.start_pos AND fgt.end = sg.end_pos AND fgt.alt = sg.alt
-	GROUP BY 1,2,3
+	GROUP BY 1,2,3*/			 				 
+	SELECT sg.aliquot_barcode, case_barcode, sg.gene_symbol, gene_coverage::double precision / gene_size AS gene_cov
+	FROM ref.ensembl_gene_mapping gm
+	INNER JOIN analysis.gencode_coverage gc ON gc.ensembl_gene_id = gm.ensembl_gene_id
+	INNER JOIN ref.ensembl_genes eg ON eg.ensembl_gene_id = gm.ensembl_gene_id
+	INNER JOIN selected_genes_samples sg ON sg.aliquot_barcode = gc.aliquot_barcode AND sg.gene_symbol = gm.gene_symbol
 ),
 gene_pair_coverage AS
 (
@@ -59,8 +53,8 @@ gene_pair_coverage AS
 		stp.tumor_pair_barcode,
 		stp.case_barcode,
 		c1.gene_symbol,
-		c1.median_cov AS cov_a,
-		c2.median_cov AS cov_b
+		c1.gene_cov AS cov_a,
+		c2.gene_cov AS cov_b
 	FROM selected_tumor_pairs stp
 	LEFT JOIN gene_sample_coverage c1 ON c1.aliquot_barcode = stp.tumor_barcode_a
 	LEFT JOIN gene_sample_coverage c2 ON c2.aliquot_barcode = stp.tumor_barcode_b AND c1.gene_symbol = c2.gene_symbol
@@ -77,7 +71,7 @@ variants_by_case_and_gene AS
 		gtc.pos,
 		gtc.alt,
 		gtc.variant_classification,
-		sg.hgvs_p,
+		sg.protein_change,
 		--mutect2_call_a AS selected_call_a,
 		--mutect2_call_b AS selected_call_b,
 		--lag(mutect2_call_a) OVER w = mutect2_call_a OR lag(mutect2_call_b) OVER w = mutect2_call_b AS is_same_variant,
@@ -88,7 +82,7 @@ variants_by_case_and_gene AS
 		(alt_count_b > 0) AS selected_call_b,
 		lag((alt_count_a > 0)) OVER w = (alt_count_a > 0) OR lag((alt_count_b > 0)) OVER w = (alt_count_b > 0) AS is_same_variant,
 		row_number() OVER w AS priority
-	FROM analysis.master_genotype_comparison gtc
+	FROM variants.pgeno gtc
 	INNER JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = gtc.tumor_pair_barcode 
 	INNER JOIN selected_genes sg ON sg.chrom = gtc.chrom AND sg.pos = gtc.pos AND sg.alt = gtc.alt
 	WHERE 
@@ -100,8 +94,7 @@ variants_by_case_and_gene AS
 sign_genes_by_subtype AS
 (
 	SELECT DISTINCT gene_symbol, subtype 
-	FROM analysis.dnds_fraction_sel_cv
-	WHERE qglobal_cv < 0.05
+	FROM ref.sig_genes_subtype
 ),
 variants_by_case AS
 (
@@ -118,9 +111,9 @@ variants_by_case AS
 		COUNT(DISTINCT (CASE WHEN selected_call_b AND selected_call_a THEN vg.gene_symbol END)) AS driver_count_shared,
 		COUNT(DISTINCT (CASE WHEN selected_call_a AND NOT selected_call_b THEN vg.gene_symbol END)) AS driver_count_private_a,
 		COUNT(DISTINCT (CASE WHEN selected_call_b AND NOT selected_call_a THEN vg.gene_symbol END)) AS driver_count_private_b,
-		trim(BOTH ', ' FROM string_agg(CASE WHEN selected_call_b AND selected_call_a THEN vg.gene_symbol || ' ' || hgvs_p || ', ' ELSE '' END, '')) AS driver_shared,
-		trim(BOTH ', ' FROM string_agg(CASE WHEN selected_call_b AND NOT selected_call_a THEN '+' || vg.gene_symbol || ' ' || hgvs_p || ', ' ELSE '' END, '')) AS target_a,
-		trim(BOTH ', ' FROM string_agg(CASE WHEN selected_call_a AND NOT selected_call_b THEN '-' || vg.gene_symbol || ' ' || hgvs_p || ', ' ELSE '' END, '')) AS target_b,
+		trim(BOTH ', ' FROM string_agg(CASE WHEN selected_call_b AND selected_call_a THEN vg.gene_symbol || ' ' || protein_change || ', ' ELSE '' END, '')) AS driver_shared,
+		trim(BOTH ', ' FROM string_agg(CASE WHEN selected_call_b AND NOT selected_call_a THEN '+' || vg.gene_symbol || ' ' || protein_change || ', ' ELSE '' END, '')) AS target_a,
+		trim(BOTH ', ' FROM string_agg(CASE WHEN selected_call_a AND NOT selected_call_b THEN '-' || vg.gene_symbol || ' ' || protein_change || ', ' ELSE '' END, '')) AS target_b,
 		(CASE
 		 WHEN bool_and(CASE WHEN selected_call_b AND selected_call_a THEN sg.subtype IS NOT NULL END) THEN 'In-context'
 		 WHEN bool_or(CASE WHEN selected_call_b AND selected_call_a THEN sg.subtype IS NULL END) THEN 'Out-of-context'

@@ -1,34 +1,23 @@
 /*
----
-Perform gene level copy number calling using a modified GATK CallCopyRatioSegments / ReCapSeg caller combined with arm level thresholds inspired by the
-Taylor aneuploidy paper and GISTIC2 methods
----
-1. Define a list of genes on which to call copy number
-2. Intersect gene start/stop with segments
-3. Group results by gene and sample, and compute weighted average of non-log2 copy number
-4. Perform simple calling using -1 and 1 thresholds
----
+Call CNV for 10q25-26 region
 */
 WITH
-selected_genes AS
+selected_regions AS
 (
-	SELECT dr.gene_symbol,chrom,pos
-	FROM ref.driver_genes dr
-	LEFT JOIN ref.genes ge ON ge.gene_symbol = dr.gene_symbol
-	WHERE has_cnv IS TRUE
+	SELECT '10q25-26' AS region, * FROM ref.cytobands WHERE chrom = 10 AND substring(cytoband from 1 for 3) IN ('q25','q26')
 ),
 gene_seg_intersect AS
 (
-    SELECT aliquot_barcode, gene_symbol, gs.chrom, (upper(t0.pos * gs.pos) - lower(t0.pos * gs.pos) -1) AS w, 2^log2_copy_ratio::decimal As cr
+    SELECT aliquot_barcode, gs.chrom, (upper(t0.pos * gs.pos) - lower(t0.pos * gs.pos) -1) AS w, 2^log2_copy_ratio::decimal As cr
     FROM variants.gatk_seg gs
-    INNER JOIN selected_genes t0 ON t0.chrom = gs.chrom AND t0.pos && gs.pos
+    INNER JOIN selected_regions t0 ON t0.chrom = gs.chrom AND t0.pos && gs.pos
 ),
 gene_sample_call AS
 (
-    SELECT aliquot_barcode, gene_symbol, 
+    SELECT aliquot_barcode, region, 
 		sum(w * cr) / sum(w) AS wcr
     FROM gene_seg_intersect
-    GROUP BY aliquot_barcode, gene_symbol
+    GROUP BY aliquot_barcode, region
 ),
 seg_stats_optimized AS
 (
@@ -51,20 +40,20 @@ seg_stats_optimized AS
 ),
 gene_cp AS
 (
-	SELECT ts.aliquot_barcode, gene_symbol, ts.chrom, (upper(t0.pos * ts.pos) - lower(t0.pos * ts.pos) -1) AS w, cellular_prevalence As cp
+	SELECT ts.aliquot_barcode, region, ts.chrom, (upper(t0.pos * ts.pos) - lower(t0.pos * ts.pos) -1) AS w, cellular_prevalence As cp
 	FROM variants.titan_seg ts
-	INNER JOIN selected_genes t0 ON t0.chrom = ts.chrom AND t0.pos && ts.pos
+	INNER JOIN selected_regions t0 ON t0.chrom = ts.chrom AND t0.pos && ts.pos
 ),
 gene_cp_agg AS
 (
-	SELECT aliquot_barcode, gene_symbol, 
+	SELECT aliquot_barcode, region, 
 		COALESCE(sum(w * cp) / NULLIF(sum(w),0),NULL) AS wcp
     FROM gene_cp
     GROUP BY 1, 2
 )
 SELECT
 	gc.aliquot_barcode,
-	gc.gene_symbol,
+	gc.region,
 	(CASE
 	 WHEN gc.wcr >= del_thres AND gc.wcr <= amp_thres THEN 0
 	 WHEN gc.wcr < hldel_thres THEN -2
@@ -77,5 +66,5 @@ SELECT
 	wcp AS cellular_prevalence
 FROM gene_sample_call gc
 LEFT JOIN seg_stats_optimized ss ON ss.aliquot_barcode = gc.aliquot_barcode
-LEFT JOIN gene_cp_agg cp ON cp.aliquot_barcode = gc.aliquot_barcode AND cp.gene_symbol = gc.gene_symbol
+LEFT JOIN gene_cp_agg cp ON cp.aliquot_barcode = gc.aliquot_barcode AND cp.region = gc.region
 ORDER BY 3

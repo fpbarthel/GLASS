@@ -4,7 +4,7 @@ library(ggplot2)
 library(RColorBrewer)
 library(egg)
 
-con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
+con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")
 
 ########################
 ## Load heatmap data
@@ -189,10 +189,10 @@ testPlot(gg_time_data)
 
 gg_clinical <-
   clin_data %>% 
-  gather(key = "type", value = "value", location_distal, grade_change, received_tmz, received_rt, is_hypermutator) %>%
+  gather(key = "type", value = "value", location_distal, grade_change, received_alk, received_rt, is_hypermutator) %>%
   mutate(type = factor(type,
-                       levels = c("location_distal", "grade_change", "received_tmz", "received_rt", "is_hypermutator"),
-                       labels = c("Distal location", "Grade increase", "Received TMZ", "Received RT", "Hypermutator"))) %>%
+                       levels = c("location_distal", "grade_change", "received_alk", "received_rt", "is_hypermutator"),
+                       labels = c("Distal location", "Grade increase", "Received Alk.", "Received RT", "Hypermutator"))) %>%
   ggplot(aes(x=case_barcode)) +
   geom_tile(aes(fill = factor(value), y = type)) +
   scale_fill_manual(values=c("white", "#377eb8"), na.value = "gray90") +
@@ -335,7 +335,7 @@ gg_snv_prop_gene <-
 
 testPlot(gg_snv_prop_gene)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Figure 1/snv_prop_gene_all.pdf", width = 12, height = 8)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/snv_prop_gene_all.pdf", width = 12, height = 8)
 testPlot(gg_snv_prop_gene)
 dev.off()
 
@@ -354,7 +354,7 @@ gg_cnv_prop_gene <-
 
 testPlot(gg_cnv_prop_gene)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Figure 1/cnv_prop_gene_all.pdf", width = 12, height = 8)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/cnv_prop_gene_all.pdf", width = 12, height = 8)
 testPlot(gg_cnv_prop_gene)
 dev.off()
 
@@ -415,7 +415,7 @@ gleg3 <- gg_rbind(gg_legend(gg_mut_heatmap),
                   gg_legend(gg_mut_freq_case),
                   heights = rep(1,3),
                   ncol = 1)
-pdf(file = "sandbox/fig/legends.pdf", height = 12, width = 4)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/legends.pdf", height = 12, width = 4)
 plot(gleg1)
 plot(gleg2)
 plot(gleg3)
@@ -435,7 +435,7 @@ g9 <- ggplotGrob(gg_cnv_heatmap + plot_grid + plot_theme + null_legend + bottom_
 g <- gg_rbind(g0, g1, g2, g3, g4, g5, g6, g7, g8, g9, heights = c(5, 4, 5, 1, 4, 4, 7, 4, 12, 12), ncol = 1)
 plot(g)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Figure 1/fig_cnv_drivers.pdf", height = 16, width = 12)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/fig_cnv_drivers.pdf", height = 16, width = 12)
 plot(g)
 dev.off()
 
@@ -459,6 +459,6 @@ g9sb <- gg_cbind(g9, g9b, widths = c(0.1,8))
 gsb <- gg_rbind(g0sb, g1sb, g2sb, g3sb, g4sb, g5sb, g6sb, g7sb, g8sb, g9sb, heights = c(5, 4, 5, 1, 4, 4, 7, 4, 12, 12), ncol = 2)
 plot(gsb)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Figure 1/fig_cnv_drivers_w_sidebar.pdf", height = 16, width = 12)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/fig_cnv_drivers_w_sidebar.pdf", height = 16, width = 12)
 plot(gsb)
 dev.off()

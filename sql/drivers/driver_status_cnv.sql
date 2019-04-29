@@ -4,19 +4,9 @@ Determine CNV driver changes between selected primary and recurrences
 WITH
 selected_tumor_pairs AS
 (
-	SELECT
-		tumor_pair_barcode,
-		ps.case_barcode,
-		idh_codel_subtype,
-		tumor_barcode_a,
-		tumor_barcode_b
-	FROM analysis.tumor_pairs ps
-	LEFT JOIN analysis.blocklist b1 ON b1.aliquot_barcode = ps.tumor_barcode_a
-	LEFT JOIN analysis.blocklist b2 ON b2.aliquot_barcode = ps.tumor_barcode_b
-	LEFT JOIN clinical.subtypes cs ON cs.case_barcode = ps.case_barcode
-	WHERE
-		sample_type_b <> 'M1' AND
-		b1.coverage_exclusion = 'allow' AND b2.coverage_exclusion = 'allow' 
+	SELECT tumor_pair_barcode,ss.case_barcode,tumor_barcode_a,tumor_barcode_b,idh_codel_subtype
+	FROM analysis.silver_set ss
+	INNER JOIN clinical.subtypes st ON st.case_barcode = ss.case_barcode
 ),
 selected_genes AS
 (
@@ -94,7 +84,7 @@ seg_stats_optimized AS
 		 ELSE NULL
 		END) AS hlamp_fwsd
 	FROM analysis.gatk_seg_stats gs
-	LEFT JOIN analysis.taylor_aneuploidy gsa ON gsa.aliquot_barcode = gs.aliquot_barcode
+	LEFT JOIN analysis.gatk_aneuploidy gsa ON gsa.aliquot_barcode = gs.aliquot_barcode
 ),
 cnv_by_pair_gene AS
 (
@@ -130,8 +120,8 @@ cnv_by_pair_gene AS
 		c1.hlvl_call AS cn_a,
 		c2.hlvl_call AS cn_b
 	FROM selected_genes_pairs sgs
-	LEFT JOIN analysis.cnv_by_gene_gatk c1 ON c1.aliquot_barcode = sgs.tumor_barcode_a AND c1.gene_symbol = sgs.gene_symbol
-	LEFT JOIN analysis.cnv_by_gene_gatk c2 ON c2.aliquot_barcode = sgs.tumor_barcode_b AND c2.gene_symbol = sgs.gene_symbol
+	LEFT JOIN analysis.gatk_cnv_by_gene c1 ON c1.aliquot_barcode = sgs.tumor_barcode_a AND c1.gene_symbol = sgs.gene_symbol
+	LEFT JOIN analysis.gatk_cnv_by_gene c2 ON c2.aliquot_barcode = sgs.tumor_barcode_b AND c2.gene_symbol = sgs.gene_symbol
 	LEFT JOIN seg_stats_optimized ss1 ON ss1.aliquot_barcode = sgs.tumor_barcode_a
 	LEFT JOIN seg_stats_optimized ss2 ON ss2.aliquot_barcode = sgs.tumor_barcode_b
 	WHERE abs(c1.hlvl_call) = 2 OR abs(c2.hlvl_call) = 2

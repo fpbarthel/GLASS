@@ -66,7 +66,7 @@ seg_stats_optimized AS
 		 ELSE NULL
 		END) AS hlamp_fwsd
 	FROM analysis.gatk_seg_stats gs
-	LEFT JOIN analysis.taylor_aneuploidy gsa ON gsa.aliquot_barcode = gs.aliquot_barcode
+	LEFT JOIN analysis.gatk_aneuploidy gsa ON gsa.aliquot_barcode = gs.aliquot_barcode
 ),
 cnv_by_pair_gene AS
 (
@@ -120,8 +120,8 @@ cnv_by_pair_gene AS
 		ss2.hldel_thres AS hldel_thres_b,
 		ss2.hlamp_thres AS hlamp_thres_b
 	FROM selected_genes_samples sgs
-	LEFT JOIN analysis.cnv_by_gene_gatk c1 ON c1.aliquot_barcode = sgs.tumor_barcode_a AND c1.gene_symbol = sgs.gene_symbol
-	LEFT JOIN analysis.cnv_by_gene_gatk c2 ON c2.aliquot_barcode = sgs.tumor_barcode_b AND c2.gene_symbol = sgs.gene_symbol
+	LEFT JOIN analysis.gatk_cnv_by_gene c1 ON c1.aliquot_barcode = sgs.tumor_barcode_a AND c1.gene_symbol = sgs.gene_symbol
+	LEFT JOIN analysis.gatk_cnv_by_gene c2 ON c2.aliquot_barcode = sgs.tumor_barcode_b AND c2.gene_symbol = sgs.gene_symbol
 	LEFT JOIN seg_stats_optimized ss1 ON ss1.aliquot_barcode = sgs.tumor_barcode_a
 	LEFT JOIN seg_stats_optimized ss2 ON ss2.aliquot_barcode = sgs.tumor_barcode_b
 ),
