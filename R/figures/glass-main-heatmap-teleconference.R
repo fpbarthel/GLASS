@@ -4,7 +4,7 @@ library(ggplot2)
 library(RColorBrewer)
 library(egg)
 
-con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")
+con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")
 
 ########################
 ## Load heatmap data
@@ -23,14 +23,16 @@ c710data <- dbGetQuery(con, read_file("sql/heatmap/heatmap_c710.sql"))
 puridata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_purity.sql"))
 drivdata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_drivers.sql"))
 
-neutrdata = read_tsv("sandbox/glass-evolution-neutrality-20190129.txt")
-all_drivers = dbGetQuery(con, "SELECT * FROM analysis.driver_status")
-neutrdata = all_drivers %>% 
-  left_join(neutrdata, by="tumor_pair_barcode") %>% 
-  mutate(case_barcode = substr(tumor_pair_barcode, 1, 12),
-         evolution = paste(bayesian_evo_p,bayesian_evo_r, sep="-" ),
-         evolution = ifelse(evolution=="NA-NA", NA, evolution)) %>% 
-  select(case_barcode, evolution, idh_codel_subtype = idh_codel_subtype.x)
+neutrdata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_evolution.sql"))
+pycldata  <- dbGetQuery(con, read_file("sql/heatmap/heatmap_pyclone_clusters.sql"))
+# neutrdata = read_tsv("sandbox/glass-evolution-neutrality-20190129.txt")
+# all_drivers = dbGetQuery(con, "SELECT * FROM analysis.driver_status")
+# neutrdata = all_drivers %>% 
+#   left_join(neutrdata, by="tumor_pair_barcode") %>% 
+#   mutate(case_barcode = substr(tumor_pair_barcode, 1, 12),
+#          evolution = paste(bayesian_evo_p,bayesian_evo_r, sep="-" ),
+#          evolution = ifelse(evolution=="NA-NA", NA, evolution)) %>% 
+#   select(case_barcode, evolution, idh_codel_subtype = idh_codel_subtype.x)
 
 ########################
 # Data pre-processing: transform data into a form that can be ingested and used by ggplot plotting engine
@@ -202,10 +204,10 @@ testPlot(gg_time_data)
 
 gg_clinical <-
   clin_data %>% 
-  gather(key = "type", value = "value", location_distal, grade_change, received_tmz, received_rt, is_hypermutator) %>%
+  gather(key = "type", value = "value", location_distal, grade_change, received_alk, received_rt, is_hypermutator) %>%
   mutate(type = factor(type,
-                       levels = c("location_distal", "grade_change", "received_tmz", "received_rt", "is_hypermutator"),
-                       labels = c("Distal location", "Grade increase", "Received TMZ", "Received RT", "Hypermutator"))) %>%
+                       levels = c("location_distal", "grade_change", "received_alk", "received_rt", "is_hypermutator"),
+                       labels = c("Distal location", "Grade increase", "Received Alkyl.", "Received RT", "Hypermutator"))) %>%
   ggplot(aes(x=case_barcode)) +
   geom_tile(aes(fill = factor(value), y = type)) +
   scale_fill_manual(values=c("white", "#377eb8"), na.value = "gray90") +
@@ -218,9 +220,14 @@ testPlot(gg_clinical)
 ## Plot co-variates
 ########################
 gg_evolution <-
-  ggplot(neutrdata, aes(x=case_barcode)) +
-  geom_tile(aes(fill = evolution, y = 1)) +
-  scale_fill_manual(values = c("N-N" = "#67A3BD", "N-S" = "#8167BD", "S-N" = "#A3BD67", "S-S" = "#BD8167")) +
+  neutrdata %>%
+  gather(key = "type", value = "value", evolution_a, evolution_b) %>%
+  mutate(type = factor(type,
+                       levels = c("evolution_a", "evolution_b"),
+                       labels = c("Primary", "Recurrence"))) %>%
+  ggplot(aes(x=case_barcode)) +
+  geom_tile(aes(fill = factor(value), y = type)) +
+  scale_fill_manual(values = c("N" = "#A3BD67", "S" = "#BD8167")) +
   labs(y = "Evolution \nmode")
 
 testPlot(gg_evolution)
@@ -349,11 +356,11 @@ gg_snv_prop_gene <-
 
 testPlot(gg_snv_prop_gene)
 
-pdf(file = "/Users/johnsk/Documents/snv_prop_genes.pdf", width = 12, height = 8)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/snv_prop_genes.pdf", width = 12, height = 8)
 testPlot(gg_snv_prop_gene)
 dev.off()
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Figure 1/snv_prop_gene_all.pdf", width = 12, height = 8)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/snv_prop_gene_all.pdf", width = 12, height = 8)
 testPlot(gg_snv_prop_gene)
 dev.off()
 
@@ -373,12 +380,12 @@ gg_cnv_prop_gene <-
 
 testPlot(gg_cnv_prop_gene)
 
-pdf(file = "/Users/johnsk/Documents/cnv_prop_genes.pdf", width = 12, height = 8)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/cnv_prop_genes.pdf", width = 12, height = 8)
 testPlot(gg_cnv_prop_gene)
 dev.off()
 
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Figure 1/cnv_prop_gene_all.pdf", width = 12, height = 8)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/cnv_prop_gene_all.pdf", width = 12, height = 8)
 testPlot(gg_cnv_prop_gene)
 dev.off()
 
@@ -386,11 +393,14 @@ dev.off()
 ## Plot mutations
 ########################
 
+mut_heatmap <- hmapdata %>%
+  mutate(covered = factor(covered, levels = c("Coverage < 5x", "Coverage >= 5x", "Coverage >= 15x", "Coverage >= 30x")))
+
 gg_mut_heatmap <-
   ggplot(mut_heatmap, aes(x=case_barcode, y=gene_symbol)) +
   geom_tile(aes(fill = covered)) +
   geom_point(aes(shape = variant_call, color = variant_classification), size=1) +
-  scale_fill_manual(values=c("gray90","white"), na.value = "gray90") +
+  scale_fill_manual(values=c("gray90", "gray95", "gray99", "white"), na.value = "gray90") +
   scale_color_manual(values=c("5'Flank" = brewer.pal(9, "Paired")[9],
                               "Frame_Shift_Del" = brewer.pal(7, "Paired")[1],
                               "Frame_Shift_Ins" = brewer.pal(7, "Paired")[2],
@@ -410,13 +420,15 @@ testPlot(gg_mut_heatmap)
 
 gg_cnv_heatmap <-
   ggplot(cnv_heatmap, aes(x=case_barcode, y=gene_symbol)) + 
-  geom_tile(fill = "#f7f7f7") +
+  geom_tile(aes(fill=gold_set)) +
+  scale_fill_manual(values=c("white", "gray90"), na.value = "gray90") +
   geom_point(aes(color = cnv_state, shape = cnv_change), size=1) + #
   scale_color_manual(values=c("HLDEL" = "#0571b0", #0 = "#f7f7f7",
                               "HLAMP" = "#ca0020")) +
-  labs(y = "Gene Symbol", x= "", color = "CNV type", shape = "CNV evolution") 
+  labs(y = "Gene Symbol", color = "CNV type", shape = "CNV evolution")
 
 testPlot(gg_cnv_heatmap)   
+
 
 ########################
 ## Layout plot elements
@@ -439,7 +451,7 @@ gleg3 <- gg_rbind(gg_legend(gg_mut_heatmap),
                   gg_legend(gg_mut_freq_case),
                   heights = rep(1,3),
                   ncol = 1)
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Figures/Figure1/legends-new.pdf", height = 12, width = 4)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/legends-new.pdf", height = 12, width = 4)
 plot(gleg1)
 plot(gleg2)
 plot(gleg3)
@@ -455,19 +467,19 @@ g6 <- ggplotGrob(gg_driver_context + plot_grid + plot_theme + null_legend + null
 g7 <- ggplotGrob(gg_mut_freq_prop_case + plot_grid + plot_theme + null_legend + null_x + null_facet + bottom_margin) %>% gtable_frame()
 g8 <- ggplotGrob(gg_mut_heatmap + plot_grid + plot_theme + null_legend + null_x + null_facet ) %>% gtable_frame()
 g9 <- ggplotGrob(gg_cnv_heatmap + plot_grid + plot_theme + null_legend + bottom_x + null_facet + bottom_margin) %>% gtable_frame()
-g10 <- ggplotGrob(gg_evolution + plot_grid + plot_theme + null_legend + null_x + null_y + null_facet) %>% gtable_frame()
+g10 <- ggplotGrob(gg_evolution + plot_grid + plot_theme + null_legend + null_x + null_facet) %>% gtable_frame()
 
 g <- gg_rbind(g0, g1, g2, g3, g4, g5, g6, g7, g8, g9, heights = c(5, 4, 5, 1, 4, 4, 7, 4, 12, 12), ncol = 1)
 plot(g)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Figure 1/fig_cnv_drivers.pdf", height = 16, width = 12)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/fig_cnv_drivers.pdf", height = 16, width = 12)
 plot(g)
 dev.off()
 
 g_2 <- gg_rbind(g0, g7, g2 , g1 , heights = c(5, 5, 5, 4), ncol = 1)
 plot(g_2)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Figures/Figure1/f1a-fpb.pdf", height = 12, width = 16, bg = "transparent", useDingbats = FALSE)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/f1a-fpb.pdf", height = 12, width = 16, bg = "transparent", useDingbats = FALSE)
 plot(g_2) 
 dev.off()
 
@@ -491,14 +503,14 @@ g10sb <- gg_cbind(g10, gb, widths = c(0.1,8))
 gsb <- gg_rbind(g0sb, g1sb, g2sb, g3sb, g4sb, g5sb, g6sb, g7sb, g8sb, g9sb, heights = c(5, 4, 5, 1, 4, 4, 7, 4, 12, 12), ncol = 2)
 plot(gsb)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Figure 1/fig_cnv_drivers_w_sidebar.pdf", height = 16, width = 12)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/fig_cnv_drivers_w_sidebar.pdf", height = 16, width = 12)
 plot(gsb)
 dev.off()
 
 gsb <- gg_rbind(g2sb, g6sb, g10sb, g8sb, g4sb, g9sb, heights = c(5, 3, 1, 12, 3, 12), ncol = 2)
 plot(gsb)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Figures/Figure3/f3a-fpb.pdf", height = 12, width = 16, bg = "transparent", useDingbats = FALSE)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 3/f3a-fpb.pdf", height = 12, width = 16, bg = "transparent", useDingbats = FALSE)
 plot(gsb)
 dev.off()
 

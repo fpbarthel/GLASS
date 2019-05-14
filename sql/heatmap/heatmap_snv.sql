@@ -40,7 +40,7 @@ selected_genes AS
 	WHERE
 		has_mut IS TRUE AND
 		((sn.gene_symbol NOT IN ('TERT','IDH1') AND variant_classification_priority IS NOT NULL) OR
-		(sn.gene_symbol = 'TERT' AND sn.variant_classification = '5''Flank' AND lower(sn.pos) IN (1295228,1295250)) OR
+		(sn.gene_symbol = 'TERT' AND sn.variant_classification = 'FIVE_PRIME_FLANK' AND lower(sn.pos) IN (1295228,1295250)) OR
 		(sn.gene_symbol = 'IDH1' AND sn.protein_change IN ('p.R132C','p.R132G','p.R132H','p.R132S')))
 ),
 selected_genes_uq AS
@@ -64,12 +64,29 @@ selected_variants_samples AS
 	FROM selected_genes
 	CROSS JOIN selected_tumor_pairs
 ),
-gene_sample_coverage AS
+hotspot_coverage AS -- For IDH1 and TERT we don't want genic coverage but coverage at the hotspot sites
+(
+	SELECT aliquot_barcode, case_barcode, gene_symbol, sum(ad_alt + ad_ref)::decimal / COUNT(*) AS gene_cov
+	FROM variants.geno pg
+	INNER JOIN variants.passanno pa ON pa.variant_id = pg.variant_id
+	LEFT JOIN variants.variant_classifications vc ON vc.variant_classification = pa.variant_classification
+	WHERE
+		(pa.gene_symbol = 'TERT' AND pa.variant_classification = 'FIVE_PRIME_FLANK' AND lower(pa.pos) IN (1295228,1295250)) OR
+		(pa.gene_symbol = 'IDH1' AND pa.protein_change IN ('p.R132C','p.R132G','p.R132H','p.R132S'))
+	GROUP BY 1,2,3
+	ORDER BY 1,2,3
+),
+gene_sample_coverage AS -- For all other genes get genic coverage
 (
 	SELECT sgu.aliquot_barcode, case_barcode, sgu.gene_symbol, gene_coverage::double precision / gene_size AS gene_cov
 	FROM selected_genes_samples_uq sgu
 	INNER JOIN analysis.gencode_coverage gc ON gc.ensembl_gene_id = sgu.ensembl_gene_id AND gc.aliquot_barcode = sgu.aliquot_barcode
 	INNER JOIN ref.ensembl_genes eg ON eg.ensembl_gene_id = sgu.ensembl_gene_id
+	WHERE sgu.gene_symbol NOT IN ('IDH1','TERT')
+
+	UNION
+
+	SELECT * FROM hotspot_coverage
 ),
 gene_pair_coverage AS
 (
@@ -117,7 +134,7 @@ squared_variants AS
 		vcg.selected_call_a,
 		vcg.selected_call_b,
 		gc.cov_a,
-		gc.cov_b  
+		gc.cov_b
 	FROM (SELECT * FROM variants_by_case_and_gene WHERE priority = 1) vcg
 	RIGHT JOIN gene_pair_coverage gc ON gc.tumor_pair_barcode = vcg.tumor_pair_barcode AND gc.gene_symbol = vcg.gene_symbol
 )
@@ -138,7 +155,13 @@ SELECT
 	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_a AND NOT selected_call_b 			THEN 'P'
 	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_b AND NOT selected_call_a 			THEN 'R'
 	 ELSE NULL END) AS variant_call,
-	(CASE WHEN cov_a >= 5 AND cov_b >= 5 THEN 'Coverage >= 5' ELSE 'Coverage < 5' END) AS covered
+	(CASE
+		WHEN cov_a >= 30 AND cov_b >= 30 THEN 'Coverage >= 30x' 
+		--WHEN cov_a >= 20 AND cov_b >= 20 THEN 'Coverage >= 20x' 
+		--WHEN cov_a >= 10 AND cov_b >= 5 THEN 'Coverage >= 10x' 
+		WHEN cov_a >= 15 AND cov_b >= 15 THEN 'Coverage >= 15x' 
+		WHEN cov_a >= 5 AND cov_b >= 5 THEN 'Coverage >= 5x' 
+		ELSE 'Coverage < 5x' END) AS covered
 FROM squared_variants var
 LEFT JOIN clinical.subtypes st ON st.case_barcode = var.case_barcode
 --LEFT JOIN selected_tumor_pairs stp ON stp.case_barcode = var.case_barcode AND priority = 1

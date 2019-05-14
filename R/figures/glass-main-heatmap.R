@@ -362,11 +362,14 @@ dev.off()
 ## Plot mutations
 ########################
 
+mut_heatmap <- hmapdata %>%
+  mutate(covered = factor(covered, levels = c("Coverage < 5x", "Coverage >= 5x", "Coverage >= 15x", "Coverage >= 30x")))
+
 gg_mut_heatmap <-
   ggplot(mut_heatmap, aes(x=case_barcode, y=gene_symbol)) +
   geom_tile(aes(fill = covered)) +
   geom_point(aes(shape = variant_call, color = variant_classification), size=1) +
-  scale_fill_manual(values=c("gray90","white"), na.value = "gray90") +
+  scale_fill_manual(values=c("gray90", "gray95", "gray99", "white"), na.value = "gray90") +
   scale_color_manual(values=c("5'Flank" = brewer.pal(9, "Paired")[9],
                               "Frame_Shift_Del" = brewer.pal(7, "Paired")[1],
                               "Frame_Shift_Ins" = brewer.pal(7, "Paired")[2],
@@ -386,7 +389,8 @@ testPlot(gg_mut_heatmap)
 
 gg_cnv_heatmap <-
   ggplot(cnv_heatmap, aes(x=case_barcode, y=gene_symbol)) + 
-  geom_tile(fill = "#f7f7f7") +
+  geom_tile(aes(fill=gold_set)) +
+  scale_fill_manual(values=c("white", "gray90"), na.value = "gray90") +
   geom_point(aes(color = cnv_state, shape = cnv_change), size=1) + #
   scale_color_manual(values=c("HLDEL" = "#0571b0", #0 = "#f7f7f7",
                               "HLAMP" = "#ca0020")) +

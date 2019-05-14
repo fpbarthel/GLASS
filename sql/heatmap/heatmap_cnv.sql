@@ -1,7 +1,9 @@
 WITH
 selected_tumor_pairs AS
 (
-	SELECT * FROM analysis.silver_set
+	SELECT ss.tumor_pair_barcode, ss.tumor_barcode_a, ss.tumor_barcode_b, ss.case_barcode, (CASE WHEN gs.tumor_pair_barcode IS NULL THEN 'Silver set' ELSE 'Gold set' END) AS gold_set
+	FROM analysis.silver_set ss
+	LEFT JOIN analysis.gold_set gs ON gs.tumor_pair_barcode = ss.tumor_pair_barcode
 ),
 selected_genes AS
 (
@@ -71,6 +73,7 @@ cnv_by_pair_gene AS
 		sgs.tumor_pair_barcode,
 		sgs.case_barcode,
 		sgs.gene_symbol,
+		gold_set,
 		pathway,
 		ROUND(c1.wcr,6) AS cr_a,
 		ROUND(c2.wcr,6) AS cr_b,
