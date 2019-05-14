@@ -8,7 +8,7 @@ selected_regions AS
 ),
 gene_seg_intersect AS
 (
-    SELECT aliquot_barcode, gs.chrom, (upper(t0.pos * gs.pos) - lower(t0.pos * gs.pos) -1) AS w, 2^log2_copy_ratio::decimal As cr
+    SELECT aliquot_barcode, region, gs.chrom, (upper(t0.pos * gs.pos) - lower(t0.pos * gs.pos) -1) AS w, 2^log2_copy_ratio::decimal As cr
     FROM variants.gatk_seg gs
     INNER JOIN selected_regions t0 ON t0.chrom = gs.chrom AND t0.pos && gs.pos
 ),
