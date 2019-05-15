@@ -6,7 +6,7 @@ library(ggforce)
 library(egg)
 
 con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")
-res <- dbGetQuery(con, q)#read_file("sql/pyclone/pyclone_cluster_pairs.sql"))
+res <- dbGetQuery(con, read_file("sql/pyclone/pyclone_cluster_pairs.sql"))
 
 df <- res %>% 
   select(case_barcode, idh_codel_subtype, cluster_id, size, ccf_a, ccf_b, rank_a, rank_b) %>%
@@ -19,6 +19,15 @@ df <- res %>%
   spread(var, v) %>%
   mutate(id = sprintf("%s%s", case_barcode, cluster_id),
          sample_type = ifelse(sample_type == "a", "P", "R"))
+
+df2 <- res %>%
+  group_by(case_barcode) %>%
+  summarize(w_selected_ps = sum(size[ccf_a < 0.5 & ccf_b > 0.5]),
+            w_selected_ns = sum(size[ccf_a > 0.5 & ccf_b < 0.5]),
+            w_total = sum(size)) %>%
+  mutate(p_selection_pos = w_selected_ps / (w_total - w_selected_ns),
+         p_selection_all = (w_selected_ps + w_selected_ns) / w_total) %>%
+  ungroup()
 
 g <- ggplot(df, aes(x=sample_type, y=ccf, size = cut(size,breaks = c(-Inf,2,10,30,Inf)), group = id, color = cat)) + 
   geom_point() + 
@@ -97,7 +106,8 @@ pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/pycl
 do.call(grid.arrange,(c(myplots, ncol=3)))
 dev.off()
 
-ggplot(res, aes(x=ccf_a, y=ccf_b, color = idh_codel_subtype, size=cut(size,breaks = c(-Inf,10,100,1000,Inf)))) +
+
+g <- ggplot(res, aes(x=ccf_a, y=ccf_b, color = idh_codel_subtype, size=cut(size,breaks = c(-Inf,10,100,1000,Inf)))) +
   geom_point(alpha = 0.1) +
   labs(x = "Cancer Cell Fraction Rank in Primary", y = "Cancer Cell Fraction Rank in Recurrent", size = "Number of Samples", color = "Subtype") +
   theme_bw(base_size = 12) + theme(axis.title = element_text(size = 10),
@@ -106,4 +116,8 @@ ggplot(res, aes(x=ccf_a, y=ccf_b, color = idh_codel_subtype, size=cut(size,break
                                    panel.grid.minor = element_blank(),
                                    panel.background = element_rect(fill = "transparent"),
                                    axis.line = element_blank())
-  
+g
+
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/pyclone_ccf_comparison_all.pdf", width = 6, height = 4)
+plot(g)
+dev.off()

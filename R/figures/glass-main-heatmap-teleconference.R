@@ -15,6 +15,9 @@ snvgdata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_snv_by_gene.sql"))
 cnv_data <- dbGetQuery(con, read_file("sql/heatmap/heatmap_cnv.sql"))
 cnvgdata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_cnv_by_gene.sql"))
 
+arm_data <- dbGetQuery(con, read_file("sql/heatmap/heatmap_arm.sql"))
+armadata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_arm_by_arm.sql"))
+
 mutfdata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_mf.sql"))
 clindata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_clinical.sql"))
 timedata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_time.sql"))
@@ -29,9 +32,8 @@ pycldata  <- dbGetQuery(con, read_file("sql/heatmap/heatmap_pyclone_clusters.sql
 ## Check counts (cases)
 
 n_distinct(hmapdata$case_barcode)
-n_distinct(snvgdata$case_barcode)
 n_distinct(cnv_data$case_barcode)
-n_distinct(cnvgdata$case_barcode)
+n_distinct(arm_data$case_barcode)
 n_distinct(mutfdata$case_barcode)
 n_distinct(clindata$case_barcode)
 n_distinct(timedata$case_barcode)
@@ -49,6 +51,8 @@ n_distinct(snvgdata$gene_symbol)
 n_distinct(cnv_data$gene_symbol)
 n_distinct(cnvgdata$gene_symbol)
 
+## Check counts (arms)
+n_distinct(armadata$arm)
 
 ########################
 # Data pre-processing: transform data into a form that can be ingested and used by ggplot plotting engine
@@ -76,21 +80,9 @@ sort_df <-
   left_join(clindata) %>% 
   left_join(anpldata) %>%
   left_join(neutrdata) %>%
+  #arrange(desc(cnv_driver_count + snv_driver_count))
   #arrange(evolution_a,evolution_b)
   arrange(desc(mf_b)) # snv_driver_count, cnv_driver_count)#, aneuploidy_b - aneuploidy_a, 
-
-
-#pycldata <- pycldata %>% 
-#  mutate(min_ccf = ifelse(is.na(min_ccf), 0, min_ccf),
-#         cluster_size = ifelse(is.na(cluster_size), 0, cluster_size))
-
-#mut_freq_prop_gene = genedata %>% 
-#  mutate(P = (count_a-shared)/total,
-#         R =  (count_b-shared)/total,
-#         S = shared/total) %>% 
-#  select(P, R, S, gene_symbol) %>% 
-#  gather(mutation_type, mutation_percent, c(P, R, S), -gene_symbol) %>%
-#  mutate(mutation_type = factor(mutation_type, levels = c("R", "P", "S")))
 
 ########################
 # Data re-ordering: order plot elements to match one another
@@ -99,8 +91,8 @@ sort_df <-
 case_order <- unique(sort_df$case_barcode)
 snv_gene_order <- rev(unique(snvgdata$gene_symbol))
 cnv_gene_order <- rev(unique(cnvgdata$gene_symbol))
+arm_order <- rev(c("1p","19q","7p","7q","10p","10q"))
 
-#idh_codel_data <- idh_codel_data %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
 c710_data <- c710data %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
 time_data <- time_data %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
 clin_data <- clindata %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
@@ -108,6 +100,11 @@ mut_freq_case <- mut_freq_case %>% mutate(case_barcode = factor(case_barcode, le
 anpl_data <- anpldata %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
 puri_data <- puridata %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
 mut_freq_prop_case <- mut_freq_prop_case %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
+arm_heatmap <- arm_data %>% mutate(case_barcode = factor(case_barcode, levels = case_order),
+                                   segment_qual = ifelse(!is.na(cnv_state), "Contiguous", "Disrupted"),
+                                   cnv_state = ifelse(cnv_state == "neut", NA, cnv_state),
+                                   arm = factor(arm, levels = arm_order))
+armadata <- armadata %>% mutate(arm = factor(arm, levels = arm_order))
 cnv_heatmap <- cnv_data %>% mutate(case_barcode = factor(case_barcode, levels = case_order),
                                    gene_symbol = factor(gene_symbol, levels = cnv_gene_order))
 mut_heatmap <- hmapdata %>% mutate(case_barcode = factor(case_barcode, levels = case_order),
@@ -118,8 +115,6 @@ snvgdata <- snvgdata %>% mutate(gene_symbol = factor(gene_symbol, levels = snv_g
 cnvgdata <- cnvgdata %>% mutate(gene_symbol = factor(gene_symbol, levels = cnv_gene_order))
 neutrdata <- neutrdata %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
 pycldata <- pycldata %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
-
-#mut_freq_prop_gene <- mut_freq_prop_gene %>% mutate(gene_symbol = factor(gene_symbol, levels = gene_order))
 
 ######################## 
 ## Common plotting elements
@@ -230,7 +225,7 @@ testPlot(gg_time_data)
 gg_pyclone_clusters <-
   ggplot(pycldata, aes(x=case_barcode, fill = cut(pycldata$cluster_size,c(0,2,10,30,Inf)))) + #fill = cut(min_ccf,breaks = c(-Inf,0.25,0.50,0.75,Inf)))) + #, fill = cut(pycldata$cluster_size,c(0,2,10,30,Inf)))) +
   geom_bar(position = "stack") +
-  labs(y = "No. of PyClone Clusters", fill = "Cluster Size") +
+  labs(y = "No. of PyClone Clusters", fill = "Cluster Size", x = "Patient") +
   scale_fill_manual(values = c("#fef0d9", "#fdcc8a", "#fc8d59", "#d7301f")) +
   scale_y_continuous(breaks = c(0,4,8,12))
 
@@ -263,10 +258,6 @@ ggtmp <- ggplot(tmp, aes(x, ccf)) +
 
 ggtmp
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/min_dominant_persistant_cluster_ccf.pdf", width = 8, height = 8)
-ggtmp
-dev.off()
-
 ########################
 ## Plot clinical
 ########################
@@ -287,6 +278,7 @@ testPlot(gg_clinical)
 ########################
 ## Plot co-variates
 ########################
+
 gg_evolution <-
   neutrdata %>%
   gather(key = "type", value = "value", evolution_a, evolution_b) %>%
@@ -315,74 +307,14 @@ testPlot(gg_c710)
 gg_anpl_data <-
   ggplot(anpl_data, aes(x=case_barcode)) +
   geom_bar(aes(y = aneuploidy_b - aneuploidy_a), fill = "#beaed4", alpha = 1, stat = "identity") +
-  #geom_point(aes(y = 0, color = factor(qc_fail))) +
-  coord_cartesian(ylim=c(-1,1)) +
+  coord_cartesian(ylim=c(-0.5,0.5)) +
   labs(y = "Aneuploidy \ndifference")
-  #scale_color_manual(values = c("1" = "red", "0" = NA))
 
 testPlot(gg_anpl_data)
-
-# gg_anpl_data1 <-
-#   ggplot(anpl_data, aes(x=case_barcode)) +
-#   geom_bar(aes(y = aneuploidy_amp_score_b - aneuploidy_amp_score_a), fill = "#de2d26", stat = "identity")
-# 
-# testPlot(gg_anpl_data1)
-# 
-# gg_anpl_data2 <-
-#   ggplot(anpl_data, aes(x=case_barcode)) +
-#   geom_bar(aes(y = aneuploidy_del_score_b - aneuploidy_del_score_a), fill = "#3182bd", stat = "identity")
-# 
-# testPlot(gg_anpl_data2)
-# 
-
-# gg_puri_data_p <-
-#   ggplot(puri_data, aes(x=case_barcode)) +
-#   geom_bar(aes(y=purity_a), fill = "#a1d99b", stat = "identity")
-# 
-# testPlot(gg_puri_data_p)
-# 
-# gg_puri_data_r <-
-#   ggplot(puri_data, aes(x=case_barcode)) +
-#   geom_bar(aes(y=purity_b), fill = "#a1d99b", stat = "identity")
-# 
-# testPlot(gg_puri_data_r)
-# 
-# gg_seqz_puri_data_p <-
-#   ggplot(puri_data, aes(x=case_barcode)) +
-#   geom_bar(aes(y=seqz_purity_a), fill = "#a1d99b", stat = "identity")
-# 
-# testPlot(gg_seqz_puri_data_p)
-# 
-# gg_seqz_puri_data_r <-
-#   ggplot(puri_data, aes(x=case_barcode)) +
-#   geom_bar(aes(y=seqz_purity_b), fill = "#a1d99b", stat = "identity") + 
-#   geom_hline(yintercept = 0.25)
-# 
-# testPlot(gg_seqz_puri_data_r)
 
 ########################
 ## Plot driver data
 ########################
-
-# gg_snv_driver_count <- 
-#   driv_hm %>% 
-#   gather(key = "type", value = "value", snv_driver_count_shared, snv_driver_count_private_a, snv_driver_count_private_b) %>%
-#   ggplot(aes(x=case_barcode)) +
-#   geom_bar(aes(y=as.integer(value), fill = type), stat = "identity") + 
-#   labs(y = "# of drivers") #+
-#   #scale_fill_manual(values = c("#ffff33", "#ff7f00"))
-# 
-# testPlot(gg_snv_driver_count)
-# 
-# gg_cnv_driver_count <- 
-#   driv_hm %>% 
-#   gather(key = "type", value = "value", cnv_driver_count_shared, cnv_driver_count_private_a, cnv_driver_count_private_b) %>%
-#   ggplot(aes(x=case_barcode)) +
-#   geom_bar(aes(y=as.integer(value), fill = type), stat = "identity") + 
-#   labs(y = "# of drivers") #+
-# #scale_fill_manual(values = c("#ffff33", "#ff7f00"))
-
-# testPlot(gg_cnv_driver_count)
 
 gg_driver_count <- 
   driv_hm %>% 
@@ -393,8 +325,9 @@ gg_driver_count <-
   ggplot(aes(x=case_barcode)) +
   geom_bar(aes(y=as.integer(value), fill = type), stat = "identity") + 
   labs(y = "# of drivers") +
-  scale_fill_brewer(palette = "Paired", type = "qual")
-#scale_fill_manual(values = c("#ffff33", "#ff7f00"))
+  scale_fill_brewer(palette = "Paired", type = "qual") +
+  scale_y_continuous(breaks = c(0,4,8,12)) +
+  coord_cartesian(ylim=c(0,12))
 
 testPlot(gg_driver_count)
 
@@ -425,18 +358,27 @@ gg_mut_freq_prop_case <-
 testPlot(gg_mut_freq_prop_case)
 
 ########################
-## Plot proportions shared/private per gene
+## Plot proportions shared/private per gene (SNVs)
 ########################
 
-gg_snv_prop_gene <-
-  snvgdata %>%
-  #filter(idh_codel_subtype == "all") %>%
+tmp1 <- snvgdata %>%
   group_by(idh_codel_subtype) %>% 
   gather(key = "type", value = "value", prop_shared, prop_private_a, prop_private_b) %>%
   mutate(type = factor(type,
                        levels = c("prop_private_b", "prop_private_a", "prop_shared"),
                        labels = c("R", "P", "S"))) %>%
-  ggplot(aes(x = gene_symbol, y = value, fill = type)) +
+  ungroup()
+
+gg_snv_prop_gene_all <- ggplot(tmp1, aes(x = gene_symbol, y = value, fill = type)) +
+  geom_bar(stat="identity") + 
+  geom_text(aes(label = sprintf("n=%s", total)), y = 0.90, stat = "identity", check_overlap = TRUE) +
+  labs(y = "% mutation", x = "Gene Symbol") +
+  scale_fill_manual(values=c("R" = "#2FB3CA", "P" ="#CA2F66", "S"="#CA932F")) +
+  coord_flip()
+
+testPlot(gg_snv_prop_gene_all)
+
+gg_snv_prop_gene <- tmp1 %>% filter(idh_codel_subtype == "all") %>% ggplot(aes(x = gene_symbol, y = value, fill = type)) +
   geom_bar(stat="identity") +
   labs(y = "% mutation", x = "Gene Symbol") +
   scale_fill_manual(values=c("R" = "#2FB3CA", "P" ="#CA2F66", "S"="#CA932F")) +
@@ -444,23 +386,28 @@ gg_snv_prop_gene <-
 
 testPlot(gg_snv_prop_gene)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/snv_prop_genes.pdf", width = 12, height = 8)
-testPlot(gg_snv_prop_gene)
-dev.off()
+########################
+## Plot proportions shared/private per gene (CNV)
+########################
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/snv_prop_gene_all.pdf", width = 12, height = 8)
-testPlot(gg_snv_prop_gene)
-dev.off()
-
-gg_cnv_prop_gene <-
-  cnvgdata %>%
-  #filter(idh_codel_subtype == "all") %>%
+tmp2 <- cnvgdata %>%
   group_by(idh_codel_subtype) %>% 
   gather(key = "type", value = "value", prop_shared, prop_private_a, prop_private_b) %>%
   mutate(type = factor(type,
                        levels = c("prop_private_b", "prop_private_a", "prop_shared"),
                        labels = c("R", "P", "S"))) %>%
-  ggplot(aes(x = gene_symbol, y = value, fill = type)) +
+  ungroup()
+
+gg_cnv_prop_gene_all <- ggplot(tmp2, aes(x = gene_symbol, y = value, fill = type)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = sprintf("n=%s", total)), y = 0.90, stat = "identity", check_overlap = TRUE) +
+  labs(y = "% cnv", x = "Gene Symbol") +
+  scale_fill_manual(values=c("R" = "#2FB3CA", "P" ="#CA2F66", "S"="#CA932F")) +
+  coord_flip()
+
+testPlot(gg_cnv_prop_gene_all)
+
+gg_cnv_prop_gene <- tmp2 %>% filter(idh_codel_subtype == "all") %>% ggplot(aes(x = gene_symbol, y = value, fill = type)) +
   geom_bar(stat="identity") +
   labs(y = "% cnv", x = "Gene Symbol") +
   scale_fill_manual(values=c("R" = "#2FB3CA", "P" ="#CA2F66", "S"="#CA932F")) +
@@ -468,14 +415,34 @@ gg_cnv_prop_gene <-
 
 testPlot(gg_cnv_prop_gene)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/cnv_prop_genes.pdf", width = 12, height = 8)
-testPlot(gg_cnv_prop_gene)
-dev.off()
+########################
+## Plot proportions shared/private per gene (arm-level)
+########################
 
+tmp3 <- armadata %>%
+  group_by(idh_codel_subtype) %>% 
+  gather(key = "type", value = "value", prop_shared, prop_private_a, prop_private_b) %>%
+  mutate(type = factor(type,
+                       levels = c("prop_private_b", "prop_private_a", "prop_shared"),
+                       labels = c("R", "P", "S"))) %>%
+  ungroup()
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/cnv_prop_gene_all.pdf", width = 12, height = 8)
-testPlot(gg_cnv_prop_gene)
-dev.off()
+gg_arm_prop_arm_all <- ggplot(tmp3, aes(x = arm, y = value, fill = type)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = sprintf("n=%s", total)), y = 0.90, stat = "identity", check_overlap = TRUE) +
+  labs(y = "% cnv", x = "Arm") +
+  scale_fill_manual(values=c("R" = "#2FB3CA", "P" ="#CA2F66", "S"="#CA932F")) +
+  coord_flip()
+
+testPlot(gg_arm_prop_arm_all)
+
+gg_arm_prop_arm <- tmp3 %>% filter(idh_codel_subtype == "all") %>% ggplot(aes(x = arm, y = value, fill = type)) +
+  geom_bar(stat="identity") +
+  labs(y = "% cnv", x = "Arm") +
+  scale_fill_manual(values=c("R" = "#2FB3CA", "P" ="#CA2F66", "S"="#CA932F")) +
+  coord_flip()
+
+testPlot(gg_arm_prop_arm)
 
 ########################
 ## Plot mutations
@@ -500,6 +467,21 @@ gg_mut_heatmap <-
 testPlot(gg_mut_heatmap)
 
 ########################
+## Plot arm cnv
+########################
+
+gg_arm_heatmap <-
+  ggplot(arm_heatmap, aes(x=case_barcode, y=arm)) + 
+  geom_tile(aes(fill=segment_qual)) +
+  scale_fill_manual(values=c("white", "#f2f0f7"), na.value = "gray90") +
+  geom_point(aes(color = cnv_state, shape = cnv_change), size=1) + #
+  scale_color_manual(values=c("del" = "#0571b0", #0 = "#f7f7f7",
+                              "amp" = "#ca0020")) +
+  labs(y = "Chr. Arm", color = "CNV type", shape = "Arm evolution", fill = "Segment Quality")
+
+testPlot(gg_arm_heatmap)   
+
+########################
 ## Plot CNV
 ########################
 
@@ -510,13 +492,13 @@ gg_cnv_heatmap <-
   geom_point(aes(color = cnv_state, shape = cnv_change), size=1) + #
   scale_color_manual(values=c("HLDEL" = "#0571b0", #0 = "#f7f7f7",
                               "HLAMP" = "#ca0020")) +
-  labs(y = "Gene Symbol", color = "CNV type", shape = "CNV evolution")
+  labs(y = "Gene Symbol", color = "CNV type", shape = "CNV evolution", x = "Patient")
 
 testPlot(gg_cnv_heatmap)   
 
 
 ########################
-## Layout plot elements
+## Plot figure legends
 ########################
 
 gleg1 <- gg_rbind(gg_legend(gg_clinical),
@@ -536,67 +518,121 @@ gleg3 <- gg_rbind(gg_legend(gg_mut_heatmap),
                   gg_legend(gg_mut_freq_case),
                   heights = rep(1,3),
                   ncol = 1)
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/legends-new.pdf", height = 12, width = 4)
+
+gleg4 <- gg_rbind(gg_legend(gg_arm_heatmap),
+                  gg_legend(gg_pyclone_clusters),
+                  heights = rep(1,2),
+                  ncol = 1)
+
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/legends-fig1-fig3.pdf", height = 12, width = 4)
 plot(gleg1)
 plot(gleg2)
 plot(gleg3)
+plot(gleg4)
 dev.off()
 
-g0 <- ggplotGrob(gg_mut_freq_case + plot_grid + plot_theme + null_legend + null_x + null_facet + top_margin) %>% gtable_frame()
-g1 <- ggplotGrob(gg_pyclone_clusters + plot_grid + plot_theme + null_legend + null_x + null_facet + top_margin) %>% gtable_frame()
-g2 <- ggplotGrob(gg_clinical + plot_grid + plot_theme + null_legend + null_x + null_facet + top_margin) %>% gtable_frame()
-g3 <- ggplotGrob(gg_c710 + plot_grid + plot_theme + null_legend + null_x + null_y + null_facet + top_margin) %>% gtable_frame()
-g4 <- ggplotGrob(gg_anpl_data + plot_grid + plot_theme + null_legend + null_x + null_facet + bottom_margin) %>% gtable_frame()
-g5 <- ggplotGrob(gg_driver_count + plot_grid + plot_theme + null_legend + null_x + null_facet + bottom_margin) %>% gtable_frame()
-g6 <- ggplotGrob(gg_driver_context + plot_grid + plot_theme + null_legend + null_x + null_facet ) %>% gtable_frame()
-g7 <- ggplotGrob(gg_mut_freq_prop_case + plot_grid + plot_theme + null_legend + null_x + null_facet + bottom_margin) %>% gtable_frame()
-g8 <- ggplotGrob(gg_mut_heatmap + plot_grid + plot_theme + null_legend + null_x + null_facet ) %>% gtable_frame()
-g9 <- ggplotGrob(gg_cnv_heatmap + plot_grid + plot_theme + null_legend + bottom_x + null_facet + bottom_margin) %>% gtable_frame()
-g10 <- ggplotGrob(gg_evolution + plot_grid + plot_theme + null_legend + null_x + null_facet) %>% gtable_frame()
+########################
+## Plot exploratory/overview heatmap
+########################
 
-g <- gg_rbind(g0, g1, g2, g3, g4, g5, g6, g7, g8, g9, heights = c(5, 4, 5, 1, 4, 4, 7, 4, 12, 12), ncol = 1)
+g <- gg_rbind(gtable_frame(ggplotGrob(gg_mut_freq_case      + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+              gtable_frame(ggplotGrob(gg_pyclone_clusters   + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+              gtable_frame(ggplotGrob(gg_clinical           + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+              gtable_frame(ggplotGrob(gg_c710               + plot_grid + plot_theme + null_legend + null_x + null_y + null_facet)),
+              gtable_frame(ggplotGrob(gg_anpl_data          + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+              gtable_frame(ggplotGrob(gg_driver_count       + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+              gtable_frame(ggplotGrob(gg_driver_context     + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+              gtable_frame(ggplotGrob(gg_mut_freq_prop_case + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+              gtable_frame(ggplotGrob(gg_evolution          + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+              gtable_frame(ggplotGrob(gg_arm_heatmap        + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+              gtable_frame(ggplotGrob(gg_mut_heatmap        + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+              gtable_frame(ggplotGrob(gg_cnv_heatmap        + plot_grid + plot_theme + null_legend + bottom_x + null_facet)),
+              heights = c(4, 4, 4, 1, 4, 4, 3, 4, 2, 6, 12, 12),
+              ncol = 1)
 plot(g)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/fig_full.pdf", height = 16, width = 12)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/heatmap_full.pdf", height = 16, width = 12)
 plot(g)
 dev.off()
 
-g_2 <- gg_rbind(g0, g7, g2 , g1 , heights = c(5, 5, 5, 5), ncol = 1)
-plot(g_2)
+########################
+## Plot figure 1 heatmap
+########################
+
+fig1a <- gg_rbind(gtable_frame(ggplotGrob(gg_mut_freq_case + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_mut_freq_prop_case + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_clinical + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_pyclone_clusters + plot_grid + plot_theme + null_legend + bottom_x + null_facet + bottom_margin)),
+                  heights = c(5, 5, 4, 5), ncol = 1)
+plot(fig1a)
 
 pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/f1a-fpb.pdf", height = 12, width = 16, bg = "transparent", useDingbats = FALSE)
-plot(g_2) 
+plot(fig1a) 
 dev.off()
 
-## plot with sidebars
-gb <- ggplotGrob(gg_blank + plot_theme + null_legend + null_x + null_y + null_facet + top_margin) %>% gtable_frame()
-g8b <- ggplotGrob(gg_snv_prop_gene + plot_grid + plot_theme + null_legend + null_x + null_y + null_facet) %>% gtable_frame()
-g9b <- ggplotGrob(gg_cnv_prop_gene + plot_grid + plot_theme + null_legend + bottom_x + null_y + null_facet + bottom_margin) %>% gtable_frame()
+########################
+## Plot Figure 3 heatmap
+########################
 
-g0sb <- gg_cbind(g0, gb, widths = c(0.1,8))
-g1sb <- gg_cbind(g1, gb, widths = c(0.1,8))
-g2sb <- gg_cbind(g2, gb, widths = c(0.1,8))
-g3sb <- gg_cbind(g3, gb, widths = c(0.1,8))
-g4sb <- gg_cbind(g4, gb, widths = c(0.1,8))
-g5sb <- gg_cbind(g5, gb, widths = c(0.1,8))
-g6sb <- gg_cbind(g6, gb, widths = c(0.1,8))
-g7sb <- gg_cbind(g7, gb, widths = c(0.1,8))
-g8sb <- gg_cbind(g8, g8b, widths = c(0.1,8))
-g9sb <- gg_cbind(g9, g9b, widths = c(0.1,8))
-g10sb <- gg_cbind(g10, gb, widths = c(0.1,8))
+gb <- gtable_frame(ggplotGrob(gg_blank + plot_theme + null_legend + null_x + null_y + null_facet))  
 
-gsb <- gg_rbind(g0sb, g1sb, g2sb, g3sb, g4sb, g5sb, g6sb, g7sb, g8sb, g9sb, heights = c(5, 4, 5, 1, 4, 4, 7, 4, 12, 12), ncol = 2)
-plot(gsb)
+fig3a <- gg_rbind(gg_cbind(gtable_frame(ggplotGrob(gg_clinical + plot_grid + plot_theme + null_legend + null_x + null_facet)), 
+                           gb,
+                           widths = c(0.1,8)),
+                  gg_cbind(gtable_frame(ggplotGrob(gg_evolution     + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                           gb,
+                           widths = c(0.1,8)),
+                  gg_cbind(gtable_frame(ggplotGrob(gg_anpl_data     + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                           gb,
+                           widths = c(0.1,8)),
+                  gg_cbind(gtable_frame(ggplotGrob(gg_driver_count  + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                           gb,
+                           widths = c(0.1,8)),
+                  gg_cbind(gtable_frame(ggplotGrob(gg_mut_heatmap   + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                           gtable_frame(ggplotGrob(gg_snv_prop_gene + plot_grid + plot_theme + null_legend + null_x + null_y + null_facet)),
+                           widths = c(0.1,8)),
+                  gg_cbind(gtable_frame(ggplotGrob(gg_arm_heatmap   + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                           gtable_frame(ggplotGrob(gg_arm_prop_arm  + plot_grid + plot_theme + null_legend + null_x + null_y + null_facet)),
+                           widths = c(0.1,8)),
+                  gg_cbind(gtable_frame(ggplotGrob(gg_cnv_heatmap   + plot_grid + plot_theme + null_legend + bottom_x + null_facet)),
+                           gtable_frame(ggplotGrob(gg_cnv_prop_gene + plot_grid + plot_theme + null_legend + bottom_x + null_y + null_facet)),
+                           widths = c(0.1,8)),
+                  heights = c(4, 2, 3, 3, 12, 6, 12),
+                  ncol = 2)
+plot(fig3a)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/fig_full_w_sidebar.pdf", height = 16, width = 12)
-plot(gsb)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 3/f3a-fpb.pdf", height = 16, width = 16, bg = "transparent", useDingbats = FALSE)
+plot(fig3a)
 dev.off()
 
-gsb <- gg_rbind(g2sb, g6sb, g10sb, g8sb, g4sb, g9sb, heights = c(5, 3, 1, 12, 3, 12), ncol = 2)
-plot(gsb)
+########################
+## Plot PyClone minimum dominant cluster CCF
+########################
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 3/f3a-fpb.pdf", height = 12, width = 16, bg = "transparent", useDingbats = FALSE)
-plot(gsb)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/min_dominant_persistant_cluster_ccf.pdf", width = 5, height = 5, useDingbats = FALSE)
+plot(ggtmp)
 dev.off()
 
+########################
+## Plot supplementary figure proportions (SNV)
+########################
 
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/snv_prop_gene_all.pdf", width = 12, height = 8, useDingbats = FALSE)
+testPlot(gg_snv_prop_gene_all)
+dev.off()
+
+########################
+## Plot supplementary figure proportions (CNV)
+########################
+
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/cnv_prop_genes_all.pdf", width = 12, height = 8, useDingbats = FALSE)
+testPlot(gg_cnv_prop_gene_all)
+dev.off()
+
+########################
+## Plot supplementary figure proportions (arm)
+########################
+
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/arm_prop_arm_all.pdf", width = 12, height = 8, useDingbats = FALSE)
+testPlot(gg_arm_prop_arm_all)
+dev.off()
