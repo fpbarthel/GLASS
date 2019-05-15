@@ -25,14 +25,30 @@ drivdata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_drivers.sql"))
 
 neutrdata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_evolution.sql"))
 pycldata  <- dbGetQuery(con, read_file("sql/heatmap/heatmap_pyclone_clusters.sql"))
-# neutrdata = read_tsv("sandbox/glass-evolution-neutrality-20190129.txt")
-# all_drivers = dbGetQuery(con, "SELECT * FROM analysis.driver_status")
-# neutrdata = all_drivers %>% 
-#   left_join(neutrdata, by="tumor_pair_barcode") %>% 
-#   mutate(case_barcode = substr(tumor_pair_barcode, 1, 12),
-#          evolution = paste(bayesian_evo_p,bayesian_evo_r, sep="-" ),
-#          evolution = ifelse(evolution=="NA-NA", NA, evolution)) %>% 
-#   select(case_barcode, evolution, idh_codel_subtype = idh_codel_subtype.x)
+
+## Check counts (cases)
+
+n_distinct(hmapdata$case_barcode)
+n_distinct(snvgdata$case_barcode)
+n_distinct(cnv_data$case_barcode)
+n_distinct(cnvgdata$case_barcode)
+n_distinct(mutfdata$case_barcode)
+n_distinct(clindata$case_barcode)
+n_distinct(timedata$case_barcode)
+n_distinct(anpldata$case_barcode)
+n_distinct(c710data$case_barcode)
+n_distinct(puridata$case_barcode)
+n_distinct(drivdata$case_barcode)
+n_distinct(neutrdata$case_barcode)
+n_distinct(pycldata$case_barcode)
+
+## Check counts (genes)
+
+n_distinct(hmapdata$gene_symbol)
+n_distinct(snvgdata$gene_symbol)
+n_distinct(cnv_data$gene_symbol)
+n_distinct(cnvgdata$gene_symbol)
+
 
 ########################
 # Data pre-processing: transform data into a form that can be ingested and used by ggplot plotting engine
@@ -59,7 +75,14 @@ sort_df <-
   left_join(drivdata) %>%
   left_join(clindata) %>% 
   left_join(anpldata) %>%
+  left_join(neutrdata) %>%
+  #arrange(evolution_a,evolution_b)
   arrange(desc(mf_b)) # snv_driver_count, cnv_driver_count)#, aneuploidy_b - aneuploidy_a, 
+
+
+#pycldata <- pycldata %>% 
+#  mutate(min_ccf = ifelse(is.na(min_ccf), 0, min_ccf),
+#         cluster_size = ifelse(is.na(cluster_size), 0, cluster_size))
 
 #mut_freq_prop_gene = genedata %>% 
 #  mutate(P = (count_a-shared)/total,
@@ -88,11 +111,13 @@ mut_freq_prop_case <- mut_freq_prop_case %>% mutate(case_barcode = factor(case_b
 cnv_heatmap <- cnv_data %>% mutate(case_barcode = factor(case_barcode, levels = case_order),
                                    gene_symbol = factor(gene_symbol, levels = cnv_gene_order))
 mut_heatmap <- hmapdata %>% mutate(case_barcode = factor(case_barcode, levels = case_order),
-                                   gene_symbol = factor(gene_symbol, levels = snv_gene_order))
+                                   gene_symbol = factor(gene_symbol, levels = snv_gene_order),
+                                   covered = factor(covered, levels = c("Coverage < 5x", "Coverage >= 5x", "Coverage >= 15x", "Coverage >= 30x")))
 driv_hm <- drivdata %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
 snvgdata <- snvgdata %>% mutate(gene_symbol = factor(gene_symbol, levels = snv_gene_order))
 cnvgdata <- cnvgdata %>% mutate(gene_symbol = factor(gene_symbol, levels = cnv_gene_order))
 neutrdata <- neutrdata %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
+pycldata <- pycldata %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
 
 #mut_freq_prop_gene <- mut_freq_prop_gene %>% mutate(gene_symbol = factor(gene_symbol, levels = gene_order))
 
@@ -199,22 +224,65 @@ gg_time_data <-
 testPlot(gg_time_data)
 
 ########################
+## Plot PyCle clusters
+########################
+
+gg_pyclone_clusters <-
+  ggplot(pycldata, aes(x=case_barcode, fill = cut(pycldata$cluster_size,c(0,2,10,30,Inf)))) + #fill = cut(min_ccf,breaks = c(-Inf,0.25,0.50,0.75,Inf)))) + #, fill = cut(pycldata$cluster_size,c(0,2,10,30,Inf)))) +
+  geom_bar(position = "stack") +
+  labs(y = "No. of PyClone Clusters", fill = "Cluster Size") +
+  scale_fill_manual(values = c("#fef0d9", "#fdcc8a", "#fc8d59", "#d7301f")) +
+  scale_y_continuous(breaks = c(0,4,8,12))
+
+testPlot(gg_pyclone_clusters)
+
+########################
+## Plot PyClone dominant cluster 
+########################
+
+tmp <- pycldata %>% 
+  group_by(case_barcode) %>% 
+  summarize(ccf=max(min_ccf)) %>% 
+  ungroup() %>%
+  filter(complete.cases(ccf), !duplicated(ccf)) %>%
+  arrange(desc(ccf)) %>%
+  mutate(x=row_number()/n())
+
+ggtmp <- ggplot(tmp, aes(x, ccf)) + 
+  geom_hline(yintercept = max(tmp$x[tmp$ccf>0.25]), linetype = 2, color = "blue") +
+  geom_vline(xintercept = 0.25, linetype = 2, color = "blue") +
+  geom_hline(yintercept = max(tmp$x[tmp$ccf>0.50]), linetype = 2, color = "green") +
+  geom_vline(xintercept = 0.50, linetype = 2, color = "green") +
+  geom_text(x=0.25-0.025, y = max(tmp$x[tmp$ccf>0.25])-0.025, label = sprintf("%s%%", round(max(tmp$x[tmp$ccf>0.25])*100,1)), color = "blue", hjust = 1, vjust = 1) +
+  geom_text(x=0.50-0.025, y = max(tmp$x[tmp$ccf>0.50])-0.025, label = sprintf("%s%%", round(max(tmp$x[tmp$ccf>0.50])*100,1)), color = "green", hjust = 1, vjust = 1) +
+  geom_point() + 
+  geom_line() + 
+  coord_cartesian(xlim = c(0,1), ylim = c(0,1)) + 
+  labs(x= "Mininum Dominant Persistant Cluster Cancer Cell Fraction", y = "Proportion of Patients") + 
+  theme_bw(base_size = 12)
+
+ggtmp
+
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/min_dominant_persistant_cluster_ccf.pdf", width = 8, height = 8)
+ggtmp
+dev.off()
+
+########################
 ## Plot clinical
 ########################
 
 gg_clinical <-
   clin_data %>% 
-  gather(key = "type", value = "value", location_distal, grade_change, received_alk, received_rt, is_hypermutator) %>%
+  gather(key = "type", value = "value", grade_change, received_rt,received_alk, is_hypermutator) %>%
   mutate(type = factor(type,
-                       levels = c("location_distal", "grade_change", "received_alk", "received_rt", "is_hypermutator"),
-                       labels = c("Distal location", "Grade increase", "Received Alkyl.", "Received RT", "Hypermutator"))) %>%
+                       levels = c("grade_change", "received_rt","received_alk",  "is_hypermutator"),
+                       labels = c("Grade increase", "Received RT","Received Alkyl.", "Hypermutator"))) %>%
   ggplot(aes(x=case_barcode)) +
   geom_tile(aes(fill = factor(value), y = type)) +
   scale_fill_manual(values=c("white", "#377eb8"), na.value = "gray90") +
   labs(y="", fill = "Event")
 
 testPlot(gg_clinical)
-
 
 ########################
 ## Plot co-variates
@@ -266,11 +334,31 @@ testPlot(gg_anpl_data)
 # 
 # testPlot(gg_anpl_data2)
 # 
-# gg_puri_data <-
+
+# gg_puri_data_p <-
 #   ggplot(puri_data, aes(x=case_barcode)) +
-#   geom_bar(aes(y=purity_b-purity_a), fill = "#a1d99b", stat = "identity")
+#   geom_bar(aes(y=purity_a), fill = "#a1d99b", stat = "identity")
 # 
-# testPlot(gg_puri_data)
+# testPlot(gg_puri_data_p)
+# 
+# gg_puri_data_r <-
+#   ggplot(puri_data, aes(x=case_barcode)) +
+#   geom_bar(aes(y=purity_b), fill = "#a1d99b", stat = "identity")
+# 
+# testPlot(gg_puri_data_r)
+# 
+# gg_seqz_puri_data_p <-
+#   ggplot(puri_data, aes(x=case_barcode)) +
+#   geom_bar(aes(y=seqz_purity_a), fill = "#a1d99b", stat = "identity")
+# 
+# testPlot(gg_seqz_puri_data_p)
+# 
+# gg_seqz_puri_data_r <-
+#   ggplot(puri_data, aes(x=case_barcode)) +
+#   geom_bar(aes(y=seqz_purity_b), fill = "#a1d99b", stat = "identity") + 
+#   geom_hline(yintercept = 0.25)
+# 
+# testPlot(gg_seqz_puri_data_r)
 
 ########################
 ## Plot driver data
@@ -342,7 +430,7 @@ testPlot(gg_mut_freq_prop_case)
 
 gg_snv_prop_gene <-
   snvgdata %>%
-  filter(idh_codel_subtype == "all") %>%
+  #filter(idh_codel_subtype == "all") %>%
   group_by(idh_codel_subtype) %>% 
   gather(key = "type", value = "value", prop_shared, prop_private_a, prop_private_b) %>%
   mutate(type = factor(type,
@@ -366,7 +454,7 @@ dev.off()
 
 gg_cnv_prop_gene <-
   cnvgdata %>%
-  filter(idh_codel_subtype == "all") %>%
+  #filter(idh_codel_subtype == "all") %>%
   group_by(idh_codel_subtype) %>% 
   gather(key = "type", value = "value", prop_shared, prop_private_a, prop_private_b) %>%
   mutate(type = factor(type,
@@ -392,9 +480,6 @@ dev.off()
 ########################
 ## Plot mutations
 ########################
-
-mut_heatmap <- hmapdata %>%
-  mutate(covered = factor(covered, levels = c("Coverage < 5x", "Coverage >= 5x", "Coverage >= 15x", "Coverage >= 30x")))
 
 gg_mut_heatmap <-
   ggplot(mut_heatmap, aes(x=case_barcode, y=gene_symbol)) +
@@ -458,7 +543,7 @@ plot(gleg3)
 dev.off()
 
 g0 <- ggplotGrob(gg_mut_freq_case + plot_grid + plot_theme + null_legend + null_x + null_facet + top_margin) %>% gtable_frame()
-g1 <- ggplotGrob(gg_time_data + plot_grid + plot_theme + null_legend + null_x + null_facet + top_margin) %>% gtable_frame()
+g1 <- ggplotGrob(gg_pyclone_clusters + plot_grid + plot_theme + null_legend + null_x + null_facet + top_margin) %>% gtable_frame()
 g2 <- ggplotGrob(gg_clinical + plot_grid + plot_theme + null_legend + null_x + null_facet + top_margin) %>% gtable_frame()
 g3 <- ggplotGrob(gg_c710 + plot_grid + plot_theme + null_legend + null_x + null_y + null_facet + top_margin) %>% gtable_frame()
 g4 <- ggplotGrob(gg_anpl_data + plot_grid + plot_theme + null_legend + null_x + null_facet + bottom_margin) %>% gtable_frame()
@@ -472,11 +557,11 @@ g10 <- ggplotGrob(gg_evolution + plot_grid + plot_theme + null_legend + null_x +
 g <- gg_rbind(g0, g1, g2, g3, g4, g5, g6, g7, g8, g9, heights = c(5, 4, 5, 1, 4, 4, 7, 4, 12, 12), ncol = 1)
 plot(g)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/fig_cnv_drivers.pdf", height = 16, width = 12)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/fig_full.pdf", height = 16, width = 12)
 plot(g)
 dev.off()
 
-g_2 <- gg_rbind(g0, g7, g2 , g1 , heights = c(5, 5, 5, 4), ncol = 1)
+g_2 <- gg_rbind(g0, g7, g2 , g1 , heights = c(5, 5, 5, 5), ncol = 1)
 plot(g_2)
 
 pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/f1a-fpb.pdf", height = 12, width = 16, bg = "transparent", useDingbats = FALSE)
@@ -503,7 +588,7 @@ g10sb <- gg_cbind(g10, gb, widths = c(0.1,8))
 gsb <- gg_rbind(g0sb, g1sb, g2sb, g3sb, g4sb, g5sb, g6sb, g7sb, g8sb, g9sb, heights = c(5, 4, 5, 1, 4, 4, 7, 4, 12, 12), ncol = 2)
 plot(gsb)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/fig_cnv_drivers_w_sidebar.pdf", height = 16, width = 12)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/fig_full_w_sidebar.pdf", height = 16, width = 12)
 plot(gsb)
 dev.off()
 

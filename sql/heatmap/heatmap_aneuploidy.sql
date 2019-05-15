@@ -13,7 +13,7 @@ SELECT
 	a1.aneuploidy_score::integer AS aneuploidy_score_a,
 	a2.aneuploidy_score::integer AS aneuploidy_score_b,
 	(CASE WHEN b1.cnv_exclusion <> 'allow' OR b2.cnv_exclusion <> 'allow' THEN 1 ELSE 0 END) qc_fail
-FROM analysis.silver_set ss
+FROM analysis.gold_set ss
 LEFT JOIN analysis.gatk_aneuploidy a1 ON a1.aliquot_barcode = ss.tumor_barcode_a
 LEFT JOIN analysis.gatk_aneuploidy a2 ON a2.aliquot_barcode = ss.tumor_barcode_b
 --LEFT JOIN analysis.taylor_aneuploidy t1 ON t1.aliquot_barcode = ss.tumor_barcode_a

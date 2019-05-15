@@ -20,5 +20,5 @@ WITH t1 AS
 )
 SELECT t1.*, case_source
 FROM t1
-INNER JOIN analysis.silver_set ss ON t1.case_barcode = ss.case_barcode
+INNER JOIN analysis.gold_set ss ON t1.case_barcode = ss.case_barcode
 LEFT JOIN clinical.cases cc ON t1.case_barcode = cc.case_barcode

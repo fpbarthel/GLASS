@@ -4,7 +4,7 @@ Fractionated mutation proportions per gene (and subtype)
 WITH
 selected_tumor_pairs AS
 (
-	SELECT * FROM analysis.silver_set
+	SELECT * FROM analysis.gold_set
 ),
 selected_aliquots AS
 (
@@ -14,7 +14,7 @@ selected_aliquots AS
 ),
 selected_genes AS
 (
-	SELECT DISTINCT sn.gene_symbol, ensembl_gene_id, chrom, pos, alt, sn.variant_classification, variant_classification_priority, protein_change
+	SELECT DISTINCT sn.gene_symbol, ensembl_gene_id, variant_id, chrom, pos, alt, sn.variant_classification, variant_classification_priority, protein_change
 	FROM variants.anno sn
 	INNER JOIN ref.driver_genes ds ON ds.gene_symbol = sn.gene_symbol
 	INNER JOIN ref.ensembl_gene_mapping gm ON gm.gene_symbol = sn.gene_symbol
@@ -22,7 +22,7 @@ selected_genes AS
 	WHERE
 		has_mut IS TRUE AND
 		((sn.gene_symbol NOT IN ('TERT','IDH1') AND variant_classification_priority IS NOT NULL) OR
-		(sn.gene_symbol = 'TERT' AND sn.variant_classification = '5''Flank' AND lower(sn.pos) IN (1295228,1295250)) OR
+		(sn.gene_symbol = 'TERT' AND sn.variant_classification = 'FIVE_PRIME_FLANK' AND lower(sn.pos) IN (1295228,1295250)) OR
 		(sn.gene_symbol = 'IDH1' AND sn.protein_change IN ('p.R132C','p.R132G','p.R132H','p.R132S')))
 ),
 variants_by_case_and_gene AS

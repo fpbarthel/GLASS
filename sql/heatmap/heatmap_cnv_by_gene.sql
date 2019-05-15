@@ -4,7 +4,7 @@ Fractionated CNV proportions per gene (and subtype)
 WITH
 selected_tumor_pairs AS
 (
-	SELECT * FROM analysis.silver_set
+	SELECT * FROM analysis.gold_set
 ),
 selected_genes AS
 (

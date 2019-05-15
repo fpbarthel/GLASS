@@ -2,7 +2,7 @@ WITH
 selected_tumor_pairs AS
 (
 	SELECT ss.tumor_pair_barcode, ss.tumor_barcode_a, ss.tumor_barcode_b, ss.case_barcode, (CASE WHEN gs.tumor_pair_barcode IS NULL THEN 'Silver set' ELSE 'Gold set' END) AS gold_set
-	FROM analysis.silver_set ss
+	FROM analysis.gold_set ss
 	LEFT JOIN analysis.gold_set gs ON gs.tumor_pair_barcode = ss.tumor_pair_barcode
 ),
 selected_genes AS

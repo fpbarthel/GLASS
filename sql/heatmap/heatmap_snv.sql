@@ -22,7 +22,7 @@ Build a squared gene x subject matrix for heatmap plotting
 WITH
 selected_tumor_pairs AS
 (
-	SELECT * FROM analysis.silver_set
+	SELECT * FROM analysis.gold_set
 ),
 selected_aliquots AS
 (

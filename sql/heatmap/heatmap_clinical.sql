@@ -8,5 +8,5 @@ SELECT
 	(CASE WHEN hypermutator_status = '1' THEN 1 WHEN hypermutator_status = '0' THEN 0 ELSE NULL END) is_hypermutator,
 	idh_codel_subtype
 FROM analysis.tumor_clinical_comparison cp
-INNER JOIN analysis.silver_set ss ON ss.tumor_pair_barcode = cp.tumor_pair_barcode
+INNER JOIN analysis.gold_set ss ON ss.tumor_pair_barcode = cp.tumor_pair_barcode
 LEFT JOIN clinical.subtypes st ON st.case_barcode = cp.case_barcode

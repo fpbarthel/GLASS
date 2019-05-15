@@ -25,7 +25,7 @@ SELECT
     cnv_driver_context_change,
     snv_driver_context_change,
     snv_driver_evolution
-FROM analysis.silver_set ss 
+FROM analysis.gold_set ss 
 LEFT JOIN analysis.driver_status_snv dss ON ss.tumor_pair_barcode = dss.tumor_pair_barcode
 LEFT JOIN analysis.driver_status_cnv dsc ON ss.tumor_pair_barcode = dsc.tumor_pair_barcode
 LEFT JOIN clinical.subtypes st ON st.case_barcode = ss.case_barcode
