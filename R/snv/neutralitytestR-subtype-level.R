@@ -15,7 +15,6 @@ library(DBI)
 library(neutralitytestr)
 library(survminer)
 library(survival)
-require(alluvial)
 library(ggExtra)
 library(EnvStats)
 library(gridExtra)
@@ -31,7 +30,7 @@ subtypes = dbReadTable(con,  Id(schema="clinical", table="subtypes"))
 variant_classifications = dbReadTable(con,  Id(schema="variants", table="variant_classifications"))
 
 # Construct a table that provides subject-level information about clinical variables between two timepoints.
-clinical_tumor_pairs_query = read_file("/sql/clinical/clinical-tumor-pairs-db2.sql")
+clinical_tumor_pairs_query = read_file("sql/clinical/clinical-tumor-pairs-db2.sql")
 clinical_tumor_pairs <- dbGetQuery(con, clinical_tumor_pairs_query)
 
 ################################
@@ -39,7 +38,7 @@ clinical_tumor_pairs <- dbGetQuery(con, clinical_tumor_pairs_query)
 ################################
 # First, analyze the non-hypermutation in recurrent tumor.
 # Currently, there is a coverage filter requirement (30X in both tumor_a and tumor_b) PLUS it is required that both tumors have Mutect2 calls for shared variants.
-neutrality_input  = read_file("/sql/neutrality/neutralitytestr-subtype-resubmission.sql")
+neutrality_input  = read_file("sql/neutrality/neutralitytestr-subtype.sql")
 glass_vaf_cnv_unfiltered <- dbGetQuery(con, neutrality_input)
 
 # Examine the VAFs for variants with 30X. Filter based on copy number status and hypermutation event.
