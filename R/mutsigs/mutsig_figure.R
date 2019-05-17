@@ -2,9 +2,120 @@ library(DBI)
 library(tidyverse)
 library(MutationalPatterns)
 
-con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")  
-res <- dbGetQuery(con, read_file("sql/mut_sig/mut_sig_effect.sql"))
+con <- DBI::dbConnect(odbc::odbc(), "GLASSv2") 
+res <- dbGetQuery(con, read_file("sql/figures/mutsig_boxplot_fig1.sql"))
 
+################ stacked bar plots
+
+res <- res %>% filter(rnk == 1, all_fractions_counts == 3) %>%
+  mutate(signature = factor(signature, levels = c(1,3,8,11,16), labels = c("Signature 1\nAging","Signature 3\nDNA DSB repair","Signature 8\nUnknown","Signature 11\nAlkylating Agent","Signature 16\nUnknown")),
+         fraction = factor(fraction, levels = c("P","S","R")))
+
+plot_theme <- theme_bw(base_size = 12) +
+  theme(axis.title = element_text(size = 12),
+        axis.text = element_text(size=12),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "transparent"),
+        axis.line = element_blank())
+
+gg_sig_stackedbar <- ggplot(res, aes(x = fraction, fill = factor(signature))) +
+  geom_bar(width=1, color = "black") +
+  facet_wrap(~idh_codel_subtype, scales = "free_y") +
+  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ff7f00")) + 
+  scale_y_continuous(expand = c(0,0)) + 
+  scale_x_discrete(expand = c(0,0)) +
+  plot_theme + 
+  labs(x = "Fraction", y = "Number of Patients (n=216)", fill = "Dominant\nMutational\nSignature")
+
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/mutsigs_stacked_bars.pdf", width = 8, height  = 6, useDingbats = FALSE)
+plot(gg_sig_stackedbar)
+dev.off()
+
+
+
+
+################ ################ ################ ################ ################ ################ ################ 
+## New figure
+################ ################ ################ ################ ################ ################ ################ 
+
+res <- dbGetQuery(con, read_file("sql/figures/mutsig_boxplot_fig1.sql"))
+
+res <- res %>% mutate(signature = factor(signature, levels = c(16,3,8,11,1), labels = c("Signature 16\nUnknown","Signature 3\nDNA DSB repair","Signature 8\nUnknown","Signature 11\nAlkylating Agent","Signature 1\nAging")),
+                      fraction = factor(fraction, levels = c("R","S","P"))) #sd_rel_score = ifelse(avg_rel_score + sd_rel_score > 1, 1 - avg_rel_score, sd_rel_score))
+
+tmp0 <- res %>% filter(hypermutator_status == 0)
+tmp1 <- res %>% filter(hypermutator_status == 1)
+
+plot_theme <- theme_bw(base_size = 12) +
+  theme(axis.title = element_text(size = 12),
+        axis.text = element_text(size=12),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "transparent"),
+        axis.line = element_blank(),
+        legend.position = 'none',
+        axis.title.y=element_blank()) + 
+  theme(strip.background = element_blank(),
+        strip.text.x = element_blank())
+
+plot_colors <- scale_fill_manual(values=c("#2FB3CA","#CA932F","#CA2F66"))
+
+null_y        <- theme(axis.text.y=element_blank())
+
+g0_box <- ggplot(tmp0, aes(x = signature, y = rel_score, fill = fraction)) + 
+  geom_boxplot() +
+  scale_y_reverse(expand=c(0,0)) +
+  scale_x_discrete(position = "top") +
+  coord_flip(ylim=c(0,1.0)) +
+  plot_theme + null_y + plot_colors +
+  labs(y = "Signature Score (Non-hypermutants)") +
+  theme(plot.margin= unit(c(1, 0.2, 1, 1), "lines")) ## Top, Right, Bottom, Left
+
+g1_box <- ggplot(tmp1, aes(x = signature, y = rel_score, fill = fraction)) + 
+  geom_boxplot() +
+  scale_y_continuous(expand=c(0,0)) + 
+  scale_x_discrete() +
+  coord_flip(ylim=c(0,1.0)) +
+  plot_theme + plot_colors +
+  theme(axis.text.y = element_text(angle=0, vjust = 0.5)) +
+  labs(y = "Signature Score (Hypermutants)") +
+  theme(plot.margin= unit(c(1, 1, 1, 0.2), "lines")) ## Top, Right, Bottom, Left
+
+g0_bar <- ggplot(tmp0, aes(x = signature, y = avg_rel_score, fill = fraction, ymax = avg_rel_score + sd_rel_score, ymin = 0)) + 
+  geom_errorbar(position = position_dodge(width = 0.9), width = 0.5) +
+  geom_bar(stat = "identity", position = "dodge", color = "black") +
+  scale_y_reverse(expand=c(0,0)) +
+  scale_x_discrete(position = "top") +
+  coord_flip(ylim=c(0,1.0)) +
+  plot_theme + null_y + plot_colors +
+  labs(y = "Signature Score (Non-hypermutants)") +
+  theme(plot.margin= unit(c(1, 0.2, 1, 1), "lines")) ## Top, Right, Bottom, Left
+
+g1_bar <- ggplot(tmp1, aes(x = signature, y = avg_rel_score, fill = fraction, ymax = avg_rel_score + sd_rel_score, ymin = 0)) + 
+  geom_errorbar(position = position_dodge(width = 0.9), width = 0.5) +
+  geom_bar(stat = "identity", position = "dodge", color = "black") +
+  scale_y_continuous(expand=c(0,0)) + 
+  scale_x_discrete() +
+  coord_flip(ylim=c(0,1.0)) +
+  plot_theme + plot_colors +
+  theme(axis.text.y = element_text(angle=0, vjust = 0.5)) +
+  labs(y = "Signature Score (Hypermutants)") +
+  theme(plot.margin= unit(c(1, 1, 1, 0.2), "lines")) ## Top, Right, Bottom, Left
+
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/mutsigs_main_boxplot.pdf", width = 8, height  = 6, useDingbats = FALSE)
+grid.arrange(g0_box, g1_box, ncol=2, widths = c(0.725,1))
+dev.off()
+
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/mutsigs_main_barplot.pdf", width = 8, height  = 6, useDingbats = FALSE)
+grid.arrange(g0_bar, g1_bar, ncol=2, widths = c(0.725,1))
+dev.off()
+
+
+message("Stop here")
+
+### Below are former attempts
+# res <- dbGetQuery(con, read_file("sql/mut_sig/mut_sig_effect.sql"))
 ggplot(res, aes(y=rel_score, x=factor(signature), fill = variant_effect)) + geom_bar(stat = "identity",position="dodge" ) + facet_grid(known_driver_status~sample_type)
 
 mat <- res %>% 

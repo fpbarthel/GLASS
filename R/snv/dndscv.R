@@ -33,6 +33,8 @@ dnds_all <- res_fraction %>%
   distinct() %>%
   dndscv(refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 250)
 
+message("Ran dNdSCV for ", n_distinct(res_fraction$case_barcode) - length(dnds_all$exclsamples))
+
 dnds_all_global = dnds_all$globaldnds
 dnds_all_sel_cv = dnds_all$sel_cv
 dnds_all_gene_ci = geneci(dnds_all, gene_list = known_cancergenes)
@@ -64,6 +66,7 @@ result_list <- lapply(na.omit(unique(res_fraction$subtype)), function(st) {
     message("Computing dNdS for ", fr, " and ", st)
     qres_subset = res_fraction %>% filter(fraction == fr, subtype == st) %>% select(case_barcode,chrom,pos,ref,mut) %>% distinct()
     dnds_subset = dndscv(qres_subset, refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = 250)
+    message(".. Ran dNdSCV for ", n_distinct(qres_subset$case_barcode) - length(dnds_subset$exclsamples))
     globaldnds <- cbind(fraction = fr, subtype = st, dnds_subset$globaldnds)
     sel_cv <- cbind(fraction = fr, subtype = st, dnds_subset$sel_cv)
     gene_ci <- cbind(fraction = fr, subtype = st, geneci(dnds_subset, gene_list = known_cancergenes))
@@ -229,7 +232,7 @@ print(dnds_sample_sel_cv)
 #   labs(x = "Variant Fraction", y = "Global dN/dS", color = "Variant Classification")
 
 ## PDF
-pdf('results/dndscv/dndscv.pdf', height = 12, width = 12)
+pdf('~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 2/dnds.pdf', height = 12, width = 12)
 
 ###################
 ## Plot dNdS for all data

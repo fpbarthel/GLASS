@@ -6,9 +6,9 @@ Modified for per sample analysis
 WITH
 selected_aliquots AS
 (
-    SELECT tumor_barcode_a AS aliquot_barcode, 'P' AS sample_type FROM analysis.silver_set
+    SELECT tumor_barcode_a AS aliquot_barcode, 'P' AS sample_type FROM analysis.gold_set
     UNION
-    SELECT tumor_barcode_b AS aliquot_barcode, 'R' AS sample_type FROM analysis.silver_set
+    SELECT tumor_barcode_b AS aliquot_barcode, 'R' AS sample_type FROM analysis.gold_set
 )
 
 SELECT DISTINCT -- remove duplicate entries

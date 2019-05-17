@@ -18,6 +18,8 @@ cnvgdata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_cnv_by_gene.sql"))
 arm_data <- dbGetQuery(con, read_file("sql/heatmap/heatmap_arm.sql"))
 armadata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_arm_by_arm.sql"))
 
+sigsdata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_signatures.sql"))
+
 mutfdata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_mf.sql"))
 clindata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_clinical.sql"))
 timedata <- dbGetQuery(con, read_file("sql/heatmap/heatmap_time.sql"))
@@ -43,6 +45,7 @@ n_distinct(puridata$case_barcode)
 n_distinct(drivdata$case_barcode)
 n_distinct(neutrdata$case_barcode)
 n_distinct(pycldata$case_barcode)
+n_distinct(sigsdata$case_barcode)
 
 ## Check counts (genes)
 
@@ -115,6 +118,10 @@ snvgdata <- snvgdata %>% mutate(gene_symbol = factor(gene_symbol, levels = snv_g
 cnvgdata <- cnvgdata %>% mutate(gene_symbol = factor(gene_symbol, levels = cnv_gene_order))
 neutrdata <- neutrdata %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
 pycldata <- pycldata %>% mutate(case_barcode = factor(case_barcode, levels = case_order))
+sigsdata <- sigsdata %>% complete(case_barcode,signature,fraction, fill = list(rel_score = 0)) %>% 
+  select(-idh_codel_subtype) %>%
+  left_join(select(clindata,case_barcode,idh_codel_subtype)) %>%
+  mutate(case_barcode = factor(case_barcode, levels = case_order))
 
 ######################## 
 ## Common plotting elements
@@ -205,6 +212,44 @@ testPlot(gg_mut_freq_case)
 
 
 ########################
+## Plot mutation signatures
+########################
+
+gg_sig_sha <-
+  sigsdata %>% filter(fraction == 'S') %>%
+  ggplot(aes(x=case_barcode, fill = factor(signature), y=rel_score)) +
+  geom_bar(position = "stack", stat = "identity") +
+  labs(y = "Signature Score\nShared") +
+  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ff7f00"))
+
+testPlot(gg_sig_sha)
+
+gg_sig_pri <-
+  sigsdata %>% filter(fraction == 'P') %>%
+  ggplot(aes(x=case_barcode, fill = factor(signature), y=rel_score)) +
+  geom_bar(position = "stack", stat = "identity") +
+  labs(y = "Signature Score\nPrimary") +
+  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ff7f00"))
+
+testPlot(gg_sig_pri)
+
+gg_sig_rec <-
+  sigsdata %>% filter(fraction == 'R') %>%
+  ggplot(aes(x=case_barcode, fill = factor(signature), y=rel_score)) +
+  geom_bar(position = "stack", stat = "identity") +
+  labs(y = "Signature Score\nRecurrent") +
+  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ff7f00"))
+
+testPlot(gg_sig_rec)
+
+# gg_sig <- ggplot(sigsdata, aes(x=case_barcode, y = factor(fraction, levels = c("R","P","S")), alpha = rel_score, fill=factor(signature, levels = c(1,11,16,3,8)))) +
+#   geom_tile() +
+#   labs(y="Fraction", fill = "Dominant Signature", alpha = "Signature Score") +
+#   scale_fill_brewer(palette = "Set1") #values = c("#e41a1c","#377eb8","#4daf4a","#984ea3","#ffff33"))
+# 
+# testPlot(gg_sig)
+
+########################
 ## Plot time/interval data
 ########################
 
@@ -292,13 +337,13 @@ gg_evolution <-
 
 testPlot(gg_evolution)
 
-gg_c710 <-
-  ggplot(c710_data, aes(x=case_barcode)) +
-  geom_tile(aes(fill = c710_status, y = 1)) +
-  scale_fill_manual(values = c("R" = "#fc8d59","S" = "#ffffbf", "P" = "#91bfdb", "WT" = "white"), na.value = "gray90") +
-  labs(y="") + null_y
-
-testPlot(gg_c710)
+# gg_c710 <-
+#   ggplot(c710_data, aes(x=case_barcode)) +
+#   geom_tile(aes(fill = c710_status, y = 1)) +
+#   scale_fill_manual(values = c("R" = "#fc8d59","S" = "#ffffbf", "P" = "#91bfdb", "WT" = "white"), na.value = "gray90") +
+#   labs(y="") + null_y
+# 
+# testPlot(gg_c710)
 
 ########################
 ## Plot aneuploidy
@@ -521,7 +566,8 @@ gleg3 <- gg_rbind(gg_legend(gg_mut_heatmap),
 
 gleg4 <- gg_rbind(gg_legend(gg_arm_heatmap),
                   gg_legend(gg_pyclone_clusters),
-                  heights = rep(1,2),
+                  gg_legend(gg_sig_rec),
+                  heights = rep(1,3),
                   ncol = 1)
 
 pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/legends-fig1-fig3.pdf", height = 12, width = 4)
@@ -563,11 +609,48 @@ fig1a <- gg_rbind(gtable_frame(ggplotGrob(gg_mut_freq_case + plot_grid + plot_th
                   gtable_frame(ggplotGrob(gg_mut_freq_prop_case + plot_grid + plot_theme + null_legend + null_x + null_facet)),
                   gtable_frame(ggplotGrob(gg_clinical + plot_grid + plot_theme + null_legend + null_x + null_facet)),
                   gtable_frame(ggplotGrob(gg_pyclone_clusters + plot_grid + plot_theme + null_legend + bottom_x + null_facet + bottom_margin)),
-                  heights = c(5, 5, 4, 5), ncol = 1)
+                  heights = c(5, 5, 4, 5),
+                  ncol = 1)
 plot(fig1a)
 
 pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/f1a-fpb.pdf", height = 12, width = 16, bg = "transparent", useDingbats = FALSE)
 plot(fig1a) 
+dev.off()
+
+########################
+## Plot figure 1 heatmap (including full signature barplots)
+########################
+
+fig1a <- gg_rbind(gtable_frame(ggplotGrob(gg_mut_freq_case + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_mut_freq_prop_case + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_sig_sha + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_sig_pri + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_sig_rec + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_clinical + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_pyclone_clusters + plot_grid + plot_theme + null_legend + bottom_x + null_facet + bottom_margin)),
+                  heights = c(5, 5, 3, 3,3,4, 5),
+                  ncol = 1)
+plot(fig1a)
+
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/f1a-fpb-full.pdf", height = 12, width = 16, bg = "transparent", useDingbats = FALSE)
+plot(fig1a) 
+dev.off()
+
+########################
+## Plot supplementary mutsig plot
+########################
+
+figms <- gg_rbind(gtable_frame(ggplotGrob(gg_clinical + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_time_data + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_sig_sha + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_sig_pri + plot_grid + plot_theme + null_legend + null_x + null_facet)),
+                  gtable_frame(ggplotGrob(gg_sig_rec + plot_grid + plot_theme + null_legend + null_x + bottom_x + null_facet + bottom_margin)),
+                  heights = c(4,5,3,3,3),
+                  ncol = 1)
+plot(figms)
+
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/mutsig_suppl_per_patient.pdf", height = 8, width = 16, bg = "transparent", useDingbats = FALSE)
+plot(figms) 
 dev.off()
 
 ########################
