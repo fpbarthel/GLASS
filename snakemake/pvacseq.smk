@@ -6,42 +6,74 @@
 LENGTHS = [8,9,10,11]
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Decompress zipped VCF files
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##
-
-rule gunzip:
-    input:
-        ancient("results/mutect2/m2filter/{case_barcode}.filtered.vcf.gz")
-    output:
-        temp("results/pvacseq/gunzip/{case_barcode}.filtered.vcf")
-    log:
-        "logs/gunzip/{case_barcode}.log"
-    message:
-        "Decompressing zipped VCF files \n"
-        "Sample: {wildcards.case_barcode}"
-    shell:
-        "(gunzip -c {input} > {output}) 2>{log}"
-
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
-## Select Mutect2 calls that have passed filters
+## Select Mutect2 calls that have passed filters:
+## Filter 1: PASSED calls
+## Filter 2: Force-called hotspot mutations (IDH, TERT)
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##
 
 rule vcf_pass:
     input:
-        "results/pvacseq/gunzip/{case_barcode}.filtered.vcf"
+        "results/mutect2/dropgt/{case_barcode}.filtered.normalized.sorted.vcf.gz"
     output:
-        temp("results/pvacseq/passed/{case_barcode}.filtered.passed.vcf")
+        temp("results/pvacseq/passed/{case_barcode}.filtered.normalized.sorted.passed.vcf")
+    params:
+    	mem = CLUSTER_META["vcf_pass"]["mem"]
     conda:
         "../envs/gatk4.yaml"
     log:
-        "logs/passed/{case_barcode}.log"
+        "logs/select/{case_barcode}.pass.log"
     message:
-        "Filtering VCF \n"
+        "Filtering VCF for PASSed calls \n"
+        "Sample: {wildcards.case_barcode}"
+    shell:
+    	"(gatk --java-options -Xmx{params.mem}g SelectVariants \
+    	--exclude-filtered TRUE \
+    	-V {input} \
+    	-O {output}) 2>{log}"
+
+rule vcf_hotspot:
+    input:
+        "results/mutect2/dropgt/{case_barcode}.filtered.normalized.sorted.vcf.gz"
+    output:
+        temp("results/pvacseq/passed/{case_barcode}.filtered.normalized.sorted.hotspot.vcf")
+    conda:
+        "../envs/gatk4.yaml"
+    log:
+        "logs/select/{case_barcode}.hotspot.log"
+    message:
+        "Filtering VCF for force-called hotspot mutations \n"
         "Sample: {wildcards.case_barcode}"
     shell:
     	"(gatk SelectVariants \
-    	--exclude-filtered TRUE \
+    	-L 2:209113112 \
+    	-L 2:209113113 \
+    	-L 5:1295169 \
+    	-L 5:1295228 \
+    	-L 5:1295242 \
+    	-L 5:1295250 \
+    	-L 15:90631837 \
+    	-L 15:90631838 \
+    	-L 15:90631839 \
     	-V {input} \
+    	-O {output}) 2>{log}"
+
+rule vcf_merge:
+    input:
+        I1 = "results/pvacseq/passed/{case_barcode}.filtered.normalized.sorted.passed.vcf",
+        I2 = "results/pvacseq/passed/{case_barcode}.filtered.normalized.sorted.hotspot.vcf"
+    output:
+        "results/pvacseq/passed/{case_barcode}.filtered.normalized.sorted.select.vcf"
+    conda:
+        "../envs/gatk4.yaml"
+    log:
+        "logs/select/{case_barcode}.merge.log"
+    message:
+        "Merging filtered VCF files \n"
+        "Sample: {wildcards.case_barcode}"
+    shell: 
+    	"(gatk MergeVcfs \
+    	-I {input.I1} \
+    	-I {input.I2} \
     	-O {output}) 2>{log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -50,11 +82,11 @@ rule vcf_pass:
 
 rule vep_plugins:
     input:
-        "results/pvacseq/passed/{case_barcode}.filtered.passed.vcf"
+        "results/pvacseq/passed/{case_barcode}.filtered.normalized.sorted.select.vcf"
     output:
-        "results/pvacseq/vep/{case_barcode}.filtered.passed.vep.vcf"
+        "results/pvacseq/vep/{case_barcode}.filtered.normalized.sorted.select.vep.vcf"
     params:
-        mem = 4
+        mem = 8
     conda:
         "../envs/vep.yaml"
     log:
@@ -86,9 +118,9 @@ rule vep_plugins:
 
 rule vcf_extract:
     input:
-        "results/pvacseq/vep/{case_barcode}.filtered.passed.vep.vcf"
+        "results/pvacseq/vep/{case_barcode}.filtered.normalized.sorted.select.vep.vcf"
     output:
-        "results/pvacseq/vep/{case_barcode}.filtered.passed.vep.onesamp.vcf"
+        "results/pvacseq/vep/{case_barcode}.filtered.normalized.sorted.select.vep.onesamp.vcf"
     params:
     	sample = lambda wildcards: manifest.getTumorByCase(wildcards.case_barcode)[0]
     conda:
@@ -107,7 +139,7 @@ rule vcf_extract:
 
 rule pvacseq:
     input:
-        vcf = "results/pvacseq/vep/{case_barcode}.filtered.passed.vep.onesamp.vcf",
+        vcf = "results/pvacseq/vep/{case_barcode}.filtered.normalized.sorted.select.vep.onesamp.vcf",
         hla = lambda wildcards: expand("results/optitype/HLA_calls/{normals}/{normals}_result.tsv", normals = manifest.getNormalByCase(wildcards.case_barcode))
     output:
         "results/pvacseq/neoag_frag/{case_barcode}_{epitope_lengths}/MHC_Class_I/{case_barcode}_{epitope_lengths}.final.tsv"
