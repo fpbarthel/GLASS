@@ -48,21 +48,21 @@ WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in ran
 #include: "snakemake/align.smk"
 
 # include: "snakemake/haplotype-map.smk"
-include: "snakemake/fingerprinting.smk"
+#include: "snakemake/fingerprinting.smk"
 # include: "snakemake/telseq.smk"
-include: "snakemake/mutect2.smk"
+#include: "snakemake/mutect2.smk"
 include: "snakemake/mutect2-post.smk"
 # include: "snakemake/varscan2.smk"
 # include: "snakemake/cnvnator.smk"
 # include: "snakemake/lumpy.smk"
 # include: "snakemake/delly.smk"
 # include: "snakemake/manta.smk"
-include: "snakemake/cnv.smk"
-include: "snakemake/sequenza.smk"
+#include: "snakemake/cnv.smk"
+#include: "snakemake/sequenza.smk"
 include: "snakemake/optitype.smk"
 include: "snakemake/pvacseq.smk"
 #include: "snakemake/cnv-post.smk"
-include: "snakemake/titan.smk"
+#include: "snakemake/titan.smk"
 #include: "snakemake/pyclone.smk"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
@@ -119,32 +119,32 @@ rule gencode:
 ## URL: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-rule gencode_coverage:
-    input:
-        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
-    output:
-        "results/align/gencode-coverage/{aliquot_barcode}.gencode-coverage.tsv"
-    params:
-        mem = CLUSTER_META["gencode_coverage"]["mem"]
-    #conda:
-    #    "envs/align.yaml"
-    threads:
-        CLUSTER_META["gencode_coverage"]["ppn"]
-    log:
-        "logs/align/gencode-coverage/{aliquot_barcode}.log"
-    benchmark:
-        "benchmarks/align/gencode-coverage/{aliquot_barcode}.txt"
-    message:
-        "Computing coverage using flattened gencode GTF\n"
-        "Sample: {wildcards.aliquot_barcode}"
-    shell:
-        "set +o pipefail; /opt/software/helix/samtools/1.8/bin/samtools view -q 10 -b {input} | \
-            /opt/software/helix/BEDtools/2.27.0/bin/bedtools coverage -a {config[gencode_gtf_flat]} -b stdin -d -sorted -g {config[bedtools_genome]} | \
-            /opt/software/helix/BEDtools/2.27.0/bin/bedtools groupby -i stdin -g 1,2,3,4,5 -c 7 -o sum | \
-            sort -k5,5 | \
-            /opt/software/helix/BEDtools/2.27.0/bin/bedtools groupby -i stdin -g 5 -c 4,6 -o sum,sum | \
-            awk -F\"[+\\t]\" 'BEGIN {{OFS=\"\\t\"}}{{for(i=1;i<(NF-1);i++){{split($i,g,\".\"); print g[1],$(NF-1),$NF}}}}' \
-            > {output} 2> {log}"
+#rule gencode_coverage:
+#    input:
+#        "results/align/bqsr/{aliquot_barcode}.realn.mdup.bqsr.bam"
+#    output:
+#        "results/align/gencode-coverage/{aliquot_barcode}.gencode-coverage.tsv"
+#    params:
+#        mem = CLUSTER_META["gencode_coverage"]["mem"]
+#    conda:
+#        "envs/align.yaml"
+#    threads:
+#        CLUSTER_META["gencode_coverage"]["ppn"]
+#    log:
+#        "logs/align/gencode-coverage/{aliquot_barcode}.log"
+#    benchmark:
+#        "benchmarks/align/gencode-coverage/{aliquot_barcode}.txt"
+#    message:
+#        "Computing coverage using flattened gencode GTF\n"
+#        "Sample: {wildcards.aliquot_barcode}"
+#    shell:
+#        "set +o pipefail; /opt/software/helix/samtools/1.8/bin/samtools view -q 10 -b {input} | \
+#            /opt/software/helix/BEDtools/2.27.0/bin/bedtools coverage -a {config[gencode_gtf_flat]} -b stdin -d -sorted -g {config[bedtools_genome]} | \
+#            /opt/software/helix/BEDtools/2.27.0/bin/bedtools groupby -i stdin -g 1,2,3,4,5 -c 7 -o sum | \
+#            sort -k5,5 | \
+#            /opt/software/helix/BEDtools/2.27.0/bin/bedtools groupby -i stdin -g 5 -c 4,6 -o sum,sum | \
+#            awk -F\"[+\\t]\" 'BEGIN {{OFS=\"\\t\"}}{{for(i=1;i<(NF-1);i++){{split($i,g,\".\"); print g[1],$(NF-1),$NF}}}}' \
+#            > {output} 2> {log}"
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Download only rule

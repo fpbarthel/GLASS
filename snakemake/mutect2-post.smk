@@ -14,8 +14,8 @@ rule selectvariants:
         ancient("results/mutect2/m2filter/{case_barcode}.filtered.vcf.gz")
     output:
         normalized = temp("results/mutect2/dropgt/{case_barcode}.filtered.normalized.vcf.gz"),
-        sortd = temp("results/mutect2/dropgt/{case_barcode}.filtered.normalized.sorted.vcf.gz"),
-        sortdind = temp("results/mutect2/dropgt/{case_barcode}.filtered.normalized.sorted.vcf.gz.tbi"),
+        sortd = "results/mutect2/dropgt/{case_barcode}.filtered.normalized.sorted.vcf.gz",
+        sortdind = "results/mutect2/dropgt/{case_barcode}.filtered.normalized.sorted.vcf.gz.tbi",
         vcf = temp("results/mutect2/dropgt/{case_barcode}.filtered.normalized.sorted.dropgt.vcf.gz"),
         tbi = temp("results/mutect2/dropgt/{case_barcode}.filtered.normalized.sorted.dropgt.vcf.gz.tbi")
     params:
