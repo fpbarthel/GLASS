@@ -42,7 +42,7 @@ test_subgroup <- function(df) {
 }
 
 tmp %>% group_by(idh_codel_subtype) %>% do(test_subgroup(.))
-tmp %>% group_by(idh_codel_subtype,known_driver) %>% do(test_subgroup(.))
+tmp %>% group_by(idh_codel_subtype) %>% do(test_subgroup(.))
 
 
 ### PLOT barplot of clonal/subclobal
