@@ -41,8 +41,8 @@ test_subgroup <- function(df) {
   data.frame(n = nrow(df), median_a = median(df$mean[df$sample_type == "P"]), median_b = median(df$mean[df$sample_type == "R"]), wilcox_p = wtest$p.value, wilcox_v = wtest$statistic)
 }
 
-tmp1 = res %>% group_by(idh_codel_subtype) %>% do(test_subgroup(.))
-tmp2 = res %>% group_by(gene_symbol,idh_codel_subtype) %>% do(test_subgroup(.))
+tmp %>% group_by(idh_codel_subtype) %>% do(test_subgroup(.))
+tmp %>% group_by(idh_codel_subtype,known_driver) %>% do(test_subgroup(.))
 
 
 ### PLOT barplot of clonal/subclobal

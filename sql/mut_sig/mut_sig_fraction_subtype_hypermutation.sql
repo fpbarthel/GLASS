@@ -76,6 +76,6 @@ context_reconstruction AS
 	WHERE mut_n_total > 1
 	GROUP BY 1,2,3,4
 )
-SELECT fraction, idh_codel_subtype, hypermutator_status, generate_series(1,30) AS signature, mut_n, unnest(mut_sigs) AS abs_score, UNNEST(mut_sigs) / (SELECT SUM(s) FROM UNNEST(mut_sigs) s) AS rel_score
-FROM context_reconstruction
---SELECT * FROM variant_context_counts_aliquots
+--SELECT fraction, idh_codel_subtype, hypermutator_status, generate_series(1,30) AS signature, mut_n, unnest(mut_sigs) AS abs_score, UNNEST(mut_sigs) / (SELECT SUM(s) FROM UNNEST(mut_sigs) s) AS rel_score
+--FROM context_reconstruction
+SELECT * FROM variant_context_counts_aliquots
