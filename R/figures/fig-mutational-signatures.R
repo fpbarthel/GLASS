@@ -5,7 +5,9 @@ library(MutationalPatterns)
 con <- DBI::dbConnect(odbc::odbc(), "GLASSv2") 
 res <- dbGetQuery(con, read_file("sql/figures/mutsig_boxplot_fig1.sql"))
 
-################ stacked bar plots
+################ ################ ################ ################ ################ ################ ################ 
+################ stacked bar plots of dominant signature per sample
+################ ################ ################ ################ ################ ################ ################ 
 
 res <- res %>% filter(rnk == 1, all_fractions_counts == 3) %>%
   mutate(signature = factor(signature, levels = c(1,3,8,11,16), labels = c("Signature 1\nAging","Signature 3\nDNA DSB repair","Signature 8\nUnknown","Signature 11\nAlkylating Agent","Signature 16\nUnknown")),
@@ -32,11 +34,92 @@ pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/mu
 plot(gg_sig_stackedbar)
 dev.off()
 
+################ ################ ################ ################ ################ ################ ################ 
+################ 96 trinucleotide changes plots
+################ ################ ################ ################ ################ ################ ################ 
 
+res <- dbGetQuery(con, read_file("sql/mut_sig/mut_sig_fraction_subtype.sql"))
 
+mat <- res %>%
+  mutate(subst = sprintf("%s[%s>%s]%s", substr(trinucleotide_context,1,1), substr(trinucleotide_context,2,2), alt, substr(trinucleotide_context,3,3)),
+         set = sprintf("%s\n%s", idh_codel_subtype, fraction)) %>%
+  group_by(set) %>%
+  mutate(mut_n_total = sum(mut_n)) %>%
+  ungroup() %>%
+  mutate(set = sprintf("%s\n(n=%s)", set, mut_n_total)) %>%
+  group_by(subst,set) %>%
+  summarize(mut_n = sum(mut_n)) %>%
+  ungroup() %>%
+  select(subst,set,mut_n) %>%
+  arrange(subst) %>%
+  spread(set, mut_n, fill = 0)
+
+tmp = mat[,1,drop=T]
+mat = as.matrix(mat[,-1])
+rownames(mat) = tmp
+
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/mutsig96profile.pdf", width = 8, height  = 12, useDingbats = FALSE)
+plot_96_profile(mat, condensed = TRUE)
+dev.off()
+
+################ ################ ################ ################ ################ ################ ################ 
+################ mutational signature correlation analysis
+################ ################ ################ ################ ################ ################ ################ 
+
+res <- dbGetQuery(con, read_file("sql/figures/mutsig_corr.sql"))
+
+lm_stats = function(df){
+  n = nrow(df)
+  
+  m_abs_age = lm(abs_score ~ age, df)
+  m_rel_age = lm(rel_score ~ age, df)
+  m_abs_itv = lm(abs_score ~ surgical_interval, df)
+  m_rel_itv = lm(rel_score ~ surgical_interval, df)
+  
+  c_abs_age = cor.test(df$abs_score, df$age)
+  c_rel_age = cor.test(df$rel_score, df$age)
+  c_abs_itv = cor.test(df$abs_score, df$surgical_interval)
+  c_rel_itv = cor.test(df$rel_score, df$surgical_interval)
+  
+  eq_abs_age = sprintf("abs. score = %s + %s * age", round(coef(m_abs_age)[1],2), round(coef(m_abs_age)[2],2))
+  p_abs_age = coef(summary(m_abs_age))[,4]['age']
+  p_abs_age = ifelse(p_abs_age < 0.0001, "P<0.0001", ifelse(p_abs_age > 0.05, sprintf("P=%s", round(p_abs_age, 2)), sprintf("P=%s", round(p_abs_age, 4))))
+  
+  eq_rel_age = sprintf("abs. score = %s + %s * age", round(coef(m_rel_age)[1],2), round(coef(m_rel_age)[2],2))
+  p_rel_age = coef(summary(m_rel_age))[,4]['age']
+  p_rel_age = ifelse(p_rel_age < 0.0001, "P<0.0001", ifelse(p_rel_age > 0.05, sprintf("P=%s", round(p_rel_age, 2)), sprintf("P=%s", round(p_rel_age, 4))))
+  
+  eq_abs_itv = sprintf("abs. score = %s + %s * surgical interval", round(coef(m_abs_itv)[1],2), round(coef(m_abs_itv)[2],2))
+  p_abs_itv = coef(summary(m_abs_itv))[,4]['surgical_interval']
+  p_abs_itv = ifelse(p_abs_itv < 0.0001, "P<0.0001", ifelse(p_abs_itv > 0.05, sprintf("P=%s", round(p_abs_itv, 2)), sprintf("P=%s", round(p_abs_itv, 4))))
+  
+  eq_rel_itv = sprintf("abs. score = %s + %s * surgical interval", round(coef(m_rel_itv)[1],2), round(coef(m_rel_itv)[2],2))
+  p_rel_itv = coef(summary(m_rel_itv))[,4]['surgical_interval']
+  p_rel_itv = ifelse(p_rel_itv < 0.0001, "P<0.0001", ifelse(p_rel_itv > 0.05, sprintf("P=%s", round(p_rel_itv, 2)), sprintf("P=%s", round(p_rel_itv, 4))))
+  
+  cortxt_abs_age = sprintf("n=%s\nr=%s, %s\n%s", n, round(c_abs_age$estimate,2), p_abs_age, eq_abs_age)
+  cortxt_rel_age = sprintf("n=%s\nr=%s, %s\n%s", n, round(c_rel_age$estimate,2), p_rel_age, eq_rel_age)
+  cortxt_abs_itv = sprintf("n=%s\nr=%s, %s\n%s", n, round(c_abs_itv$estimate,2), p_abs_itv, eq_abs_itv)
+  cortxt_rel_itv = sprintf("n=%s\nr=%s, %s\n%s", n, round(c_rel_itv$estimate,2), p_rel_itv, eq_rel_itv)
+  
+  return(data.frame(n,p_abs_age,p_rel_age,p_abs_itv,p_rel_itv,cortxt_abs_age,cortxt_rel_age,cortxt_abs_itv,cortxt_rel_itv))
+}
+
+res_test <- res %>% group_by(fraction, signature) %>% do(lm_stats(.)) %>% ungroup()
+
+res %>% filter(hypermutator_status == 0) %>%
+ggplot(aes(x=age, y = log10(abs_score))) + 
+  geom_point() + 
+  geom_smooth(method="lm") +
+  facet_grid(fraction~signature)
+
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/xxxx", width = 8, height  = 12, useDingbats = FALSE)
+xxxx
+dev.off()
 
 ################ ################ ################ ################ ################ ################ ################ 
 ## New figure
+## Old iterations of the figures using barplots w/ error bars and boxplots, all deprecated in favor of stacked barplots
 ################ ################ ################ ################ ################ ################ ################ 
 
 res <- dbGetQuery(con, read_file("sql/figures/mutsig_boxplot_fig1.sql"))

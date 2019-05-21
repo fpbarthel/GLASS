@@ -21,7 +21,7 @@ library(gridExtra)
 
 ##################################################
 # Establish connection with database.
-con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB2")
+con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")
 
 # Load additional tables.
 silver_set = dbReadTable(con,  Id(schema="analysis", table="silver_set"))
@@ -48,7 +48,7 @@ vaf_cnv_silver = glass_vaf_cnv_unfiltered %>%
   left_join(subtypes, by="case_barcode") %>%
   left_join(variant_classifications, by=c("variant_classification"="variant_classification")) %>% 
   mutate(mut_class = ifelse(variant_classification_impact%in%c("HIGH", "MODERATE"), "nonsynonymous", ifelse(variant_classification_impact%in%c("LOW"), "synonymous", NA))) %>% 
-  filter(fraction =="P" & cnv_call_a == 0 | fraction =="R" & cnv_call_b == 0 | fraction =="S" & cnv_call_a == 0 & cnv_call_b == 0) %>% 
+  #filter(fraction =="P" & cnv_call_a == 0 | fraction =="R" & cnv_call_b == 0 | fraction =="S" & cnv_call_a == 0 & cnv_call_b == 0) %>% 
   filter(hypermutator_status==0) 
 
 # Put the data into a long format, separate by timepoint and fraction.
@@ -68,11 +68,22 @@ ggplot(plot_vaf, aes(x=vaf)) + geom_histogram(binwidth = 0.01) + theme_bw() + fa
   xlab("Allele frequency (f)") + ylab("Number of mutations") + ggtitle("Non-hypermutators, copy neutral regions, all variant types (n=181)")
 dev.off()
 
+
+## color difference for non-syn + syn
+
+ggplot(plot_vaf, aes(x=vaf, color = mut_class)) + 
+  geom_density() +
+  theme_bw() +
+  facet_grid(idh_codel_subtype~var_filter_revised, scales="free_y") +
+  xlab("CCF") +
+  ylab("Number of mutations") +
+  ggtitle("Non-hypermutators, copy neutral regions, all variant types (n=181)")
+
 # Nonsynonymous mutations.
 nonsyn_plot_vaf = plot_vaf %>% filter(mut_class == "nonsynonymous")
 n_distinct(nonsyn_plot_vaf$tumor_pair_barcode)
 pdf(file = "/Users/johnsk/Documents/nonhypermutants-vaf-distribution-copy-neutral-nonsynonymous.pdf", height = 4, width = 8, bg = "transparent", useDingbats = FALSE)
-ggplot(nonsyn_plot_vaf, aes(x=vaf)) + geom_histogram(binwidth = 0.01) + theme_bw() + facet_grid(idh_codel_subtype~var_filter_revised, scales="free") +
+ggplot(nonsyn_plot_vaf, aes(x=vaf)) + geom_histogram(binwidth = 0.01) + theme_bw() + facet_grid(idh_codel_subtype~var_filter_revised, scales="free_y") +
   xlab("Allele frequency (f)") + ylab("Number of mutations") + ggtitle("Non-hypermutators, copy neutral regions, nonsynonymous mutations (n=173)")
 dev.off()
 
@@ -80,7 +91,7 @@ dev.off()
 syn_plot_vaf = plot_vaf %>% filter(mut_class == "synonymous")
 n_distinct(syn_plot_vaf$tumor_pair_barcode)
 pdf(file = "/Users/johnsk/Documents/nonhypermutants-vaf-distribution-copy-neutral-synonymous.pdf", height = 4, width = 8, bg = "transparent", useDingbats = FALSE)
-ggplot(syn_plot_vaf, aes(x=vaf)) + geom_histogram(binwidth = 0.01) + theme_bw() + facet_grid(idh_codel_subtype~var_filter_revised, scales="free") +
+ggplot(syn_plot_vaf, aes(x=vaf)) + geom_histogram(binwidth = 0.01) + theme_bw() + facet_grid(idh_codel_subtype~var_filter_revised, scales="free_y") +
   xlab("Allele frequency (f)") + ylab("Number of mutations") + ggtitle("Non-hypermutators, copy neutral regions, synonymous mutations (n=168)")
 dev.off()
 
