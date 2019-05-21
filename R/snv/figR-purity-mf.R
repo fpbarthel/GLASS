@@ -23,6 +23,7 @@ con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB2")
 mutation_freq = dbReadTable(con,  Id(schema="analysis", table="mut_freq"))
 silver_set = dbReadTable(con,  Id(schema="analysis", table="silver_set"))
 gold_set = dbReadTable(con,  Id(schema="analysis", table="gold_set"))
+blocklist = dbReadTable(con,  Id(schema="analysis", table="blocklist"))
 ssm2_count = dbGetQuery(con, "SELECT * FROM variants.ssm2_count")
 pairs = dbReadTable(con,  Id(schema="analysis", table="pairs"))
 subtypes = dbReadTable(con,  Id(schema="clinical", table="subtypes"))
@@ -129,7 +130,7 @@ titan_purity = titan_params %>%
   inner_join(mutation_freq, by=c("tumor_barcode"="aliquot_barcode")) %>% 
   mutate(sample_barcode = substr(pair_barcode, 1, 15),
          seq_type = substr(pair_barcode, 27, 29)) %>% 
-  left_join(subtypes, by="case_barcode")
+  left_join(subtypes, by="case_barcode") 
 
 # What's the spread of the purity estimates in GLASS.
 summary(titan_purity$purity)
@@ -184,6 +185,26 @@ cor.test(titan_purity_recurrences_codel$purity, titan_purity_recurrences_codel$c
 cor.test(titan_purity_recurrences_noncodel$purity, titan_purity_recurrences_noncodel$coverage_adj_mut_freq, method="spearman")
 cor.test(titan_purity_recurrences_wt$purity, titan_purity_recurrences_wt$coverage_adj_mut_freq, method="spearman")
 
+# Visualize the primary/recurrent differences for the GLASS TITAN estimates.
+pdf(file = "/Users/johnsk/Documents/titan-purity-goldset-pairs.pdf", height = 5, width = 7, bg = "transparent", useDingbats = FALSE)
+titan_purity = titan_purity %>% mutate(sample = recode(sample_type, "tumor_barcode_a" = "Primary", "tumor_barcode_b" = "Recurrence"))
+ggplot(titan_purity, aes(x=idh_codel_subtype, y=purity, fill=sample)) + 
+  geom_boxplot()  + ylab("TITAN Purity") + xlab("") + theme_bw() + scale_fill_manual(values = c("Recurrence" = "#a6611a", "Primary" = "#018571")) + labs(fill="Sample Type")
+dev.off()
+
+# Define TITAN gold_set by IDH subtype.
+titan_pairs_IDHwt = titan_purity %>% 
+  filter(idh_codel_subtype == "IDHwt")
+titan_pairs_IDH_codel = titan_purity %>% 
+  filter(idh_codel_subtype == "IDHmut-codel")
+titan_pairs_IDH_noncodel = titan_purity %>% 
+  filter(idh_codel_subtype == "IDHmut-noncodel")
+
+# Test purity for statistical difference.
+wilcox.test(titan_pairs_IDH_codel$purity_a, titan_pairs_IDH_codel$purity_b, paired = TRUE)
+wilcox.test(titan_pairs_IDH_noncodel$purity_a, titan_pairs_IDH_noncodel$purity_b, paired = TRUE)
+wilcox.test(titan_pairs_IDHwt$purity_a, titan_pairs_IDHwt$purity_b, paired = TRUE)
+
 #############################################
 # Compare available TCGA samples with Taylor et al
 # ABSOLUTE array-based purity classification
@@ -204,13 +225,17 @@ glass_taylor_seqz_purity = seqz_purity %>%
   inner_join(glioma_dat, by="sample_barcode")
 cor.test(glass_taylor_seqz_purity$cellularity, glass_taylor_seqz_purity$ABSOLUTE_purity, method="s")
 
+# Plot Sequenza vs. ABSOLUTE for shared TCGA samples.
 ggplot(glass_taylor_seqz_purity, aes(ABSOLUTE_purity, cellularity)) + geom_point() + theme_bw() + xlab("ABSOLUTE purity") +
   ylab("Sequenza purity") +  ggtitle("TCGA glioma samples (n=40 )") + geom_abline(slope = 1) + ylim(0,1) + xlim(0, 1)
 
 # Purity for TITAN vs. ABSOLUTE.
 glass_taylor_titan_purity = titan_purity %>%
   inner_join(glioma_dat, by="sample_barcode")
+
+# A weaker correlation than the Sequenza samples.
 cor.test(glass_taylor_titan_purity$purity, glass_taylor_titan_purity$ABSOLUTE_purity, method="s")
+
 ggplot(glass_taylor_titan_purity, aes(ABSOLUTE_purity, purity)) + geom_point() + theme_bw() + xlab("ABSOLUTE purity") +
   ylab("TITAN purity") + ggtitle("TCGA glioma samples (n=44)") + geom_abline(slope = 1) + ylim(0,1) + xlim(0, 1)
 

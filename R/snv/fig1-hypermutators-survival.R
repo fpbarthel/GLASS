@@ -33,7 +33,7 @@ gold_set = dbReadTable(con,  Id(schema="analysis", table="gold_set"))
 subtypes = dbReadTable(con,  Id(schema="clinical", table="subtypes"))
 
 # Get the new clinical_tumor_pairs table.
-clinical_tumor_pairs_query = read_file("/Users/johnsk/Documents/Life-History/glass-analyses/sql/clinical-tumor-pairs-db2.sql")
+clinical_tumor_pairs_query = read_file("sql/clinical/clinical-tumor-pairs-db2.sql")
 clinical_tumor_pairs <- dbGetQuery(con, clinical_tumor_pairs_query)
 
 # Restrict the analyses to the gold set.

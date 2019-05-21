@@ -27,7 +27,7 @@ WITH t1 AS (SELECT
 FROM variants.pgeno pg
 LEFT JOIN variants.pyclone_loci pl1 ON pl1.variant_id = pg.variant_id AND pl1.aliquot_barcode = pg.tumor_barcode_a 
 LEFT JOIN variants.pyclone_loci pl2 ON pl2.variant_id = pg.variant_id AND pl2.aliquot_barcode= pg.tumor_barcode_b
-INNER JOIN analysis.silver_set ss ON pg.tumor_pair_barcode = ss.tumor_pair_barcode
+INNER JOIN analysis.gold_set gs ON pg.tumor_pair_barcode = gs.tumor_pair_barcode
 WHERE pl1.cellular_prevalence IS NOT NULL) 
 
 SELECT

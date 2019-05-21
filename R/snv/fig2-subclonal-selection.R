@@ -44,7 +44,8 @@ gold_selection = gold_set %>%
          r_thres_5 = most_probable_classification.y,
          r_thres_6 = ifelse(probability_neutral.y > 0.6, "N", ifelse(probability_neutral.y < 0.4, "S", NA)),
          r_thres_7 = ifelse(probability_neutral.y > 0.7, "N", ifelse(probability_neutral.y < 0.3, "S", NA))) %>% 
-  left_join(clinical_tumor_pairs, by=c("tumor_pair_barcode", "case_barcode", "tumor_barcode_a", "tumor_barcode_b"))
+  left_join(clinical_tumor_pairs, by=c("tumor_pair_barcode", "case_barcode", "tumor_barcode_a", "tumor_barcode_b")) %>% 
+  filter(!case_barcode%in%c("GLSS-SF-0058", "GLSS-CU-R011"))
 
 # Create subsets of the data by separating out subtypes.
 IDHmut_codel_gold_selection = gold_selection %>% 
@@ -53,6 +54,7 @@ IDHmut_noncodel_gold_selections = gold_selection %>%
   filter(idh_codel_subtype=="IDHmut-noncodel")
 IDHwt_gold_selection = gold_selection %>% 
   filter(idh_codel_subtype=="IDHwt")
+
 
 ###################
 # IDHwt survival - selection
