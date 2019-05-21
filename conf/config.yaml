@@ -7,7 +7,7 @@ from_source: 0
 ## Database settings
 db:
   configfile: "/projects/verhaak-lab/GLASS-analysis/.odbc.ini"
-  configsection: "VerhaakDB"
+  configsection: "GLASSv2"
 
 ## Data paths
 data:

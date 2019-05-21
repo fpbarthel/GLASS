@@ -323,25 +323,25 @@ class ManifestHandler:
         s = set([fr["readgroup_idtag"] for fr in self.files_readgroups if fr["aliquot_barcode"] != aliquot_barcode])
         return sorted(s)
 
-    def getPyCloneAliquots(self, case_barcode, analysis_type):
+    def getPyCloneAliquots(self, case_barcode):
         """
         Returns a list of aliquot barcodes for a given case and analysis type
         """
-        s = [pa["aliquot_barcode"] for pa in self.pyclone_aliquots if pa["case_barcode"] == case_barcode and pa["aliquot_analysis_type"] == analysis_type]
+        s = [pa["aliquot_barcode"] for pa in self.pyclone_aliquots if pa["case_barcode"] == case_barcode]
         return s
 
-    def getPyClonePurity(self, case_barcode, analysis_type):
+    def getPyClonePurity(self, case_barcode):
         """
         Returns a list of purity values for a given case and analysis type
         """
-        s = [str(pa["purity"]) for pa in self.pyclone_aliquots if pa["case_barcode"] == case_barcode and pa["aliquot_analysis_type"] == analysis_type]
+        s = [str(pa["purity"]) for pa in self.pyclone_aliquots if pa["case_barcode"] == case_barcode]
         return s
 
-    def getPyCloneShortNames(self):
+    def getPyCloneCases(self):
         """
         Returns a list of short names for a given case and analysis type
         """
-        s = [pa["short_name"] for pa in self.pyclone_aliquots]
+        s = list(set([pa["case_barcode"] for pa in self.pyclone_aliquots]) & set(self.getSelectedCases()))
         return s
 
     def getFASTQ(self, aliquot_barcode, readgroup_idtag):

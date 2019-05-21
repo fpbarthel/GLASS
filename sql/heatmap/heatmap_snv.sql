@@ -22,7 +22,7 @@ Build a squared gene x subject matrix for heatmap plotting
 WITH
 selected_tumor_pairs AS
 (
-	SELECT * FROM analysis.silver_set
+	SELECT * FROM analysis.gold_set
 ),
 selected_aliquots AS
 (
@@ -32,43 +32,74 @@ selected_aliquots AS
 ),
 selected_genes AS
 (
-	SELECT DISTINCT sn.gene_symbol, chrom, pos, alt, sn.variant_classification, variant_classification_priority, hgvs_p
-	FROM analysis.snvs sn
-	LEFT JOIN analysis.driver_genes_dnds ds ON ds.gene_symbol = sn.gene_symbol
-	LEFT JOIN analysis.variant_classifications vc ON sn.variant_classification = vc.variant_classification
+	SELECT DISTINCT sn.gene_symbol, ensembl_gene_id, variant_id, chrom, pos, alt, sn.variant_classification, variant_classification_priority, protein_change
+	FROM variants.anno sn
+	INNER JOIN ref.driver_genes ds ON ds.gene_symbol = sn.gene_symbol
+	INNER JOIN ref.ensembl_gene_mapping gm ON gm.gene_symbol = sn.gene_symbol
+	LEFT JOIN variants.variant_classifications vc ON sn.variant_classification = vc.variant_classification
 	WHERE
-		(ds.qglobal_cv < 0.05 OR ds.gene_symbol IN ('TERT')) AND
-		(sn.gene_symbol NOT IN ('TERT','IDH1') AND variant_classification_priority IS NOT NULL) OR 
-		(sn.gene_symbol = 'TERT' AND sn.variant_classification = '5''Flank' AND lower(sn.pos) IN (1295228,1295250)) OR
-		(sn.gene_symbol = 'IDH1' AND sn.hgvs_p IN ('p.R132C','p.R132G','p.R132H','p.R132S'))
+		has_mut IS TRUE AND
+		((sn.gene_symbol NOT IN ('TERT','IDH1') AND variant_classification_priority IS NOT NULL) OR
+		(sn.gene_symbol = 'TERT' AND sn.variant_classification = 'FIVE_PRIME_FLANK' AND lower(sn.pos) IN (1295228,1295250)) OR
+		(sn.gene_symbol = 'IDH1' AND sn.protein_change IN ('p.R132C','p.R132G','p.R132H','p.R132S')))
+),
+selected_genes_uq AS
+(
+	SELECT DISTINCT sg.gene_symbol, ensembl_gene_id
+	FROM selected_genes sg
 ),
 selected_genes_samples AS
 (
-	SELECT aliquot_barcode, case_barcode, gene_symbol, chrom, lower(pos) AS start_pos, upper(pos)-1 AS end_pos, alt
+	SELECT aliquot_barcode, case_barcode, gene_symbol, ensembl_gene_id, chrom, lower(pos) AS start_pos, upper(pos)-1 AS end_pos, alt
 	FROM selected_aliquots, selected_genes
 ),
-gene_sample_coverage AS
+selected_genes_samples_uq AS
 (
-	SELECT
-		gene_symbol,
-		sg.aliquot_barcode,
-		sg.case_barcode,
-		round(median(alt_count + ref_count)) AS median_cov
-	FROM analysis.full_genotypes fgt
-	INNER JOIN selected_genes_samples sg ON fgt.aliquot_barcode = sg.aliquot_barcode AND fgt.chrom = sg.chrom AND fgt.start = sg.start_pos AND fgt.end = sg.end_pos AND fgt.alt = sg.alt
+	SELECT DISTINCT aliquot_barcode, case_barcode, gene_symbol, ensembl_gene_id
+	FROM selected_genes_samples
+),
+selected_variants_samples AS
+(
+	SELECT variant_id, tumor_pair_barcode, variant_classification_priority, protein_change
+	FROM selected_genes
+	CROSS JOIN selected_tumor_pairs
+),
+hotspot_coverage AS -- For IDH1 and TERT we don't want genic coverage but coverage at the hotspot sites
+(
+	SELECT aliquot_barcode, case_barcode, gene_symbol, sum(ad_alt + ad_ref)::decimal / COUNT(*) AS gene_cov
+	FROM variants.geno pg
+	INNER JOIN variants.passanno pa ON pa.variant_id = pg.variant_id
+	LEFT JOIN variants.variant_classifications vc ON vc.variant_classification = pa.variant_classification
+	WHERE
+		(pa.gene_symbol = 'TERT' AND pa.variant_classification = 'FIVE_PRIME_FLANK' AND lower(pa.pos) IN (1295228,1295250)) OR
+		(pa.gene_symbol = 'IDH1' AND pa.protein_change IN ('p.R132C','p.R132G','p.R132H','p.R132S'))
 	GROUP BY 1,2,3
+	ORDER BY 1,2,3
+),
+gene_sample_coverage AS -- For all other genes get genic coverage
+(
+	SELECT sgu.aliquot_barcode, case_barcode, sgu.gene_symbol, gene_coverage::double precision / gene_size AS gene_cov
+	FROM selected_genes_samples_uq sgu
+	INNER JOIN analysis.gencode_coverage gc ON gc.ensembl_gene_id = sgu.ensembl_gene_id AND gc.aliquot_barcode = sgu.aliquot_barcode
+	INNER JOIN ref.ensembl_genes eg ON eg.ensembl_gene_id = sgu.ensembl_gene_id
+	WHERE sgu.gene_symbol NOT IN ('IDH1','TERT')
+
+	UNION
+
+	SELECT * FROM hotspot_coverage
 ),
 gene_pair_coverage AS
 (
 	SELECT
 		stp.tumor_pair_barcode,
 		stp.case_barcode,
-		c1.gene_symbol,
-		c1.median_cov AS cov_a,
-		c2.median_cov AS cov_b
+		sg.gene_symbol,
+		c1.gene_cov AS cov_a,
+		c2.gene_cov AS cov_b
 	FROM selected_tumor_pairs stp
-	LEFT JOIN gene_sample_coverage c1 ON c1.aliquot_barcode = stp.tumor_barcode_a
-	LEFT JOIN gene_sample_coverage c2 ON c2.aliquot_barcode = stp.tumor_barcode_b AND c1.gene_symbol = c2.gene_symbol
+	CROSS JOIN selected_genes_uq sg
+	LEFT JOIN gene_sample_coverage c1 ON c1.aliquot_barcode = stp.tumor_barcode_a AND c1.gene_symbol = sg.gene_symbol
+	LEFT JOIN gene_sample_coverage c2 ON c2.aliquot_barcode = stp.tumor_barcode_b AND c2.gene_symbol = sg.gene_symbol
 ),
 variants_by_case_and_gene AS
 (
@@ -79,14 +110,14 @@ variants_by_case_and_gene AS
 		gtc.chrom,
 		gtc.pos,
 		gtc.alt,
-		gtc.variant_classification,
-		sg.hgvs_p,
+		vc.variant_classification_vep AS variant_classification,
+		protein_change,
 		alt_count_a > 0 AS selected_call_a, --(alt_count_a::decimal / (alt_count_a+ref_count_a) > 0.05)
 		alt_count_b > 0 AS selected_call_b, --(alt_count_b::decimal / (alt_count_b+ref_count_b) > 0.05)
-		row_number() OVER (PARTITION BY gtc.gene_symbol, gtc.case_barcode ORDER BY mutect2_call_a::integer + mutect2_call_b::integer = 2, variant_classification_priority, mutect2_call_a::integer + mutect2_call_b::integer DESC, read_depth_a + read_depth_b DESC) AS priority
-	FROM analysis.master_genotype_comparison gtc
-	INNER JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = gtc.tumor_pair_barcode
-	INNER JOIN selected_genes sg ON sg.chrom = gtc.chrom AND sg.pos = gtc.pos AND sg.alt = gtc.alt
+		row_number() OVER (PARTITION BY gtc.gene_symbol, gtc.case_barcode ORDER BY mutect2_call_a::integer + mutect2_call_b::integer = 2, vc.variant_classification_priority, mutect2_call_a::integer + mutect2_call_b::integer DESC, ref_count_a + ref_count_b + alt_count_a + alt_count_b DESC) AS priority
+	FROM variants.pgeno gtc
+	INNER JOIN selected_variants_samples svs ON svs.tumor_pair_barcode = gtc.tumor_pair_barcode AND svs.variant_id = gtc.variant_id
+	INNER JOIN variants.variant_classifications vc ON vc.variant_classification = gtc.variant_classification
 	WHERE
 		(mutect2_call_a OR mutect2_call_b) AND (alt_count_a+ref_count_a) >= 5 AND (alt_count_b+ref_count_b) >= 5
 ),
@@ -99,26 +130,38 @@ squared_variants AS
 		vcg.pos,
 		vcg.alt,
 		vcg.variant_classification,
-		vcg.hgvs_p,
+		vcg.protein_change,
 		vcg.selected_call_a,
 		vcg.selected_call_b,
 		gc.cov_a,
-		gc.cov_b  
+		gc.cov_b
 	FROM (SELECT * FROM variants_by_case_and_gene WHERE priority = 1) vcg
 	RIGHT JOIN gene_pair_coverage gc ON gc.tumor_pair_barcode = vcg.tumor_pair_barcode AND gc.gene_symbol = vcg.gene_symbol
 )
+--SELECT * --sa.aliquot_barcode, case_barcode, gm.gene_symbol, gene_coverage::double precision / gene_size AS gene_cov
+--FROM selected_genes_samples_uq sgu
+--INNER JOIN analysis.gencode_coverage gc ON gc.ensembl_gene_id = sgu.ensembl_gene_id AND gc.aliquot_barcode = sgu.aliquot_barcode-- 
+--SELECT * from gene_sample_coverage --gene_pair_coverage gc
+--SELECT * FROM variants_by_case_and_gene vcg
+--RIGHT JOIN gene_pair_coverage gc ON gc.tumor_pair_barcode = vcg.tumor_pair_barcode AND gc.gene_symbol = vcg.gene_symbol
 SELECT
 	gene_symbol,
 	var.case_barcode,
 	idh_codel_subtype,
 	variant_classification,
-	hgvs_p,
+	protein_change,
 	(CASE
 	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_a AND selected_call_b 				THEN 'S'
 	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_a AND NOT selected_call_b 			THEN 'P'
 	 WHEN cov_a >= 5 AND cov_b >= 5 AND selected_call_b AND NOT selected_call_a 			THEN 'R'
 	 ELSE NULL END) AS variant_call,
-	(CASE WHEN cov_a >= 5 AND cov_b >= 5 THEN 'Coverage >= 5' ELSE 'Coverage < 5' END) AS covered
+	(CASE
+		WHEN cov_a >= 30 AND cov_b >= 30 THEN 'Coverage >= 30x' 
+		--WHEN cov_a >= 20 AND cov_b >= 20 THEN 'Coverage >= 20x' 
+		--WHEN cov_a >= 10 AND cov_b >= 5 THEN 'Coverage >= 10x' 
+		WHEN cov_a >= 15 AND cov_b >= 15 THEN 'Coverage >= 15x' 
+		WHEN cov_a >= 5 AND cov_b >= 5 THEN 'Coverage >= 5x' 
+		ELSE 'Coverage < 5x' END) AS covered
 FROM squared_variants var
 LEFT JOIN clinical.subtypes st ON st.case_barcode = var.case_barcode
 --LEFT JOIN selected_tumor_pairs stp ON stp.case_barcode = var.case_barcode AND priority = 1

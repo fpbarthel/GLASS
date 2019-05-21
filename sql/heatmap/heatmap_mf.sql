@@ -18,7 +18,7 @@ SELECT
 	mf1.coverage_adj_mut_freq AS mf_a,
 	mf2.coverage_adj_mut_freq AS mf_b
 FROM analysis.tumor_mut_comparison tmc
-INNER JOIN analysis.silver_set stp ON tmc.tumor_pair_barcode = stp.tumor_pair_barcode
-LEFT JOIN analysis.mutation_freq mf1 ON mf1.aliquot_barcode = tmc.tumor_barcode_a 
-LEFT JOIN analysis.mutation_freq mf2 ON mf2.aliquot_barcode = tmc.tumor_barcode_b 
+INNER JOIN analysis.gold_set stp ON tmc.tumor_pair_barcode = stp.tumor_pair_barcode
+LEFT JOIN analysis.mut_freq mf1 ON mf1.aliquot_barcode = tmc.tumor_barcode_a 
+LEFT JOIN analysis.mut_freq mf2 ON mf2.aliquot_barcode = tmc.tumor_barcode_b 
 LEFT JOIN clinical.subtypes su ON su.case_barcode = stp.case_barcode

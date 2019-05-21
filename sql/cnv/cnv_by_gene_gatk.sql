@@ -48,6 +48,19 @@ seg_stats_optimized AS
 		END) AS hlamp_thres
 	FROM analysis.gatk_seg_stats gs
 	LEFT JOIN analysis.gatk_aneuploidy gsa ON gsa.aliquot_barcode = gs.aliquot_barcode
+),
+gene_cp AS
+(
+	SELECT ts.aliquot_barcode, gene_symbol, ts.chrom, (upper(t0.pos * ts.pos) - lower(t0.pos * ts.pos) -1) AS w, cellular_prevalence As cp
+	FROM variants.titan_seg ts
+	INNER JOIN selected_genes t0 ON t0.chrom = ts.chrom AND t0.pos && ts.pos
+),
+gene_cp_agg AS
+(
+	SELECT aliquot_barcode, gene_symbol, 
+		COALESCE(sum(w * cp) / NULLIF(sum(w),0),NULL) AS wcp
+    FROM gene_cp
+    GROUP BY 1, 2
 )
 SELECT
 	gc.aliquot_barcode,
@@ -59,7 +72,10 @@ SELECT
 	 WHEN gc.wcr > hlamp_thres THEN 2
 	 WHEN gc.wcr > amp_thres THEN 1
 	 ELSE NULL
-	 END) hlvl_call 
+	 END) hlvl_call,
+	gc.wcr,
+	wcp AS cellular_prevalence
 FROM gene_sample_call gc
 LEFT JOIN seg_stats_optimized ss ON ss.aliquot_barcode = gc.aliquot_barcode
+LEFT JOIN gene_cp_agg cp ON cp.aliquot_barcode = gc.aliquot_barcode AND cp.gene_symbol = gc.gene_symbol
 ORDER BY 3
