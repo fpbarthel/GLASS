@@ -1,3 +1,10 @@
+##################################################
+# Prepare input files for running GISTIC seperately for primaries and recurrences
+# Ignores multi-sector samples (one sample per patient and timepoint)
+# Updated: 2019.04.19
+# Author: Floris B
+##################################################
+
 library(DBI)
 library(tidyverse)
 library(ggplot2)
