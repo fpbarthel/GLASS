@@ -10,8 +10,10 @@ res <- dbGetQuery(con, read_file("sql/figures/mutsig_boxplot_fig1.sql"))
 ################ ################ ################ ################ ################ ################ ################ 
 
 res <- res %>% filter(rnk == 1, all_fractions_counts == 3) %>%
-  mutate(signature = factor(signature, levels = c(1,3,8,11,16), labels = c("Signature 1\nAging","Signature 3\nDNA DSB repair","Signature 8\nUnknown","Signature 11\nAlkylating Agent","Signature 16\nUnknown")),
+  mutate(signature = factor(signature, levels = c(1,3,8,11,15,16), labels = c("Signature 1\nAging","Signature 3\nDNA DSB repair by HR","Signature 8\nUnknown","Signature 11\nAlkylating Agent","Signature 15\nDNA mismatch repair","Signature 16\nUnknown")),
          fraction = factor(fraction, levels = c("P","S","R")))
+
+n_distinct(res$case_barcode)
 
 plot_theme <- theme_bw(base_size = 12) +
   theme(axis.title = element_text(size = 12),
@@ -24,15 +26,60 @@ plot_theme <- theme_bw(base_size = 12) +
 gg_sig_stackedbar <- ggplot(res, aes(x = fraction, fill = factor(signature))) +
   geom_bar(width=1, color = "black") +
   facet_wrap(~idh_codel_subtype, scales = "free_y") +
-  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ff7f00")) + 
+  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ffff33","#ff7f00")) + 
+  scale_y_continuous(expand = c(0,0)) + 
+  scale_x_discrete(expand = c(0,0)) +
+  plot_theme + 
+  labs(x = "Fraction", y = "Number of Patients (n=219)", fill = "Dominant\nMutational\nSignature")
+
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/F1/mutsigs_stacked_bars.pdf", width = 8, height  = 6, useDingbats = FALSE)
+plot(gg_sig_stackedbar)
+dev.off()
+
+## Chi-square test of association
+
+sig_chisq <- lapply(split(res, res$idh_codel_subtype), function(df) {
+  chisq <- chisq.test(table(df$signature, df$fraction))
+  
+  sig_chisq_resid <- as.data.frame(chisq$residuals) %>% 
+    select(signature = Var1, fraction = Var2, resid = Freq)
+  
+  sig_chisq_contrib <- as.data.frame(100*chisq$residuals^2/chisq$statistic) %>% 
+    select(signature = Var1, fraction = Var2, contrib = Freq)
+  
+  sig_chisq <- sig_chisq_resid %>% left_join(sig_chisq_contrib) %>%
+    mutate(p = chisq$p.value, statistic = chisq$statistic, idh_codel_subtype = unique(df$idh_codel_subtype))
+  
+  return(sig_chisq)
+})
+
+sig_chisq <- data.table::rbindlist(sig_chisq) %>%
+  mutate(signature = factor(signature, levels = c("Signature 1\nAging","Signature 3\nDNA DSB repair by HR","Signature 8\nUnknown","Signature 11\nAlkylating Agent","Signature 15\nDNA mismatch repair","Signature 16\nUnknown")),
+         idh_codel_subtype = sprintf("%s\np%s x2=%s", idh_codel_subtype, ifelse(idh_codel_subtype == "IDHmut-codel", sprintf("=%s",round(p,2)), "<0.0001"), round(statistic,2)))
+
+gg_sig_chisq <- ggplot(sig_chisq, aes(x = fraction, y = signature)) +
+  geom_point(aes(color = resid, size = contrib)) + 
+  facet_wrap(~idh_codel_subtype) +
+  scale_color_distiller(palette = "RdBu", direction = 1) +
+  theme_bw() + 
+  labs(x = "Fraction", y = "Signature", color = "Residuals", size = "Contribution (%)") + 
+  scale_size(range = c(1,12))
+
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/F1/mutsigs_residuals.pdf", width = 7, height = 4, useDingbats = FALSE)
+plot(gg_sig_chisq)
+dev.off()
+
+## Gray out rel_score < 0.50
+res2 <- res %>% mutate(signature = factor(ifelse(rel_score < 0.50, "Undeterminate", as.character(signature)), levels = c("Signature 1\nAging","Signature 8\nUnknown","Signature 11\nAlkylating Agent","Signature 15\nDNA mismatch repair","Signature 16\nUnknown", "Undeterminate")))
+
+ggplot(res2, aes(x = fraction, fill = factor(signature))) +
+  geom_bar(width=1, color = "black") +
+  facet_wrap(~idh_codel_subtype, scales = "free_y") +
+  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ff7f00","#999999")) + 
   scale_y_continuous(expand = c(0,0)) + 
   scale_x_discrete(expand = c(0,0)) +
   plot_theme + 
   labs(x = "Fraction", y = "Number of Patients (n=216)", fill = "Dominant\nMutational\nSignature")
-
-pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/Figure 1/mutsigs_stacked_bars.pdf", width = 8, height  = 6, useDingbats = FALSE)
-plot(gg_sig_stackedbar)
-dev.off()
 
 ################ ################ ################ ################ ################ ################ ################ 
 ################ 96 trinucleotide changes plots

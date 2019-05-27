@@ -154,9 +154,9 @@ bottom_margin <- theme(plot.margin= unit(c(0, 1, 1, 1), "lines"))
 
 testPlot <- function(gg, grid = TRUE) {
   if(grid)
-    gg + plot_theme + plot_grid
+    gg + plot_theme + plot_grid + theme(axis.text.x = element_text(angle = 90, hjust = 1))
   else
-    gg + plot_theme
+    gg + plot_theme + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 }
 
 gg_cbind <- function(..., widths = NULL) {
@@ -220,7 +220,7 @@ gg_sig_sha <-
   ggplot(aes(x=case_barcode, fill = factor(signature), y=rel_score)) +
   geom_bar(position = "stack", stat = "identity") +
   labs(y = "Signature Score\nShared") +
-  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ff7f00"))
+  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ffff33","#ff7f00"))
 
 testPlot(gg_sig_sha)
 
@@ -229,7 +229,7 @@ gg_sig_pri <-
   ggplot(aes(x=case_barcode, fill = factor(signature), y=rel_score)) +
   geom_bar(position = "stack", stat = "identity") +
   labs(y = "Signature Score\nPrimary") +
-  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ff7f00"))
+  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ffff33","#ff7f00"))
 
 testPlot(gg_sig_pri)
 
@@ -238,7 +238,7 @@ gg_sig_rec <-
   ggplot(aes(x=case_barcode, fill = factor(signature), y=rel_score)) +
   geom_bar(position = "stack", stat = "identity") +
   labs(y = "Signature Score\nRecurrent") +
-  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ff7f00"))
+  scale_fill_manual(values = c("#e41a1c","#4daf4a","#377eb8","#984ea3","#ffff33","#ff7f00"))
 
 testPlot(gg_sig_rec)
 
@@ -649,7 +649,7 @@ figms <- gg_rbind(gtable_frame(ggplotGrob(gg_clinical + plot_grid + plot_theme +
                   ncol = 1)
 plot(figms)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/mutsig_suppl_per_patient.pdf", height = 8, width = 16, bg = "transparent", useDingbats = FALSE)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/EDF3/b-mutsig_suppl_per_patient.pdf", height = 8, width = 16, bg = "transparent", useDingbats = FALSE)
 plot(figms) 
 dev.off()
 
