@@ -32,17 +32,18 @@ testAOV <- function(df) {
 
 testres <- tmp %>% group_by(hypermutator_status, fraction) %>% do(testAOV(.))
 
-g <- ggplot(tmp, aes(x=idh_codel_subtype, y = log10(mf), color = fraction)) +
+g <- ggplot(tmp, aes(x=idh_codel_subtype, y = mf, color = fraction)) +
   geom_beeswarm() +
-  geom_text(data=testres, aes(x=1, y=-2, label = p)) +
+  stat_summary(fun.y = mean, geom = "errorbar", aes(ymax = 10^..y.., ymin = 10^..y..), width = .75, linetype = "dashed") +
+  scale_y_log10(breaks = c(0.1,1,10,100)) +
+  geom_text(data=testres, aes(x=1, y=10^(-2), label = p)) +
   facet_wrap(hypermutator_status~fraction) +
   scale_color_manual(values=c("R" = "#2FB3CA", "P" ="#CA2F66", "S"="#CA932F")) +
   theme_bw(base_size = 12) +
-  stat_summary(fun.y = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..), width = .75, linetype = "dashed") +
-  labs(x = "IDH-codel subtype", y = "log10 coverage adjusted mutation frequency (mut/Mb)", color = "Fraction") +
+  labs(x = "IDH-codel subtype", y = "Mutations per Megabase", color = "Fraction") +
   guides(color = FALSE)
 
-pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/fractionmf.pdf", height = 6, width = 10, useDingbats = FALSE)
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/EDF2/c-fractionmf.pdf", height = 6, width = 10, useDingbats = FALSE)
 plot(g)
 dev.off()
 

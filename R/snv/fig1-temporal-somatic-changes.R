@@ -20,7 +20,7 @@ library(ggiraphExtra)
 
 ##################################################
 # Establish connection with database.
-con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB2")
+con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")
 
 # Load in the necessary information regarding mutation frequency and all clinical information.
 mutation_freq = dbGetQuery(con, "SELECT * FROM analysis.mut_freq")
@@ -61,18 +61,43 @@ tumor_pair_mf_IDHwt = tumor_pair_mf %>%
   filter(idh_codel_subtype == "IDHwt")
 wilcox.test(tumor_pair_mf_IDHwt$mf_initial, tumor_pair_mf_IDHwt$mf_recurrence, paired = T)
 
+
+### Test
+test_subgroup <- function(df) {
+  wtest = wilcox.test(df$mf_initial, df$mf_recurrence, paired = TRUE, conf.int = TRUE)
+  data.frame(n = nrow(df), median_a = median(df$mf_initial), median_b = median(df$mf_recurrence), wilcox_p = wtest$p.value, wilcox_v = wtest$statistic)
+}
+
+tmp_str <- tumor_pair_mf %>% group_by(idh_codel_subtype,hypermutator_status) %>% do(test_subgroup(.)) %>% ungroup() %>%
+  mutate(str = sprintf("n=%s\n%s", n,
+                 case_when(n <= 3 ~ "P=NA",
+                           wilcox_p < 0.0001 ~ "P<0.0001",
+                           wilcox_p > 0.05 ~ sprintf("P=%s", format(round(wilcox_p, 2),scientific=F)),
+                           TRUE ~ sprintf("P=%s", format(round(wilcox_p, 4),scientific=F)))),
+         x = recode(hypermutator_status, `0` = 1.5, `1` = 1),
+         y = recode(hypermutator_status, `0` = 0.75, `1` = 80),
+         hypermutator_status = recode(hypermutator_status, `0` = "Non-hypermutator", `1` = "Hypermutator"))
+  
+
 # Analyse the mutational frequencies differences between primary and recurrence.
 tumor_pair_mf_nonhyper = tumor_pair_mf %>% 
   gather(sample_type, mut_freq, c(mf_initial, mf_recurrence)) %>% 
   mutate(sample_type = recode(sample_type, "mf_initial" = "Initial", "mf_recurrence" = "Recurrence"),
-         hypermutator_status = recode(hypermutator_status, `0` = "non-hypermutant", `1` = "hypermutant"))
-tumor_pair_mf_nonhyper$hypermutator_status = factor(tumor_pair_mf_nonhyper$hypermutator_status, levels=c("non-hypermutant", "hypermutant"))
+         hypermutator_status = recode(hypermutator_status, `0` = "Non-hypermutator", `1` = "Hypermutator"))
+tumor_pair_mf_nonhyper$hypermutator_status = factor(tumor_pair_mf_nonhyper$hypermutator_status, levels=c("Non-hypermutator", "Hypermutator"))
 
 # Examine the aliquot-level differences in mutational frequency.
-pdf(file = "/Users/johnsk/Documents/aliquot-mf-diff.pdf", height = 6, width = 8.4, bg = "transparent", useDingbats = FALSE)
-ggplot(tumor_pair_mf_nonhyper, aes(x=sample_type, y=log10(mut_freq), fill=sample_type)) +
-  geom_boxplot() + theme_bw() + xlab("") + ylab("log10(Mutations per Megabase)") + scale_fill_manual(values = c("Initial" = "#a6611a", "Recurrence" = "#018571")) +
-  facet_wrap(hypermutator_status~idh_codel_subtype, scales="free") + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/EDF2/aliquot-mf-diff.pdf", height = 6, width = 10, bg = "transparent", useDingbats = FALSE)
+ggplot(tumor_pair_mf_nonhyper) +
+  geom_line(aes(group=tumor_pair_barcode, x=sample_type, y=mut_freq, fill=sample_type), linetype = 2, color = "lightgray") +
+  geom_point(aes(x=sample_type, y=mut_freq)) +
+  geom_boxplot(aes(x=sample_type, y=mut_freq, fill=sample_type)) + geom_text(data = tmp_str, aes(label=str, x= x, y=y)) +
+  theme_bw() +
+  labs(x = "", y = "Mutations per Megabase", fill = "Sample Type") + 
+  scale_y_log10(breaks = c(1,10,100)) +
+  #coord_cartesian(ylim = c(1,1000)) +
+  scale_fill_manual(values = c("Initial" = "#a6611a", "Recurrence" = "#018571")) +
+  facet_wrap(hypermutator_status~idh_codel_subtype, scales="free")
 dev.off()
 
 # Split into fractions and subtypes for the non-hypermutators.
@@ -108,21 +133,27 @@ tumor_pair_mf = tumor_pair_mf %>%
          mf_ab = mf_private_a+mf_private_b,
          log10_mf_churn = log10(mf_ab),
          log10_surgical_int = log10(surgical_interval_mo),
-         hypermutator_status = recode(hypermutator_status, `0` = "non-hypermutant", `1` = "hypermutant"))
-tumor_pair_mf$hypermutator_status = factor(tumor_pair_mf$hypermutator_status, levels=c("non-hypermutant", "hypermutant"))
+         hypermutator_status = recode(hypermutator_status, `0` = "Non-hypermutator", `1` = "Hypermutator"))
+tumor_pair_mf$hypermutator_status = factor(tumor_pair_mf$hypermutator_status, levels=c("Non-hypermutator", "Hypermutator"))
 
 # Build a linear model using transformed values.
 mf_change_fit = lm(log10_mf_private_b~log10_surgical_int + idh_codel_subtype + hypermutator_status, data = tumor_pair_mf)
 summary(mf_change_fit)  ### Strong associations with hypermutation (obviously) and a positive association with surgical interval.
+
 mf_churn_fit = lm(log10_mf_churn~log10_surgical_int + idh_codel_subtype + hypermutator_status, data = tumor_pair_mf)
 summary(mf_churn_fit)  ### Strong associations with hypermutation (obviously) and a positive association with surgical interval.
 
 
 # Visualized by subtype.
-pdf(file = "/Users/johnsk/Documents/mf-private-b-time.pdf", height = 6, width = 8.4, bg = "transparent", useDingbats = FALSE)
-ggplot(tumor_pair_mf, aes(x = log10_surgical_int, y = log10_mf_private_b, color=idh_codel_subtype)) +
-  geom_point() + theme_bw() + xlab("log10(Surgical interval (months))")+ ylab("log10(Mutations per Mb \n specific to recurrence)") + geom_smooth(method='lm', formula =y~x) +
-  facet_wrap(hypermutator_status~idh_codel_subtype) + labs(color = "Glioma subtype") 
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/EDF2/mf-private-b-time.pdf", height = 6, width = 10, bg = "transparent", useDingbats = FALSE)
+ggplot(tumor_pair_mf, aes(x = surgical_interval_mo, y = mf_private_b, color=idh_codel_subtype)) +
+  geom_point() +
+  theme_bw() + 
+  scale_y_log10(breaks = c(1,10,100, 1000)) +
+  scale_x_log10() +
+  labs(x="Surgical interval (months)", y="Mutations per Mb\nPrivate to Recurrence", color = "Glioma Subtype") + 
+  geom_smooth(method='lm', formula =y~x) +
+  facet_wrap(hypermutator_status~idh_codel_subtype)
 dev.off()
 
 # Investigate whether mutational "churn" makes a difference.
