@@ -8,11 +8,11 @@ selected_aliquots AS
 (
     SELECT gs.tumor_barcode_a AS aliquot_barcode, 'P' AS sample_type FROM analysis.gold_set gs
     INNER JOIN analysis.tumor_clinical_comparison tcc ON tcc.tumor_pair_barcode = gs.tumor_pair_barcode
-    WHERE hypermutator_status IS FALSE
+    WHERE hypermutator_status IS TRUE
     UNION
     SELECT gs.tumor_barcode_b AS aliquot_barcode, 'R' AS sample_type FROM analysis.gold_set gs
     INNER JOIN analysis.tumor_clinical_comparison tcc ON tcc.tumor_pair_barcode = gs.tumor_pair_barcode
-    WHERE hypermutator_status IS FALSE
+    WHERE hypermutator_status IS TRUE
 )
 
 SELECT DISTINCT -- remove duplicate entries

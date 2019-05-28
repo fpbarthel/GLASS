@@ -17,6 +17,6 @@ INNER JOIN analysis.gold_set tp ON tp.tumor_pair_barcode = pgeno.tumor_pair_barc
 LEFT JOIN clinical.subtypes st ON st.case_barcode = pgeno.case_barcode
 INNER JOIN analysis.tumor_clinical_comparison tcc ON tcc.tumor_pair_barcode = tp.tumor_pair_barcode
 WHERE
-    (mutect2_call_a OR mutect2_call_b) AND hypermutator_status IS FALSE
+    (mutect2_call_a OR mutect2_call_b) AND hypermutator_status IS TRUE
     
 -- END --
