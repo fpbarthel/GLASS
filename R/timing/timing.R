@@ -6,9 +6,11 @@ library(egg)
 
 con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")
 res <- dbGetQuery(con, read_file('sql/timing/timing.sql'))
-pairs <- dbGetQuery(con, read_file('sql/timing/timing.sql'))
+pairs <- dbGetQuery(con, read_file('sql/timing/timing_pairs.sql'))
 
-## CCF compare
+####################
+## CCF compare between events within a tumor
+####################
 
 testWilcoxGroup <- function(df) {
   wtest = wilcox.test(df$ccf ~ df$evnt, paired = TRUE, conf.int = TRUE)
@@ -57,15 +59,6 @@ grobs = grobs[which(!sapply(grobs,is.null))]
 pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/timing.pdf", width=9, height = 12, useDingbats = FALSE)
 marrangeGrob(grobs = grobs, nrow = 4, ncol = 3)
 dev.off()
-
-
-tmp <- res %>% filter(subtype == "IDHwt", evnt %in% c("TP53 mut", "NF1 mut")) %>% 
-  group_by(aliquot_barcode) %>% 
-  mutate(n=n()) %>% 
-  ungroup() %>%
-  filter(n==2)
-
-ggplot(tmp, aes(x=evnt, y=ccf, group = aliquot_barcode)) + geom_point() + geom_line() + facet_wrap(~sample_type)
 
 ## Proportion clonal radar plot
 
