@@ -1,3 +1,6 @@
+## PyClone Figures
+## @author Floris Barthel
+
 library(DBI)
 library(tidyverse)
 library(ggplot2)

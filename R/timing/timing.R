@@ -6,6 +6,66 @@ library(egg)
 
 con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")
 res <- dbGetQuery(con, read_file('sql/timing/timing.sql'))
+pairs <- dbGetQuery(con, read_file('sql/timing/timing.sql'))
+
+## CCF compare
+
+testWilcoxGroup <- function(df) {
+  wtest = wilcox.test(df$ccf ~ df$evnt, paired = TRUE, conf.int = TRUE)
+  data.frame(n = nrow(df)/2,
+             statistic = wtest$statistic,
+             estimate = wtest$estimate,
+             lcl = wtest$conf.int[1],
+             ucl = wtest$conf.int[2],
+             wilcox_p = wtest$p.value,
+             test_str = sprintf("n=%s\n%s",
+                                nrow(df)/2,
+                                case_when(wtest$p.value < 0.0001 ~ "P<0.0001",
+                                          wtest$p.value > 0.05 ~ sprintf("P=%s", format(round(wtest$p.value, 2),scientific=F)),
+                                          TRUE ~ sprintf("P=%s", format(round(wtest$p.value, 4),scientific=F)))),
+             stringsAsFactors = FALSE)
+}
+
+grobs <- lapply(1:nrow(pairs), function(i) {
+  tmp <- res %>% filter(subtype == pairs$idh_codel_subtype[i], evnt %in% c(pairs$evnt_a[i], pairs$evnt_b[i])) %>% 
+    group_by(aliquot_barcode) %>% 
+    mutate(n=n()) %>% 
+    ungroup() %>%
+    filter(n==2)
+  
+  if(nrow(tmp)/2 < 4)
+    return()
+  
+  wtest_all <- testWilcoxGroup(tmp)
+  wtest_sam <- tmp %>% group_by(sample_type) %>% do(testWilcoxGroup(.)) %>% ungroup()
+  
+  ggplot(tmp, aes(x=evnt, y=ccf, group = aliquot_barcode, color = sample_type)) + 
+    geom_point() +
+    geom_line() + 
+    theme_bw() +
+    coord_cartesian(ylim = c(0,1), xlim = c(1,2)) +
+    geom_text(data = wtest_all, aes(x=1.5, y=0.05, label = test_str), group = NA, color = "black", size = 3) +
+    geom_text(data = filter(wtest_sam, sample_type == "P"), aes(x=1, y=0.05, label = test_str), group = NA, color = "#007C80", size = 3) +
+    geom_text(data = filter(wtest_sam, sample_type == "R"), aes(x=2, y=0.05, label = test_str), group = NA, color = "#CE8014", size = 3) +
+    guides(color = FALSE) +
+    labs(x = "Event", y = "Cancer Cell Fraction", title = pairs$idh_codel_subtype[i]) +
+    scale_color_manual(values = c("P" = "#007C80", "R" = "#CE8014"))
+})
+
+grobs = grobs[which(!sapply(grobs,is.null))]
+
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/timing.pdf", width=9, height = 12, useDingbats = FALSE)
+marrangeGrob(grobs = grobs, nrow = 4, ncol = 3)
+dev.off()
+
+
+tmp <- res %>% filter(subtype == "IDHwt", evnt %in% c("TP53 mut", "NF1 mut")) %>% 
+  group_by(aliquot_barcode) %>% 
+  mutate(n=n()) %>% 
+  ungroup() %>%
+  filter(n==2)
+
+ggplot(tmp, aes(x=evnt, y=ccf, group = aliquot_barcode)) + geom_point() + geom_line() + facet_wrap(~sample_type)
 
 ## Proportion clonal radar plot
 
@@ -65,10 +125,10 @@ ggplot(res, aes(x=sample_type, color=subtype, y=ccf)) +
 
 ## Barplots for rank per gene and subtype (counts)
 
-res <- res %>% mutate(subtype = factor(subtype),
+res2 <- res %>% mutate(subtype = factor(subtype),
                       evnt_rank = factor(evnt_rank, levels = 1:7, labels = c("1st", "2nd", "3rd", sprintf("%sth",4:7))))
 
-myplots <- lapply(split(res, list(res$subtype, res$sample_type)), function(df){
+myplots <- lapply(split(res2, list(res2$subtype, res2$sample_type)), function(df){
   df <- df %>% 
     group_by(evnt) %>%
     mutate(mean_ccf = mean(ccf),
