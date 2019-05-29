@@ -167,26 +167,29 @@ ggsurvplot(fit_IDHmut_seq_int, data = clinical_gold_IDHmut_seq, risk.table = FAL
            surv.median.line = "v", palette = c("royalblue4", "tomato3"), 
            ylab = "Progression-free survival \n probability")
 
-#############################
-# Inclusion of MGMT status
-#############################
-
-clinical_tumor_gold 
-  
-table(surgeries$mgmt_methylation_method)
+#######################################################
+# Inclusion of MGMT status for hypermutation analyses #
+#######################################################
+# Join the clinical annotation with the surgery table to extract MGMT status.
 surgery_mgmt = surgeries %>% 
-  filter(!is.na(mgmt_methylation))
-tmp_mgmt = surgery_mgmt %>% 
-  group_by(case_barcode, mgmt_methylation, mgmt_methylation_method) %>% 
-  summarise(n = n())
-subset_samples  = tmp_mgmt$case_barcode[duplicated(tmp_mgmt$case_barcode)]
+  filter(!is.na(mgmt_methylation)) %>% 
+  select(sample_barcode, surgery_number, mgmt_methylation, mgmt_methylation_method)
 
-tmp2 = tmp_mgmt %>% 
-  filter(case_barcode %in%subset_samples)
+clinical_tumor_gold_mgmt = clinical_tumor_gold %>% 
+  mutate(sample_bar_a = substr(tumor_barcode_a, 1, 15),
+         sample_bar_b = substr(tumor_barcode_b, 1, 15)) %>% 
+  left_join(surgery_mgmt, by=c("sample_bar_a"="sample_barcode")) %>% 
+  left_join(surgery_mgmt, by=c("sample_bar_b"="sample_barcode"))
 
-mnp_glass = read_tsv("/Users/johnsk/Documents/Single-Cell-DNAmethylation/450k/synapse-data/glass-overlapping-mnp-methylation.txt")
+# There is MGMT data available for roughly half the GLASS dataset.
+sum(!is.na(clinical_tumor_gold_mgmt$mgmt_methylation.x))
+# Far fewer samples that have MGMT methylation at recurrence.
+sum(!is.na(clinical_tumor_gold_mgmt$mgmt_methylation.y))
+sum(clinical_tumor_gold_mgmt$mgmt_methylation.x==clinical_tumor_gold_mgmt$mgmt_methylation.y, na.rm = TRUE)
+# 12/75 samples that were discordant for MGMT status.
+sum(clinical_tumor_gold_mgmt$mgmt_methylation.x!=clinical_tumor_gold_mgmt$mgmt_methylation.y, na.rm = TRUE)
 
-tmp = mnp_glass %>% 
-  group_by(case_barcode, mgmt_status) %>% 
-  summarise(n = n())
-write.table(tmp, file="/Users/johnsk/Documents/Single-Cell-DNAmethylation/450k/results/glass-synapse/glass-mnp-mgmt-inconsistencies.txt", sep="\t", row.names = F, col.names = T, quote = F)
+# Is there an association between survival and hypermutation while including MGMT status?
+hyper_cox_mgmt = coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + alk_assoc_hypermutator_status + idh_codel_subtype + mgmt_methylation.x, data = clinical_tumor_gold_mgmt)
+summary(hyper_cox_mgmt) # Still no association with hypermutation, but there was an association with unmethylated MGMT.
+

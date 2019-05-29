@@ -40,6 +40,9 @@ gold_selection = gold_set %>%
   left_join(cases, by="case_barcode") %>% 
   left_join(subtypes, by="case_barcode") %>% 
   mutate(patient_vital = ifelse(case_vital_status=="alive", 0, 1),
+         p_thres_5 = most_probable_classification.x,
+         p_thres_6 = ifelse(probability_neutral.x > 0.6, "N", ifelse(probability_neutral.x < 0.4, "S", NA)),
+         p_thres_7 = ifelse(probability_neutral.x > 0.7, "N", ifelse(probability_neutral.x < 0.3, "S", NA)),
          # Re-classify "most_probably_classification" to "recurrence_threshold_0.5".
          r_thres_5 = most_probable_classification.y,
          r_thres_6 = ifelse(probability_neutral.y > 0.6, "N", ifelse(probability_neutral.y < 0.4, "S", NA)),
@@ -98,7 +101,9 @@ summary(neutrality_cox) # Neutrality is protective across subtypes while adjusti
 ###############################
 gold_selection_mode = gold_selection %>% 
   filter(!is.na(most_probable_classification.x), !is.na(most_probable_classification.y)) %>% 
-  mutate(evo_mode = paste(most_probable_classification.x, most_probable_classification.y, sep="-")) %>% 
+  mutate(evo_mode = paste(p_thres_5, r_thres_5, sep="-"),
+         evo_mode_6 = paste(p_thres_6, r_thres_6, sep="-"),
+         evo_mode_7 = paste(p_thres_7, r_thres_7, sep="-")) %>% 
   mutate(evo_binary = ifelse(evo_mode=="N-N", "Neutral-Neutral", "N-S|S-N|S-S")) 
 
 # Define "evolution mode", selection status at primary and recurrence is necessary for this information.
@@ -164,6 +169,32 @@ legend("center", title="Glioma subtype",
        c("IDHwt","IDHmut-noncodel","IDHmut-codel", "Treatment unknown"), fill=pal, cex=1.5, bty = "n")
 dev.off()
 
+#################################################################################
+### Examine whether there are differences in proportions based on thresholds   ##
+#################################################################################
+# Define the selection modes for the 0.5 threshold
+t1 = table(gold_selection_mode$evo_mode)
+# Define the selection modes for the 0.6 threshold
+gold_selection_mode_6 = gold_selection_mode %>% 
+  filter(!is.na(p_thres_6), !is.na(r_thres_6))
+t2 = table(gold_selection_mode_6$evo_mode_6)
+# Define the selection modes for the 0.7 threshold
+gold_selection_mode_7 = gold_selection_mode %>% 
+  filter(!is.na(p_thres_7), !is.na(r_thres_7))
+t3 = table(gold_selection_mode_7$evo_mode_7)
+
+# Perform a Fisher's exact-test on the data across different thresholds.
+t_all = rbind(t1, t2, t3)
+fisher.test(t_all)
+
+## Impact on survival model:
+# Perform survival analysis with the binarized evolution modes.
+neutrality_cox_05 <- coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + idh_codel_subtype + r_thres_5, data = gold_selection)
+summary(neutrality_cox_05)
+neutrality_cox_06 <- coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + idh_codel_subtype + r_thres_6, data = gold_selection)
+summary(neutrality_cox_06)
+neutrality_cox_07 <- coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + idh_codel_subtype + r_thres_7, data = gold_selection)
+summary(neutrality_cox_07)
 
 ####################################################
 ### Association between treatment and selection   ##

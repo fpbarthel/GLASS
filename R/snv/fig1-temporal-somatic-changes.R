@@ -263,11 +263,17 @@ ggplot(gatk_seg_diff_gold, aes(log10(surgical_interval))) + geom_histogram() + t
 ggplot(gatk_seg_diff_gold, aes(log10(prop_change))) + geom_histogram() + theme_bw() + xlab("log10(Proportion of differential segments)") + ylab("Counts") + facet_wrap(~idh_codel_subtype) 
 
 # TOTAL proportion change as it relates to time between surgeries.
-pdf(file = "/Users/johnsk/Documents/prop-gatk-cnv-seg-diff.pdf", height = 6, width = 8.4, bg = "transparent", useDingbats = FALSE)
+pdf(file = "/Users/johnsk/Documents/prop-gatk-cnv-seg-diff.pdf", height = 4, width = 6, bg = "transparent", useDingbats = FALSE)
 ggplot(gatk_seg_diff_gold, aes(x=log10(surgical_interval), y=prop_change, color= idh_codel_subtype)) +
   geom_point() + theme_bw() + xlab("log10(Surgical interval (months))") + ylab("Proportion of CNV \n segment differences") + labs("Tumor") + geom_smooth(method='lm', formula =y~x) +
   facet_wrap(~idh_codel_subtype) + labs(color = "Glioma subtype") + ggtitle("")
 dev.off()
+
+# Correlation coefficients.
+cor.test(gatk_seg_IDH_codel$prop_change, gatk_seg_IDH_codel$surgical_interval, method = "s")
+cor.test(gatk_seg_IDH_noncodel$prop_change, gatk_seg_IDH_noncodel$surgical_interval, method = "s")
+cor.test(gatk_seg_IDHwt$prop_change, gatk_seg_IDHwt$surgical_interval, method = "s")
+
 
 # AMPLIFICATION proportion change.
 ggplot(gatk_seg_diff_gold, aes(x=log10(surgical_interval), y=prop_amp, color= idh_codel_subtype)) +

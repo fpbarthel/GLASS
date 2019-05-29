@@ -66,6 +66,7 @@ plot_vaf$var_filter_revised = factor(plot_vaf$var_filter_revised, levels = c("pr
 n_distinct(plot_vaf$tumor_pair_barcode)
 # Remove the intronic variants from this visualization.
 plot_vaf = plot_vaf %>% filter(!is.na(mut_class))
+
 pdf(file = "/Users/johnsk/Documents/neutralitytestr-nonhyper-goldset-vaf.pdf", height = 6, width = 9, bg = "transparent", useDingbats = FALSE)
 ggplot(plot_vaf, aes(x=vaf, fill=mut_class)) + geom_histogram(binwidth = 0.01) + theme_bw() + facet_grid(idh_codel_subtype~var_filter_revised, scales="free") +
   xlab("Allele frequency (f)") + ylab("Number of mutations") + scale_fill_manual(values = c("nonsynonymous" = "#b22222", "synonymous" = "#22B2B2"), name = "Mutation type\n(coding regions)") 
@@ -483,111 +484,6 @@ ggplot(plot_vaf_hyper, aes(x=vaf, color=mut_class)) +geom_density() + theme_bw()
 dev.off()
 
 
-###########################################
-# Neutrality models for non-hypermutators
-###########################################
-# Primary.
-codel_primary_nonhyper = vaf_cnv_gold %>% 
-  filter(fraction =="P", idh_codel_subtype == "IDHmut-codel", hypermutator_status==0) 
-out_primary_1 = neutralitytest(codel_primary_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
-out_primary_1 # return statistics
-noncodel_primary_nonhyper = vaf_cnv_gold %>% 
-  filter(fraction =="P", idh_codel_subtype == "IDHmut-noncodel", hypermutator_status==0) 
-out_primary_2 = neutralitytest(noncodel_primary_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
-out_primary_2 # return statistics
-wt_primary_nonhyper = vaf_cnv_gold %>% 
-  filter(fraction =="P", idh_codel_subtype == "IDHwt", hypermutator_status==0) 
-out_primary_3 = neutralitytest(wt_primary_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
-out_primary_3 # return statistics
-
-# Recurrence.
-codel_recur_nonhyper = vaf_cnv_gold %>% 
-  filter(fraction =="R", idh_codel_subtype == "IDHmut-codel", hypermutator_status==0) 
-out_recur_1 = neutralitytest(codel_recur_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
-out_recur_1 # return statistics
-noncodel_recur_nonhyper = vaf_cnv_gold %>% 
-  filter(fraction =="R", idh_codel_subtype == "IDHmut-noncodel", hypermutator_status==0) 
-out_recur_2 = neutralitytest(noncodel_recur_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
-out_recur_2 # return statistics
-wt_recur_nonhyper = vaf_cnv_gold %>% 
-  filter(fraction =="R", idh_codel_subtype == "IDHwt", hypermutator_status==0) 
-out_recur_3 = neutralitytest(wt_recur_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
-out_recur_3 # return statistics
-
-# SHARED - tumor_a
-codel_shared_a_nonhyper = vaf_cnv_gold %>% 
-  filter(fraction =="S", idh_codel_subtype == "IDHmut-codel", hypermutator_status==0) 
-out_shared_a_1 = neutralitytest(codel_shared_a_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
-out_shared_a_1 # return statistics
-noncodel_shared_a_nonhyper = vaf_cnv_gold %>% 
-  filter(fraction =="S", idh_codel_subtype == "IDHmut-noncodel", hypermutator_status==0) 
-out_shared_a_2 = neutralitytest(noncodel_shared_a_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
-out_shared_a_2 # return statistics
-wt_shared_a_nonhyper = vaf_cnv_gold %>% 
-  filter(fraction =="S", idh_codel_subtype == "IDHwt", hypermutator_status==0) 
-out_shared_a_3 = neutralitytest(wt_shared_a_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
-out_shared_a_3 # return statistics
-
-# SHARED - tumor_b
-codel_shared_b_nonhyper = vaf_cnv_gold %>% 
-  filter(fraction =="S", idh_codel_subtype == "IDHmut-codel", hypermutator_status==0) 
-out_shared_b_1 = neutralitytest(codel_shared_b_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
-out_shared_b_1 # return statistics
-noncodel_shared_b_nonhyper = vaf_cnv_gold %>% 
-  filter(fraction =="S", idh_codel_subtype == "IDHmut-noncodel", hypermutator_status==0) 
-out_shared_b_2 = neutralitytest(noncodel_shared_a_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
-out_shared_b_2 # return statistics
-wt_shared_b_nonhyper = vaf_cnv_gold %>% 
-  filter(fraction =="S", idh_codel_subtype == "IDHwt", hypermutator_status==0) 
-out_shared_b_3 = neutralitytest(wt_shared_a_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
-out_shared_b_3 # return statistics
-
-# Plot the cumulative distribution of the data as well as the best fit linear model line.
-q1 = lsq_plot(out_primary_1) + ggtitle("IDHmut codel") + xlab("") 
-q2 = lsq_plot(out_primary_2) + ggtitle("IDHmut noncodel") + ylab("") 
-q3 = lsq_plot(out_primary_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-q4 = lsq_plot(out_recur_1)  + ggtitle("IDHmut codel") + xlab("")
-q5 = lsq_plot(out_recur_2) + ggtitle("IDHmut noncodel") + ylab("")
-q6 =lsq_plot(out_recur_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-q7 = lsq_plot(out_shared_a_1)  + ggtitle("IDHmut codel") + xlab("")
-q8 = lsq_plot(out_shared_a_2)  + ggtitle("IDHmut noncodel")  + ylab("")
-q9 = lsq_plot(out_shared_a_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-q10 = lsq_plot(out_shared_b_1)  + ggtitle("IDHmut noncodel") + xlab("") 
-q11 = lsq_plot(out_shared_b_2)  + ggtitle("IDHmut noncodel") + ylab("") 
-q12 = lsq_plot(out_shared_b_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-
-# Difficult to reproduce the faceted layout of the VAF plots.
-grid.arrange(q1, q2, q3, ncol=3)
-grid.arrange(q4, q5, q6, ncol=3)
-grid.arrange(q7, q8, q9, ncol=3)
-grid.arrange(q10, q11, q12, ncol=3)
-
-grid.arrange(q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, nrow=3, ncol=4)
-
-# Plot the normalized cumulative distributions.
-p1 = normalized_plot(out_primary_1) + ggtitle("IDHmut codel") + xlab("") 
-p2 = normalized_plot(out_primary_2) + ggtitle("IDHmut noncodel") + ylab("") 
-p3 = normalized_plot(out_primary_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-p4 = normalized_plot(out_recur_1)  + ggtitle("IDHmut codel") + xlab("")
-p5 = normalized_plot(out_recur_2) + ggtitle("IDHmut noncodel") + ylab("")
-p6 = normalized_plot(out_recur_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-p7 = normalized_plot(out_shared_a_1)  + ggtitle("IDHmut codel") + xlab("")
-p8 = normalized_plot(out_shared_a_2)  + ggtitle("IDHmut noncodel")  + ylab("")
-p9 = normalized_plot(out_shared_a_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-p10 = normalized_plot(out_shared_b_1) + ggtitle("IDHmut codel") + xlab("")
-p11 = normalized_plot(out_shared_b_2)  +ggtitle("IDHmut noncodel") + ylab("") 
-p12 = normalized_plot(out_shared_b_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-
-# Plot the normalized values here:
-grid.arrange(p1, p2, p3, ncol=3)
-grid.arrange(p4, p5, p6, ncol=3)
-grid.arrange(p7, p8, p9, ncol=3)
-grid.arrange(p10, p11, p12, ncol=3)
-
-
-
-
-
 ##################################
 ## Hypermutator-specific analyses
 ###################################
@@ -669,101 +565,160 @@ stacked_mut_class_hyper = vaf_cnv_gold_hyper %>%
   filter(mut_class == "synonymous")
 hist(stacked_mut_class_hyper$freq)
 
-################################################
-# Hypermutator-specific neutralitytestR models
-################################################
-# Primary.
-codel_primary_nonhyper = vaf_cnv_gold_hyper %>% 
-  filter(fraction =="P", idh_codel_subtype == "IDHmut-codel") 
+###############################################
+# NeutralitytestR for Figure 2B with histograms (associated R^2, P-values)
+###############################################
+# Color with the nonsynonymous and synonymous colors for R^2 and pvalue.
+
+# Remove the intronic variants from this visualization.
+# **nonsynonymous**
+vaf_cnv_gold_nonsyn = vaf_cnv_gold %>% filter(mut_class == "nonsynonymous")
+
+# Primary
+codel_primary_nonhyper = vaf_cnv_gold_nonsyn %>% 
+  filter(fraction =="P", idh_codel_subtype == "IDHmut-codel", hypermutator_status==0) 
 out_primary_1 = neutralitytest(codel_primary_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
-out_primary_1 # return statistics
-noncodel_primary_nonhyper = vaf_cnv_gold_hyper %>% 
-  filter(fraction =="P", idh_codel_subtype == "IDHmut-noncodel") 
+noncodel_primary_nonhyper = vaf_cnv_gold_nonsyn %>% 
+  filter(fraction =="P", idh_codel_subtype == "IDHmut-noncodel", hypermutator_status==0) 
 out_primary_2 = neutralitytest(noncodel_primary_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
-out_primary_2 # return statistics
-wt_primary_nonhyper = vaf_cnv_gold_hyper %>% 
-  filter(fraction =="P", idh_codel_subtype == "IDHwt") 
+wt_primary_nonhyper = vaf_cnv_gold_nonsyn %>% 
+  filter(fraction =="P", idh_codel_subtype == "IDHwt", hypermutator_status==0) 
 out_primary_3 = neutralitytest(wt_primary_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
-out_primary_3 # return statistics
 
 # Recurrence.
-codel_recur_nonhyper = vaf_cnv_gold_hyper %>% 
-  filter(fraction =="R", idh_codel_subtype == "IDHmut-codel") 
+codel_recur_nonhyper = vaf_cnv_gold_nonsyn %>% 
+  filter(fraction =="R", idh_codel_subtype == "IDHmut-codel", hypermutator_status==0) 
 out_recur_1 = neutralitytest(codel_recur_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
-out_recur_1 # return statistics
-noncodel_recur_nonhyper = vaf_cnv_gold_hyper %>% 
-  filter(fraction =="R", idh_codel_subtype == "IDHmut-noncodel") 
+noncodel_recur_nonhyper = vaf_cnv_gold_nonsyn %>% 
+  filter(fraction =="R", idh_codel_subtype == "IDHmut-noncodel", hypermutator_status==0) 
 out_recur_2 = neutralitytest(noncodel_recur_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
-out_recur_2 # return statistics
-wt_recur_nonhyper = vaf_cnv_gold_hyper %>% 
-  filter(fraction =="R", idh_codel_subtype == "IDHwt") 
+wt_recur_nonhyper = vaf_cnv_gold_nonsyn %>% 
+  filter(fraction =="R", idh_codel_subtype == "IDHwt", hypermutator_status==0) 
 out_recur_3 = neutralitytest(wt_recur_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
-out_recur_3 # return statistics
 
 # SHARED - tumor_a
-codel_shared_a_nonhyper = vaf_cnv_gold_hyper %>% 
-  filter(fraction =="S", idh_codel_subtype == "IDHmut-codel") 
+codel_shared_a_nonhyper = vaf_cnv_gold_nonsyn %>% 
+  filter(fraction =="S", idh_codel_subtype == "IDHmut-codel", hypermutator_status==0) 
 out_shared_a_1 = neutralitytest(codel_shared_a_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
-out_shared_a_1 # return statistics
-noncodel_shared_a_nonhyper = vaf_cnv_gold_hyper %>% 
-  filter(fraction =="S", idh_codel_subtype == "IDHmut-noncodel") 
+noncodel_shared_a_nonhyper = vaf_cnv_gold_nonsyn %>% 
+  filter(fraction =="S", idh_codel_subtype == "IDHmut-noncodel", hypermutator_status==0) 
 out_shared_a_2 = neutralitytest(noncodel_shared_a_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
-out_shared_a_2 # return statistics
-wt_shared_a_nonhyper = vaf_cnv_gold_hyper %>% 
-  filter(fraction =="S", idh_codel_subtype == "IDHwt") 
+wt_shared_a_nonhyper = vaf_cnv_gold_nonsyn %>% 
+  filter(fraction =="S", idh_codel_subtype == "IDHwt", hypermutator_status==0) 
 out_shared_a_3 = neutralitytest(wt_shared_a_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
-out_shared_a_3 # return statistics
 
 # SHARED - tumor_b
-codel_shared_b_nonhyper = vaf_cnv_gold_hyper %>% 
-  filter(fraction =="S", idh_codel_subtype == "IDHmut-codel") 
+codel_shared_b_nonhyper = vaf_cnv_gold_nonsyn %>% 
+  filter(fraction =="S", idh_codel_subtype == "IDHmut-codel", hypermutator_status==0) 
 out_shared_b_1 = neutralitytest(codel_shared_b_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
-out_shared_b_1 # return statistics
-noncodel_shared_b_nonhyper = vaf_cnv_gold_hyper %>% 
-  filter(fraction =="S", idh_codel_subtype == "IDHmut-noncodel") 
+noncodel_shared_b_nonhyper = vaf_cnv_gold_nonsyn %>% 
+  filter(fraction =="S", idh_codel_subtype == "IDHmut-noncodel", hypermutator_status==0) 
 out_shared_b_2 = neutralitytest(noncodel_shared_a_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
-out_shared_b_2 # return statistics
-wt_shared_b_nonhyper = vaf_cnv_gold_hyper %>% 
-  filter(fraction =="S", idh_codel_subtype == "IDHwt") 
+wt_shared_b_nonhyper = vaf_cnv_gold_nonsyn %>% 
+  filter(fraction =="S", idh_codel_subtype == "IDHwt", hypermutator_status==0) 
 out_shared_b_3 = neutralitytest(wt_shared_a_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
-out_shared_b_3 # return statistics
 
-# Plot the cumulative distribution of the data as well as the best fit linear model line.
-q1 = lsq_plot(out_primary_1) + ggtitle("IDHmut codel") + xlab("") 
-q2 = lsq_plot(out_primary_2) + ggtitle("IDHmut noncodel") + ylab("") 
-q3 = lsq_plot(out_primary_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-q4 = lsq_plot(out_recur_1)  + ggtitle("IDHmut codel") + xlab("")
-q5 = lsq_plot(out_recur_2) + ggtitle("IDHmut noncodel") + ylab("")
-q6 =lsq_plot(out_recur_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-q7 = lsq_plot(out_shared_a_1)  + ggtitle("IDHmut codel") + xlab("")
-q8 = lsq_plot(out_shared_a_2)  + ggtitle("IDHmut noncodel")  + ylab("")
-q9 = lsq_plot(out_shared_a_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-q10 = lsq_plot(out_shared_b_1)  + ggtitle("IDHmut noncodel") + xlab("") 
-q11 = lsq_plot(out_shared_b_2)  + ggtitle("IDHmut noncodel") + ylab("") 
-q12 = lsq_plot(out_shared_b_3) + ggtitle("IDHwt") + ylab("") + xlab("")
+# ** synonymous **
+vaf_cnv_gold_syn = vaf_cnv_gold %>% filter(mut_class == "synonymous")
 
-# Difficult to reproduce the faceted layout of the VAF plots.
-grid.arrange(q1, q2, q3, ncol=3)
-grid.arrange(q4, q5, q6, ncol=3)
-grid.arrange(q7, q8, q9, ncol=3)
-grid.arrange(q10, q11, q12, ncol=3)
+# Primary
+codel_primary_nonhyper = vaf_cnv_gold_syn %>% 
+  filter(fraction =="P", idh_codel_subtype == "IDHmut-codel", hypermutator_status==0) 
+out_primary_1s = neutralitytest(codel_primary_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
+noncodel_primary_nonhyper = vaf_cnv_gold_syn %>% 
+  filter(fraction =="P", idh_codel_subtype == "IDHmut-noncodel", hypermutator_status==0) 
+out_primary_2s = neutralitytest(noncodel_primary_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
+wt_primary_nonhyper = vaf_cnv_gold_syn %>% 
+  filter(fraction =="P", idh_codel_subtype == "IDHwt", hypermutator_status==0) 
+out_primary_3s = neutralitytest(wt_primary_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
 
-# Plot the normalized cumulative distributions.
-p1 = normalized_plot(out_primary_1) + ggtitle("IDHmut codel") + xlab("") 
-p2 = normalized_plot(out_primary_2) + ggtitle("IDHmut noncodel") + ylab("") 
-p3 = normalized_plot(out_primary_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-p4 = normalized_plot(out_recur_1)  + ggtitle("IDHmut codel") + xlab("")
-p5 = normalized_plot(out_recur_2) + ggtitle("IDHmut noncodel") + ylab("")
-p6 = normalized_plot(out_recur_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-p7 = normalized_plot(out_shared_a_1)  + ggtitle("IDHmut codel") + xlab("")
-p8 = normalized_plot(out_shared_a_2)  + ggtitle("IDHmut noncodel")  + ylab("")
-p9 = normalized_plot(out_shared_a_3) + ggtitle("IDHwt") + ylab("") + xlab("")
-p10 = normalized_plot(out_shared_b_1) + ggtitle("IDHmut codel") + xlab("")
-p11 = normalized_plot(out_shared_b_2)  +ggtitle("IDHmut noncodel") + ylab("") 
-p12 = normalized_plot(out_shared_b_3) + ggtitle("IDHwt") + ylab("") + xlab("")
+# Recurrence.
+codel_recur_nonhyper = vaf_cnv_gold_syn %>% 
+  filter(fraction =="R", idh_codel_subtype == "IDHmut-codel", hypermutator_status==0) 
+out_recur_1s = neutralitytest(codel_recur_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
+noncodel_recur_nonhyper = vaf_cnv_gold_syn %>% 
+  filter(fraction =="R", idh_codel_subtype == "IDHmut-noncodel", hypermutator_status==0) 
+out_recur_2s = neutralitytest(noncodel_recur_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
+wt_recur_nonhyper = vaf_cnv_gold_syn %>% 
+  filter(fraction =="R", idh_codel_subtype == "IDHwt", hypermutator_status==0) 
+out_recur_3s = neutralitytest(wt_recur_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
 
-# Plot the normalized values here:
-grid.arrange(p1, p2, p3, ncol=3)
-grid.arrange(p4, p5, p6, ncol=3)
-grid.arrange(p7, p8, p9, ncol=3)
-grid.arrange(p10, p11, p12, ncol=3)
+# SHARED - tumor_a
+codel_shared_a_nonhyper = vaf_cnv_gold_syn %>% 
+  filter(fraction =="S", idh_codel_subtype == "IDHmut-codel", hypermutator_status==0) 
+out_shared_a_1s = neutralitytest(codel_shared_a_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
+noncodel_shared_a_nonhyper = vaf_cnv_gold_syn %>% 
+  filter(fraction =="S", idh_codel_subtype == "IDHmut-noncodel", hypermutator_status==0) 
+out_shared_a_2s = neutralitytest(noncodel_shared_a_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
+wt_shared_a_nonhyper = vaf_cnv_gold_syn %>% 
+  filter(fraction =="S", idh_codel_subtype == "IDHwt", hypermutator_status==0) 
+out_shared_a_3s = neutralitytest(wt_shared_a_nonhyper$variant_allele_frequency_a, fmin = 0.1, fmax = 0.25)
+
+# SHARED - tumor_b
+codel_shared_b_nonhyper = vaf_cnv_gold_syn %>% 
+  filter(fraction =="S", idh_codel_subtype == "IDHmut-codel", hypermutator_status==0) 
+out_shared_b_1s = neutralitytest(codel_shared_b_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
+noncodel_shared_b_nonhyper = vaf_cnv_gold_syn %>% 
+  filter(fraction =="S", idh_codel_subtype == "IDHmut-noncodel", hypermutator_status==0) 
+out_shared_b_2s = neutralitytest(noncodel_shared_a_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
+wt_shared_b_nonhyper = vaf_cnv_gold_syn %>% 
+  filter(fraction =="S", idh_codel_subtype == "IDHwt", hypermutator_status==0) 
+out_shared_b_3s = neutralitytest(wt_shared_a_nonhyper$variant_allele_frequency_b, fmin = 0.1, fmax = 0.25)
+
+
+# Plotting.
+plot_vaf = plot_vaf %>% 
+  mutate(var_filter_revised = recode(var_filter_revised, "private P"= "private I", "shared P"= "shared I", "shared R"= "shared R", "private R" = "private R"))
+levels(plot_vaf$var_filter_revised)
+p = ggplot(plot_vaf, aes(x=vaf, fill=mut_class)) + geom_histogram(binwidth = 0.01) + theme_bw() +
+  coord_cartesian(xlim = c(0,1)) +
+  xlab("Allele frequency (f)") + ylab("Number of mutations") + scale_fill_manual(values = c("nonsynonymous" = "#b22222", "synonymous" = "#22B2B2"), name = "Mutation type\n(coding regions)") 
+
+
+# Create text data.frame to be plotted.
+txt_df <- as.data.frame(matrix(ncol=7, nrow=24))
+colnames(txt_df) <- c("rsq", "pvalue", "idh_codel_subtype", "var_filter_revised", "selection", "mut_class", "y")
+txt_df$var_filter_revised <- as.factor(rep(c("private I", "private R", "shared I", "shared R"), 6))
+txt_df$idh_codel_subtype <- as.factor(c(rep("IDHmut-codel", 4), rep("IDHmut-noncodel", 4), rep("IDHwt", 4), 
+                                        rep("IDHmut-codel", 4), rep("IDHmut-noncodel", 4), rep("IDHwt", 4)))
+txt_df$mut_class <- c(rep("nonsynonymous", 12), rep("synonymous", 12))
+txt_df$var_filter_revised = factor(txt_df$var_filter_revised, levels = c("private I", "shared I", "shared R", "private R"))
+
+# Retrieve the R^2 values.
+txt_df$rsq = c(formatC(out_primary_1$rsq$metric, digits = 2), formatC(out_recur_1$rsq$metric, digits = 2), formatC(out_shared_a_1$rsq$metric, digits = 2),
+               formatC(out_shared_b_1$rsq$metric, digits = 2), formatC(out_primary_2$rsq$metric, digits = 2), formatC(out_recur_2$rsq$metric, digits = 2), formatC(out_shared_a_2$rsq$metric, digits = 2),
+               formatC(out_shared_b_2$rsq$metric, digits = 2), formatC(out_primary_3$rsq$metric, digits = 2), formatC(out_recur_3$rsq$metric, digits = 2), formatC(out_shared_a_3$rsq$metric, digits = 2),
+               formatC(out_shared_b_3$rsq$metric, digits = 2), formatC(out_primary_1s$rsq$metric, digits = 2), formatC(out_recur_1s$rsq$metric, digits = 2), formatC(out_shared_a_1s$rsq$metric, digits = 2),
+               formatC(out_shared_b_1s$rsq$metric, digits = 2), formatC(out_primary_2s$rsq$metric, digits = 2), formatC(out_recur_2s$rsq$metric, digits = 2), formatC(out_shared_a_2s$rsq$metric, digits = 2),
+               formatC(out_shared_b_2s$rsq$metric, digits = 2), formatC(out_primary_3s$rsq$metric, digits = 2), formatC(out_recur_3s$rsq$metric, digits = 2), formatC(out_shared_a_3s$rsq$metric, digits = 2),
+               formatC(out_shared_b_3s$rsq$metric, digits = 2))
+
+# Retrieve the p-value values.
+txt_df$pvalue = c(formatC(out_primary_1$rsq$pval, format = "e", digits = 2), formatC(out_recur_1$rsq$pval, format = "e", digits = 2), formatC(out_shared_a_1$rsq$pval, format = "e", digits = 2),
+                  formatC(out_shared_b_1$rsq$pval, format = "e", digits = 2), formatC(out_primary_2$rsq$pval, format = "e", digits = 2), formatC(out_recur_2$rsq$pval, format = "e", digits = 2), formatC(out_shared_a_2$rsq$pval, format = "e", digits = 2),
+                  formatC(out_shared_b_2$rsq$pval, format = "e", digits = 2), formatC(out_primary_3$rsq$pval, format = "e", digits = 2), formatC(out_recur_3$rsq$pval, format = "e", digits = 2), formatC(out_shared_a_3$rsq$pval, format = "e", digits = 2),
+                  formatC(out_shared_b_3$rsq$pval, format = "e", digits = 2), formatC(out_primary_1s$rsq$pval, format = "e", digits = 2), formatC(out_recur_1s$rsq$pval, format = "e", digits = 2), formatC(out_shared_a_1s$rsq$pval, format = "e", digits = 2),
+                  formatC(out_shared_b_1s$rsq$pval, format = "e", digits = 2), formatC(out_primary_2s$rsq$pval, format = "e", digits = 2), formatC(out_recur_2s$rsq$pval, format = "e", digits = 2), formatC(out_shared_a_2s$rsq$pval, format = "e", digits = 2),
+                  formatC(out_shared_b_2s$rsq$pval, format = "e", digits = 2), formatC(out_primary_3s$rsq$pval, format = "e", digits = 2), formatC(out_recur_3s$rsq$pval, format = "e", digits = 2), formatC(out_shared_a_3s$rsq$pval, format = "e", digits = 2),
+                  formatC(out_shared_b_3s$rsq$pval, format = "e", digits = 2))
+txt_df$selection = ifelse(as.numeric(txt_df$pvalue) < 0.05, "selected", "neutral")
+
+# Use geom_text to add R^2, P-values, and selection classification.
+p2 = p + facet_wrap(idh_codel_subtype~var_filter_revised, scales="free")
+txt_df$y = rep(c(layer_scales(p2, 1, 1)$y$range$range[2], layer_scales(p2, 1, 4)$y$range$range[2], layer_scales(p2, 1, 2)$y$range$range[2], layer_scales(p2, 1, 3)$y$range$range[2], 
+             layer_scales(p2, 2, 1)$y$range$range[2], layer_scales(p2, 2, 4)$y$range$range[2], layer_scales(p2, 2, 2)$y$range$range[2], layer_scales(p2, 2, 3)$y$range$range[2],
+             layer_scales(p2, 3, 1)$y$range$range[2], layer_scales(p2, 3, 4)$y$range$range[2], layer_scales(p2, 3, 2)$y$range$range[2], layer_scales(p2, 3, 3)$y$range$range[2]), 2)
+txt_df$pval = paste0("p = ", txt_df$pvalue, sep="")
+txt_df$rsquared = paste0("R^2 = ", txt_df$rsq, sep="")
+# Separate the text annotation into the mutation classes.
+txt_df_ns <- txt_df[1:12, ]
+txt_df_s <- txt_df[13:24, ]
+
+pdf(file = "/Users/johnsk/Documents/a-neutralitytestr-nonhyper-goldset-vaf.pdf", height = 9, width = 12, bg = "transparent", useDingbats = FALSE)
+p + geom_text(data=txt_df_s, aes(x = 0.5, y= 0.9*y, label=rsquared, family="serif", color="#b22222"), hjust=0) +
+  geom_text(data=txt_df_s, aes(x = 0.5, y = 0.8*y, label=pval, family="serif", color="#b22222"), hjust=0) +
+  geom_text(data=txt_df_ns, aes(x = 0.5, y= 1.1*y, label=rsquared, family="serif", color="#22B2B2"), hjust=0) +
+  geom_text(data=txt_df_ns, aes(x = 0.5, y = y, label=pval, family="serif", color="#22B2B2"), hjust=0) + 
+  guides(color = FALSE) +
+  facet_wrap(idh_codel_subtype~var_filter_revised, scales = "free") 
+dev.off()

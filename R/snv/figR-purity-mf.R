@@ -180,30 +180,47 @@ titan_purity_recurrences_noncodel = titan_purity_recurrences %>%
 titan_purity_recurrences_wt = titan_purity_recurrences %>% 
   filter(idh_codel_subtype == "IDHwt")
 
+# Is there a difference for either initial or recurrent tumors across time points.
+kruskal.test(titan_purity_primary$purity, as.factor(titan_purity_primary$idh_codel_subtype))
+kruskal.test(titan_purity_recurrences$purity, as.factor(titan_purity_recurrences$idh_codel_subtype))
+
 # Recurrence-specific purity and mutational frequency. No TITAN-specific association.
 cor.test(titan_purity_recurrences_codel$purity, titan_purity_recurrences_codel$coverage_adj_mut_freq, method="spearman")
 cor.test(titan_purity_recurrences_noncodel$purity, titan_purity_recurrences_noncodel$coverage_adj_mut_freq, method="spearman")
 cor.test(titan_purity_recurrences_wt$purity, titan_purity_recurrences_wt$coverage_adj_mut_freq, method="spearman")
 
-# Visualize the primary/recurrent differences for the GLASS TITAN estimates.
-pdf(file = "/Users/johnsk/Documents/titan-purity-goldset-pairs.pdf", height = 5, width = 7, bg = "transparent", useDingbats = FALSE)
-titan_purity = titan_purity %>% mutate(sample = recode(sample_type, "tumor_barcode_a" = "Primary", "tumor_barcode_b" = "Recurrence"))
-ggplot(titan_purity, aes(x=idh_codel_subtype, y=purity, fill=sample)) + 
-  geom_boxplot()  + ylab("TITAN Purity") + xlab("") + theme_bw() + scale_fill_manual(values = c("Recurrence" = "#a6611a", "Primary" = "#018571")) + labs(fill="Sample Type")
-dev.off()
+# How many gold_set samples are above 50% purity?
+sum(titan_purity$purity>0.5)/442
+
+# Create tumor_pairs.
+titan_purity_pairs = titan_purity %>% 
+  select(case_barcode, sample_type, purity, idh_codel_subtype) %>% 
+  # group_by(case_barcode) %>% 
+  spread(sample_type, purity)
 
 # Define TITAN gold_set by IDH subtype.
-titan_pairs_IDHwt = titan_purity %>% 
+titan_pairs_IDHwt = titan_purity_pairs %>% 
   filter(idh_codel_subtype == "IDHwt")
-titan_pairs_IDH_codel = titan_purity %>% 
+titan_pairs_IDH_codel = titan_purity_pairs %>% 
   filter(idh_codel_subtype == "IDHmut-codel")
-titan_pairs_IDH_noncodel = titan_purity %>% 
+titan_pairs_IDH_noncodel = titan_purity_pairs %>% 
   filter(idh_codel_subtype == "IDHmut-noncodel")
 
 # Test purity for statistical difference.
-wilcox.test(titan_pairs_IDH_codel$purity_a, titan_pairs_IDH_codel$purity_b, paired = TRUE)
-wilcox.test(titan_pairs_IDH_noncodel$purity_a, titan_pairs_IDH_noncodel$purity_b, paired = TRUE)
-wilcox.test(titan_pairs_IDHwt$purity_a, titan_pairs_IDHwt$purity_b, paired = TRUE)
+wilcox.test(titan_pairs_IDH_codel$tumor_barcode_a, titan_pairs_IDH_codel$tumor_barcode_b, paired = TRUE)
+wilcox.test(titan_pairs_IDH_noncodel$tumor_barcode_a, titan_pairs_IDH_noncodel$tumor_barcode_b, paired = TRUE)
+wilcox.test(titan_pairs_IDHwt$tumor_barcode_a, titan_pairs_IDHwt$tumor_barcode_b, paired = TRUE)
+
+# Visualize the primary/recurrent differences for the GLASS TITAN estimates.
+pdf(file = "/Users/johnsk/Documents/titan-purity-goldset-pairs.pdf", height = 5, width = 7, bg = "transparent", useDingbats = FALSE)
+titan_purity = titan_purity %>% mutate(sample = recode(sample_type, "tumor_barcode_a" = "Initial", "tumor_barcode_b" = "Recurrence"))
+ggplot(titan_purity, aes(x=idh_codel_subtype, y=purity, fill=sample)) + 
+  geom_boxplot()  + ylab("TITAN Purity") + xlab("") + theme_bw() + scale_fill_manual(values = c("Recurrence" = "#a6611a", "Initial" = "#018571")) + labs(fill="Sample Type") +
+  annotate("text", x = 1, y= 1.1, label = "n = 25 pairs\np = 0.50", size = 3) + annotate("text", x = 2, y= 1.1, label = "n = 63 pairs\np = 0.37", size = 3) +
+  annotate("text", x = 3, y= 1.1, label = "n = 132 pairs\np = 0.67", size = 3) 
+dev.off()
+
+
 
 #############################################
 # Compare available TCGA samples with Taylor et al
