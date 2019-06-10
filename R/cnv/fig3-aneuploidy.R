@@ -1,6 +1,6 @@
 ##################################################
 # Determine changes in aneuploidy results based on GATK CNV
-# Updated: 2019.05.15
+# Updated: 2019.06.02
 # Author: Kevin J.
 ##################################################
 
@@ -69,9 +69,9 @@ wilcox.test(aneuploidy_pairs_IDH_noncodel$aneuploidy_a, aneuploidy_pairs_IDH_non
 wilcox.test(aneuploidy_pairs_IDHwt$aneuploidy_a, aneuploidy_pairs_IDHwt$aneuploidy_b, paired = TRUE)
 
 # Compare aneuploidy SCOREs (i.e., arm-level events) between the primary and recurrent.
-wilcox.test(aneuploidy_pairs_IDH_codel$aneuploidy_score_a, aneuploidy_pairs_IDH_codel$aneuploidy_score_b, paired = TRUE)
-wilcox.test(aneuploidy_pairs_IDH_noncodel$aneuploidy_score_a, aneuploidy_pairs_IDH_noncodel$aneuploidy_score_b, paired = TRUE)
-wilcox.test(aneuploidy_pairs_IDHwt$aneuploidy_score_a, aneuploidy_pairs_IDHwt$aneuploidy_score_b, paired = TRUE)
+idh_codel_score = wilcox.test(aneuploidy_pairs_IDH_codel$aneuploidy_score_a, aneuploidy_pairs_IDH_codel$aneuploidy_score_b, paired = TRUE)
+idh_noncodel_score = wilcox.test(aneuploidy_pairs_IDH_noncodel$aneuploidy_score_a, aneuploidy_pairs_IDH_noncodel$aneuploidy_score_b, paired = TRUE)
+idh_wt_score = wilcox.test(aneuploidy_pairs_IDHwt$aneuploidy_score_a, aneuploidy_pairs_IDHwt$aneuploidy_score_b, paired = TRUE)
 
 # Arm-level gains. Statistically significant change in arm-level events.
 # Codels:
@@ -102,10 +102,46 @@ aneuploid_plot_score = aneuploidy_pairs_clin %>%
   mutate(sample = recode(sample,  "aneuploidy_score_a" = "Primary",  "aneuploidy_score_b" = "Recurrence"))
 
 # Ladder plot for aneuploidy **SCORE** in gold set samples.
-pdf(file = "/Users/johnsk/Documents/aneuploidy-scores-diff-goldset.pdf", height = 4, width = 8, bg = "transparent", useDingbats = FALSE)
-ggplot(aneuploid_plot_score, aes(x = sample, y = aneuploidy_score, group = tumor_pair_barcode, color=sample)) +
+dat_text <- data.frame(
+  idh_codel_subtype = c("IDHmut-codel", "IDHmut-noncodel", "IDHwt"),
+  pval   = c(sprintf("p = %s", format(round(idh_codel_score$p.value, 4), scientific=T)), 
+             sprintf("p = %s", format(round(idh_noncodel_score$p.value, 4), scientific=T)),
+             sprintf("p = %s", format(round(idh_wt_score$p.value, 4), scientific=T)))
+)
+# Combine with the annotation text file.
+aneuploid_plot_score_annot = aneuploid_plot_score %>% 
+  left_join(dat_text, by="idh_codel_subtype") 
+
+pdf(file = "/Users/johnsk/Documents/aneuploidy-scores-diff-goldset.pdf", height = 3, width = 6, bg = "transparent", useDingbats = FALSE)
+ggplot(aneuploid_plot_score_annot, aes(x = sample, y = aneuploidy_score, group = tumor_pair_barcode, color=sample)) +
   geom_line(linetype="solid", size=1, alpha = 0.3, color ="black") + ylab("Aneuploidy score") + xlab("") + theme_bw() +
-  geom_point(size=2) + scale_color_manual(values = c("Primary" = "#a6611a", "Recurrence" = "#018571"), name = "Sample Type") + facet_grid(~idh_codel_subtype)
+  geom_point(size=2) + scale_color_manual(values = c("Primary" = "#a6611a", "Recurrence" = "#018571"), name = "Sample Type") +
+  geom_text(data = aneuploid_plot_score_annot, mapping = aes(x = 1.5, y = 30, label = as.character(pval)), show.legend = FALSE) +
+  facet_grid(~idh_codel_subtype)
+dev.off()
+
+# Combine the aneuploidy *amp* scores for each IDHmut-noncodel tumor pair.
+aneuploid_plot_amp_score = aneuploidy_pairs_clin %>% 
+  filter(idh_codel_subtype == "IDHmut-noncodel") %>% 
+  gather(sample, aneuploidy_amp_score, c(aneuploidy_amp_score_a, aneuploidy_amp_score_b)) %>% 
+  mutate(sample = recode(sample,  "aneuploidy_amp_score_a" = "Primary",  "aneuploidy_amp_score_b" = "Recurrence"))
+
+pdf(file = "/Users/johnsk/Documents/aneuploidy-amp-scores-idhmut-noncodel.pdf", height = 4, width = 8, bg = "transparent", useDingbats = FALSE)
+ggplot(aneuploid_plot_amp_score, aes(x = sample, y = aneuploidy_amp_score, group = tumor_pair_barcode, color=sample)) +
+  geom_line(linetype="solid", size=1, alpha = 0.3, color ="black") + ylab("Aneuploidy amp score") + xlab("") + theme_bw() +
+  geom_point(size=2) + scale_color_manual(values = c("Primary" = "#a6611a", "Recurrence" = "#018571"), name = "Sample Type")
+dev.off()
+
+# Combine the aneuploidy *del* scores for each IDHmut-noncodel tumor pair.
+aneuploid_plot_del_score = aneuploidy_pairs_clin %>% 
+  filter(idh_codel_subtype == "IDHmut-noncodel") %>% 
+  gather(sample, aneuploidy_del_score, c(aneuploidy_del_score_a, aneuploidy_del_score_b)) %>% 
+  mutate(sample = recode(sample,  "aneuploidy_del_score_a" = "Primary",  "aneuploidy_del_score_b" = "Recurrence"))
+
+pdf(file = "/Users/johnsk/Documents/aneuploidy-del-scores-idhmut-noncodel.pdf", height = 4, width = 8, bg = "transparent", useDingbats = FALSE)
+ggplot(aneuploid_plot_del_score, aes(x = sample, y = aneuploidy_del_score, group = tumor_pair_barcode, color=sample)) +
+  geom_line(linetype="solid", size=1, alpha = 0.3, color ="black") + ylab("Aneuploidy del score") + xlab("") + theme_bw() +
+  geom_point(size=2) + scale_color_manual(values = c("Primary" = "#a6611a", "Recurrence" = "#018571"), name = "Sample Type")
 dev.off()
 
 # We know that IDHmut-noncodel samples have a difference in aneuploidy between the two timepoints.

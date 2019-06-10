@@ -1,6 +1,6 @@
 ##############################################
 # Analyze SubClonalSelection (Georgette Tanner) results for GLASS samples
-# Updated: 2019.05.15
+# Updated: 2019.06.15
 # Author: Kevin J.
 ##################################################
 
@@ -40,15 +40,11 @@ gold_selection = gold_set %>%
   left_join(cases, by="case_barcode") %>% 
   left_join(subtypes, by="case_barcode") %>% 
   mutate(patient_vital = ifelse(case_vital_status=="alive", 0, 1),
-         p_thres_5 = most_probable_classification.x,
-         p_thres_6 = ifelse(probability_neutral.x > 0.6, "N", ifelse(probability_neutral.x < 0.4, "S", NA)),
-         p_thres_7 = ifelse(probability_neutral.x > 0.7, "N", ifelse(probability_neutral.x < 0.3, "S", NA)),
          # Re-classify "most_probably_classification" to "recurrence_threshold_0.5".
          r_thres_5 = most_probable_classification.y,
          r_thres_6 = ifelse(probability_neutral.y > 0.6, "N", ifelse(probability_neutral.y < 0.4, "S", NA)),
          r_thres_7 = ifelse(probability_neutral.y > 0.7, "N", ifelse(probability_neutral.y < 0.3, "S", NA))) %>% 
-  left_join(clinical_tumor_pairs, by=c("tumor_pair_barcode", "case_barcode", "tumor_barcode_a", "tumor_barcode_b")) %>% 
-  filter(!case_barcode%in%c("GLSS-SF-0058", "GLSS-CU-R011"))
+  left_join(clinical_tumor_pairs, by=c("tumor_pair_barcode", "case_barcode", "tumor_barcode_a", "tumor_barcode_b")) 
 
 # Create subsets of the data by separating out subtypes.
 IDHmut_codel_gold_selection = gold_selection %>% 
@@ -92,6 +88,11 @@ dev.off()
 # Perform Cox analysis using categorical variable of selection across groups.
 neutrality_cox <- coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + idh_codel_subtype + r_thres_5, data = gold_selection)
 summary(neutrality_cox)
+neutrality_cox <- coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + idh_codel_subtype + r_thres_6, data = gold_selection)
+summary(neutrality_cox)
+neutrality_cox <- coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + idh_codel_subtype + r_thres_7, data = gold_selection)
+summary(neutrality_cox)
+
 # Perform Cox analysis using continuous variable of selection across groups.
 neutrality_cox <- coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + idh_codel_subtype + probability_neutral.y, data = gold_selection)
 summary(neutrality_cox) # Neutrality is protective across subtypes while adjusting for age.
@@ -101,10 +102,10 @@ summary(neutrality_cox) # Neutrality is protective across subtypes while adjusti
 ###############################
 gold_selection_mode = gold_selection %>% 
   filter(!is.na(most_probable_classification.x), !is.na(most_probable_classification.y)) %>% 
-  mutate(evo_mode = paste(p_thres_5, r_thres_5, sep="-"),
-         evo_mode_6 = paste(p_thres_6, r_thres_6, sep="-"),
-         evo_mode_7 = paste(p_thres_7, r_thres_7, sep="-")) %>% 
+  mutate(evo_mode = paste(most_probable_classification.x, most_probable_classification.y, sep="-")) %>% 
   mutate(evo_binary = ifelse(evo_mode=="N-N", "Neutral-Neutral", "N-S|S-N|S-S")) 
+
+table(gold_selection_mode$evo_mode)
 
 # Define "evolution mode", selection status at primary and recurrence is necessary for this information.
 IDHwt_gold_selection_mode = gold_selection_mode %>% 
@@ -124,6 +125,7 @@ fit_wt_recurrence <- survfit(Surv(case_overall_survival_mo, patient_vital) ~ evo
                              data = IDHwt_gold_selection_mode)
 ggsurvplot(fit_wt_recurrence, data = IDHwt_gold_selection_mode, risk.table = TRUE, pval= TRUE, pval.coord = c(100, 0.75),
            ylab = "Overall survival \n probability", xlab = "Time (months)")
+
 # Perform survival analysis with the binarized evolution modes.
 neutrality_cox <- coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + idh_codel_subtype + evo_binary, data = gold_selection_mode)
 summary(neutrality_cox)
@@ -139,7 +141,7 @@ gold_select_dat = gold_selection %>%
   left_join(clinical_tumor_pairs, by=c("tumor_pair_barcode", "case_barcode", "tumor_barcode_a", "tumor_barcode_b"))
 
 neutral_sankey = gold_select_dat %>% 
-  select(tumor_pair_barcode, idh_codel_subtype, hypermutator_status, received_alk, received_rt, treatment = received_treatment, primary_evolution = most_probable_classification.x, recurrence_evolution = most_probable_classification.y) %>% 
+  select(tumor_pair_barcode, idh_codel_subtype, hypermutator_status = hypermutator_status.y, received_alk = received_alk.y, received_rt = received_rt.y, treatment = received_treatment.y, primary_evolution = most_probable_classification.x, recurrence_evolution = most_probable_classification.y) %>% 
   mutate(primary_evolution = recode(primary_evolution, "N" = "Neutral", "S" = "Selected"),
          recurrence_evolution = recode(recurrence_evolution, "N" = "Neutral", "S" = "Selection"),
          treatment = ifelse(is.na(treatment), "Unknown", treatment),
@@ -169,32 +171,6 @@ legend("center", title="Glioma subtype",
        c("IDHwt","IDHmut-noncodel","IDHmut-codel", "Treatment unknown"), fill=pal, cex=1.5, bty = "n")
 dev.off()
 
-#################################################################################
-### Examine whether there are differences in proportions based on thresholds   ##
-#################################################################################
-# Define the selection modes for the 0.5 threshold
-t1 = table(gold_selection_mode$evo_mode)
-# Define the selection modes for the 0.6 threshold
-gold_selection_mode_6 = gold_selection_mode %>% 
-  filter(!is.na(p_thres_6), !is.na(r_thres_6))
-t2 = table(gold_selection_mode_6$evo_mode_6)
-# Define the selection modes for the 0.7 threshold
-gold_selection_mode_7 = gold_selection_mode %>% 
-  filter(!is.na(p_thres_7), !is.na(r_thres_7))
-t3 = table(gold_selection_mode_7$evo_mode_7)
-
-# Perform a Fisher's exact-test on the data across different thresholds.
-t_all = rbind(t1, t2, t3)
-fisher.test(t_all)
-
-## Impact on survival model:
-# Perform survival analysis with the binarized evolution modes.
-neutrality_cox_05 <- coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + idh_codel_subtype + r_thres_5, data = gold_selection)
-summary(neutrality_cox_05)
-neutrality_cox_06 <- coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + idh_codel_subtype + r_thres_6, data = gold_selection)
-summary(neutrality_cox_06)
-neutrality_cox_07 <- coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + idh_codel_subtype + r_thres_7, data = gold_selection)
-summary(neutrality_cox_07)
 
 ####################################################
 ### Association between treatment and selection   ##
@@ -202,6 +178,8 @@ summary(neutrality_cox_07)
 # Test by method of **Selection at Recurrence**
 ## IDH MUT CODELs. The codels have a very small sample size and may error out.
 ## Only 3 selected samples. Not worth performing association tests.
+fisher.test(table(IDHmut_codel_gold_selection$r_thres_5, IDHmut_codel_gold_selection$received_tmz))
+fisher.test(table(IDHmut_codel_gold_selection$r_thres_5, IDHmut_codel_gold_selection$received_rt))
 
 ## IDH MUT NONCODELs. Neutral (n=32) and Selection (n=11).
 wilcox.test(IDHmut_noncodel_gold_selections$surgical_interval~IDHmut_noncodel_gold_selections$r_thres_5)

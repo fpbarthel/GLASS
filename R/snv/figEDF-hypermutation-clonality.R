@@ -121,7 +121,7 @@ idh_mut_hyper_clone$hyper_clone = factor(idh_mut_hyper_clone$hyper_clone, levels
 fit_IDHmut_surv <- survfit(Surv(case_overall_survival_mo, patient_vital) ~ hyper_clone,
                           data = idh_mut_hyper_clone)
 pdf(file = "/Users/johnsk/Documents/idh-noncodel-hypermutator-clonality-surv.pdf", height = 5, width = 7, bg = "transparent", useDingbats = FALSE)
-ggsurvplot(fit_IDHmut_surv, data = tmp, risk.table = FALSE, pval= TRUE, pval.coord = c(100, 0.50),
+ggsurvplot(fit_IDHmut_surv, data = idh_mut_hyper_clone, risk.table = FALSE, pval= TRUE, pval.coord = c(100, 0.50),
            surv.median.line = "v", ylab = "Overall survival \n probability", xlab = "Time (months)", palette = c("#e31a1c", "#33a02c", "#1f78b4")) 
 dev.off()
 

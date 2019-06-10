@@ -44,6 +44,14 @@ clinical_tumor_gold = clinical_tumor_pairs %>%
   left_join(mut_freq, by=c("tumor_barcode_b" = "aliquot_barcode")) %>% 
   mutate(patient_vital =  ifelse(case_vital_status=="alive", 0, 1))
 
+# For how many samples are the data available?
+clinical_tumor_gold_hyper = clinical_tumor_gold %>% 
+  select(case_overall_survival_mo, patient_vital, case_age_diagnosis_years, alk_assoc_hypermutator_status, idh_codel_subtype) %>% 
+  filter(complete.cases(.))
+table(clinical_tumor_gold_hyper$idh_codel_subtype)
+table(clinical_tumor_gold_hyper$alk_assoc_hypermutator_status)
+
+
 # Is there a difference between the hypermutants survival versus all others? Answer: No.
 hyper_cox_model = coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + hypermutator_status + idh_codel_subtype, data = clinical_tumor_gold)
 summary(hyper_cox_model)
@@ -77,6 +85,13 @@ pdf(file = "/Users/johnsk/Documents/f1c-kcj.pdf", height = 5, width = 7, bg = "t
 ggplot(stacked_tmz, aes(x=idh_codel_subtype, y=freq, fill=alk_assoc_hypermutator_status)) + geom_bar(stat="identity") + scale_fill_manual(values=c("royalblue4", "tomato3")) +
   labs(fill="Alkylating agent\nassociated hypermutation") + xlab("") + theme_bw() + ylab("")
 dev.off()
+
+# Test whether there are differences in proportions of hypermutators between subtypes.
+clinical_tumor_gold_alk = clinical_tumor_gold %>% 
+  filter(!is.na(alk_assoc_hypermutator_status)) 
+# Statistical test.
+fisher.test(table(clinical_tumor_gold_alk$idh_codel_subtype, clinical_tumor_gold_alk$alk_assoc_hypermutator_status))
+
 ######################
 ##### Survival #######
 ######################
@@ -119,6 +134,8 @@ dev.off()
 # Does this change when age is included as a variable? Answer: No.
 hyper_cox_model = coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + alk_assoc_hypermutator_status, data = clinical_tumor_gold_IDHmut_noncodel)
 summary(hyper_cox_model) # P = 0.536
+
+
 
 ############################
 #### Surgical interval #####
@@ -188,6 +205,15 @@ sum(!is.na(clinical_tumor_gold_mgmt$mgmt_methylation.y))
 sum(clinical_tumor_gold_mgmt$mgmt_methylation.x==clinical_tumor_gold_mgmt$mgmt_methylation.y, na.rm = TRUE)
 # 12/75 samples that were discordant for MGMT status.
 sum(clinical_tumor_gold_mgmt$mgmt_methylation.x!=clinical_tumor_gold_mgmt$mgmt_methylation.y, na.rm = TRUE)
+
+# Samples with complete information (n = 65):
+clinical_tumor_gold_mgmt_complete = clinical_tumor_gold_mgmt %>% 
+  select(case_overall_survival_mo, patient_vital, case_age_diagnosis_years, alk_assoc_hypermutator_status, idh_codel_subtype, mgmt_methylation.x) %>% 
+  filter(complete.cases(.))
+# No IDH-codels left.
+table(clinical_tumor_gold_mgmt_complete$idh_codel_subtype)
+# Only three hypermutators had unmethylated MGMT.
+table(clinical_tumor_gold_mgmt_complete$alk_assoc_hypermutator_status, clinical_tumor_gold_mgmt_complete$mgmt_methylation.x)
 
 # Is there an association between survival and hypermutation while including MGMT status?
 hyper_cox_mgmt = coxph(Surv(case_overall_survival_mo, patient_vital) ~ case_age_diagnosis_years + alk_assoc_hypermutator_status + idh_codel_subtype + mgmt_methylation.x, data = clinical_tumor_gold_mgmt)

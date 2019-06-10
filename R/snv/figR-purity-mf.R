@@ -286,3 +286,53 @@ ggplot(titan_plot_purity, aes(x=idh_codel_subtype, y=purity, fill=sample)) +
   ylim(0, 1.1) + annotate("text", label = c("P = 0.68", "P = 0.33", "P = 0.55"),  x = c(1, 2, 3), y = c(1.1, 1.1, 1.1), size = 4) + ggtitle("GLASS silver set (n = 250 subjects)")
 dev.off()
 
+
+
+#########################
+# Comparisons of purity in gold_set versus non-gold-set samples
+#########################
+titan_purity = titan_params %>% 
+  inner_join(pairs, by= "pair_barcode") %>% 
+  inner_join(gold_set_aliquots, by=c("tumor_barcode"="aliquot_barcode")) %>% 
+  inner_join(mutation_freq, by=c("tumor_barcode"="aliquot_barcode")) %>% 
+  mutate(sample_barcode = substr(pair_barcode, 1, 15),
+         seq_type = substr(pair_barcode, 27, 29)) %>% 
+  left_join(subtypes, by="case_barcode") 
+
+# Remove any gold set samples and only keep the review|allow samples
+titan_anti_purity = titan_params %>% 
+  inner_join(pairs, by= "pair_barcode") %>% 
+  anti_join(gold_set_aliquots, by=c("tumor_barcode"="aliquot_barcode")) %>% 
+  left_join(blocklist, by=c("tumor_barcode"="aliquot_barcode")) %>% 
+  filter(cnv_exclusion!="allow ")
+
+# Is there a difference?
+wilcox.test(titan_purity$purity, titan_anti_purity$purity)
+
+# TITAN seems to provide higher estimates for these difficult samples.
+ggplot(titan_purity, aes(y=purity)) + geom_boxplot()
+ggplot(titan_anti_purity, aes(y=purity)) + geom_boxplot()
+
+## Try Sequenza ##
+# Restrict to gold_set purity estimates.
+  seqz_purity = seqz_params %>% 
+    inner_join(pairs, by= "pair_barcode") %>% 
+    inner_join(gold_set_aliquots, by=c("tumor_barcode"="aliquot_barcode")) %>% 
+    inner_join(mutation_freq, by=c("tumor_barcode"="aliquot_barcode")) %>% 
+    mutate(sample_barcode = substr(pair_barcode, 1, 15),
+           seq_type = substr(pair_barcode, 27, 29)) %>% 
+    left_join(subtypes, by="case_barcode") 
+  
+# Same as with TITAN.
+  seqz_anti_purity = seqz_params %>% 
+    inner_join(pairs, by= "pair_barcode") %>% 
+    anti_join(gold_set_aliquots, by=c("tumor_barcode"="aliquot_barcode")) %>% 
+    left_join(blocklist, by=c("tumor_barcode"="aliquot_barcode")) %>% 
+    filter(cnv_exclusion!="allow ")
+  
+# Strong statistical association in the expected direction.
+wilcox.test(seqz_purity$cellularity, seqz_anti_purity$cellularity)
+ggplot(seqz_purity, aes(y=cellularity)) + geom_boxplot()
+ggplot(seqz_anti_purity, aes(y=cellularity)) + geom_boxplot()
+  
+  

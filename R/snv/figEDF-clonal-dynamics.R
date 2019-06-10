@@ -14,7 +14,7 @@ setwd(mybasedir)
 library(tidyverse)
 library(DBI)
 library(parallel)
-library(clonevol)
+#library(clonevol)
 
 #######################################################
 # Establish connection with the GLASS database.
@@ -123,12 +123,12 @@ cluster_ccf_annot = sample_cluster_ccf %>%
   distinct()
 
 # Create a visualization that displays the time with points indicating a surgical sample. Create gray areas for treatment.
-pdf('/Users/johnsk/Documents/pyclone-example-MD-0027.pdf', width = 9, height = 6, useDingbats = FALSE, title='')
+pdf('/Users/johnsk/Documents/pyclone-example-MD-0027.pdf', width = 9, height = 5, bg = "transparent", useDingbats = FALSE)
 ggplot(data=sample_cluster_ccf, aes(x=sample, y=median_ccf, group=as.factor(cluster), color=as.factor(cluster))) + 
   geom_line(size=1.5) + geom_point(size=3) + theme_bw() + xlab("Time (months)") + ylab("Median Cluster CCF") +labs(color="Mutational clusters\n(mutation number)") +
   coord_cartesian(xlim=c(-5, 80), ylim = c(0, 1)) + annotate("text", x = c(0, 55, 76), y = c(0.775, 0.775, 0.775), label = c("Initial", "R1", "R2"), col = "red", size=8) +
   scale_color_discrete(labels= paste(cluster_ccf_annot$cluster, " (n=", cluster_ccf_annot$mut_count, ")", sep = "")) +
-  annotate("rect", xmin = 57, xmax = 69, ymin = -5, ymax = 75, alpha = .2) + annotate("text", x = 63, y = 0.95, label = "TMZ\n12 cycles", col = "black") + ggtitle("GLSS-MD-0027")
+  annotate("rect", xmin = 57, xmax = 69, ymin = 0, ymax = 1, alpha = .2) + annotate("text", x = 63, y = 0.95, label = "TMZ\n12 cycles", col = "black") + ggtitle("GLSS-MD-0027")
 dev.off()
 
 
@@ -298,11 +298,86 @@ cluster_ccf_annot = sample_cluster_ccf %>%
   distinct()
 
 # Provide a clinical and mutational cluster representation as example cases.
-pdf('/Users/johnsk/Documents/pyclone-example-SF-0004.pdf', width = 9, height = 6, useDingbats = FALSE, title='')
+pdf('/Users/johnsk/Documents/pyclone-example-SF-0004.pdf', width = 9, height = 5, useDingbats = FALSE, title='')
 ggplot(data=sample_cluster_ccf, aes(x=sample, y=median_ccf, group=as.factor(cluster), color=as.factor(cluster))) + 
   geom_line(size=1.5) + geom_point(size=3) + theme_bw() + xlab("Time (months)") + ylab("Median Cluster CCF") +labs(color="Mutational clusters\n(mutation number)") +
   coord_cartesian(xlim=c(-5, 50), ylim = c(0, 1)) + annotate("text", x = c(0, 15, 35, 44), y = c(0.775, 0.775, 0.775, 0.775), label = c("Initial", "R1", "R2", "R3"), col = "red", size=8) +
   scale_color_discrete(labels= paste(cluster_ccf_annot$cluster, " (n=", cluster_ccf_annot$mut_count, ")", sep = "")) + ggtitle("GLSS-SF-0004") +
-  annotate("rect", xmin = 17, xmax = 24, ymin = -5, ymax = 75, alpha = .2) + annotate("rect", xmin = 36, xmax = 42, ymin = -5, ymax = 75, alpha = .2) + annotate("text", x = c(21, 39), y = 0.95, label = c("TMZ\n7 cycles", "TMZ\n6 cycles"), col = "black") 
+  annotate("rect", xmin = 17, xmax = 24, ymin = 0, ymax = 1, alpha = .2) + annotate("rect", xmin = 36, xmax = 42, ymin = 0, ymax = 1, alpha = .2) + annotate("text", x = c(21, 39), y = 0.95, label = c("TMZ\n7 cycles", "TMZ\n6 cycles"), col = "black") 
 dev.off()
+
+#######################
+# 1.TCGA-DU-6407
+########################
+loci <- read_tsv("results/pyclone/run/TCGA-DU-6407/tables/loci.tsv") 
+
+# Offset clusters so that they are 1-based.
+locidf <- loci %>% 
+  mutate(sample_id = gsub("-", "_", substr(sample_id, 14, 18)),
+         cluster = cluster_id + 1,
+         variant_allele_frequency = variant_allele_frequency*100) %>%
+  select(-cluster_id) %>%
+  # Avoid alphabetical ordering.
+  mutate(sample_id = gsub("TP", "S1", sample_id)) %>%
+  mutate(sample_id = gsub("R1", "S2", sample_id)) %>%
+  mutate(sample_id = gsub("R2", "S3", sample_id)) %>%
+  gather(variable, value, -mutation_id, -sample_id, -cluster) %>%
+  unite(temp, sample_id, variable) %>%
+  spread(temp, value) %>%
+  # Remove clusters with low number of mutations (9, 10, 11, 12).
+  filter(!cluster%in%c(9, 10, 11, 12)) %>% 
+  arrange(cluster) 
+
+# Shorten vaf column names as they will be projected otherwise.
+vaf.col.names <- grep('_variant_allele_frequency', colnames(locidf), value=T)
+ccf.col.names <- grep('_cellular_prevalence$', colnames(locidf), value=T)
+# Rename the samples.
+sample.names <- gsub('_variant_allele_frequency', '', vaf.col.names)
+locidf[, sample.names] <- locidf[, ccf.col.names]
+locidf[, sprintf("%s_VAF", sample.names)] <- locidf[, vaf.col.names]
+ccf.col.names <- sample.names
+vaf.col.names <- sprintf("%s_VAF", sample.names)
+
+# Retrieve the average CCF for a particular cluster:
+sample_cluster_ccf = locidf %>% 
+  select(-S1_01_variant_allele_frequency, -S2_01_variant_allele_frequency, -S3_01_variant_allele_frequency, -S1_01_cellular_prevalence_std,
+         -S2_01_cellular_prevalence_std, -S3_01_cellular_prevalence_std) %>% 
+  gather(sample, cellular_prevalence, c(S1_01_cellular_prevalence, S2_01_cellular_prevalence, S3_01_cellular_prevalence)) %>% 
+  mutate(sample = gsub("_01_cellular_prevalence", "", sample),
+         sample = recode(sample, "S1" = 0, "S2" = 55, "S3" = 76)) %>% 
+  group_by(cluster, sample) %>% 
+  summarise(median_ccf = median(cellular_prevalence)) %>% 
+  ungroup()
+
+# Count the number of mutations per cluster.
+cluster_num = locidf %>% 
+  group_by(cluster) %>% 
+  summarise(mut_count = n())
+
+# Join the number of mutations per cluster with the cluster name.
+cluster_ccf_annot = sample_cluster_ccf %>% 
+  left_join(cluster_num, by="cluster") %>% 
+  select(cluster, mut_count) %>% 
+  distinct()
+
+# Create a visualization that displays the time with points indicating a surgical sample. Create gray areas for treatment.
+pdf('/Users/johnsk/Documents/pyclone-example-MD-0027.pdf', width = 9, height = 5, bg = "transparent", useDingbats = FALSE)
+ggplot(data=sample_cluster_ccf, aes(x=sample, y=median_ccf, group=as.factor(cluster), color=as.factor(cluster))) + 
+  geom_line(size=1.5) + geom_point(size=3) + theme_bw() + xlab("Time (months)") + ylab("Median Cluster CCF") +labs(color="Mutational clusters\n(mutation number)") +
+  coord_cartesian(xlim=c(-5, 80), ylim = c(0, 1)) + annotate("text", x = c(0, 55, 76), y = c(0.775, 0.775, 0.775), label = c("Initial", "R1", "R2"), col = "red", size=8) +
+  scale_color_discrete(labels= paste(cluster_ccf_annot$cluster, " (n=", cluster_ccf_annot$mut_count, ")", sep = "")) +
+  annotate("rect", xmin = 57, xmax = 69, ymin = 0, ymax = 1, alpha = .2) + annotate("text", x = 63, y = 0.95, label = "TMZ\n12 cycles", col = "black") + ggtitle("GLSS-MD-0027")
+dev.off()
+
+
+
+
+
+
+# 2. GLSS-SF-0018
+# 3. GLSS-19-0279
+# 4. GLSS-SU-0270
+# 5. GLSS-SF-0024
+# 6. TCGA-14-1402
+# 7. GLSS-HK-0002
 

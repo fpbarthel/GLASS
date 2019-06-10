@@ -28,12 +28,28 @@ con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB2")
 silver_set = dbReadTable(con,  Id(schema="analysis", table="silver_set"))
 gold_set = dbReadTable(con,  Id(schema="analysis", table="gold_set"))
 subtypes = dbReadTable(con,  Id(schema="clinical", table="subtypes"))
+cases = dbReadTable(con,  Id(schema="clinical", table="cases"))
+
 variant_classifications = dbReadTable(con,  Id(schema="variants", table="variant_classifications"))
 
 # Construct a table that provides subject-level information about clinical variables between two timepoints.
 clinical_tumor_pairs_query = read_file("sql/clinical/clinical-tumor-pairs-db2.sql")
 clinical_tumor_pairs <- dbGetQuery(con, clinical_tumor_pairs_query)
 
+# Determine the proportion by subtype and hypermutation status.
+gold_clinic = clinical_tumor_pairs %>% 
+  filter(tumor_pair_barcode%in%gold_set$tumor_pair_barcode) %>% 
+  left_join(subtypes, by="case_barcode") %>% 
+  left_join(cases, by="case_barcode")
+table(gold_clinic$idh_codel_subtype, gold_clinic$hypermutator_status)
+
+# Determine the missing samples in each.
+gold_clinic_int = gold_clinic %>% 
+  filter(!is.na(surgical_interval))
+table(gold_clinic_int$hypermutator_status)
+gold_clinic_age = gold_clinic %>% 
+  filter(!is.na(case_age_diagnosis_years))
+table(gold_clinic_age$hypermutator_status)
 ################################
 ## Group-wise neutralitytestR ##
 ################################
@@ -496,6 +512,7 @@ vaf_cnv_gold_hyper = glass_vaf_cnv_unfiltered %>%
   mutate(mut_class = ifelse(variant_classification_impact%in%c("HIGH", "MODERATE"), "nonsynonymous", ifelse(variant_classification_impact%in%c("LOW"), "synonymous", NA))) %>% 
   filter(fraction =="P" & cnv_call_a == 0 | fraction =="R" & cnv_call_b == 0 | fraction =="S" & cnv_call_a == 0 & cnv_call_b == 0) %>% 
   filter(hypermutator_status==1) 
+
 
 # Create a vaf plot by timepoint and subtype.
 plot_vaf_hyper = vaf_cnv_gold_hyper %>% 
