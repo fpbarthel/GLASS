@@ -4,13 +4,16 @@
 #PBS -j oe
 #PBS -M floris.barthel@jax.org
 #PBS -m a
-#PBS -l nodes=1:ppn=8,walltime=24:00:00
+#PBS -l nodes=1:ppn=8,walltime=72:00:00
 #PBS -l mem=24gb
 
-BD=/projects/verhaak-lab/GLASS-analysis/results/cnv/gistic
-SEG=/projects/verhaak-lab/GLASS-analysis/results/cnv/gistic/input.seg
-MK=/projects/verhaak-lab/GLASS-analysis/results/cnv/gistic/markers.txt
+BDP=/projects/verhaak-lab/GLASS-analysis/results/gistic2/primary
+BDR=/projects/verhaak-lab/GLASS-analysis/results/gistic2/recurrence
+SEGP=/projects/verhaak-lab/GLASS-analysis/results/gistic2/primary.seg
+SEGR=/projects/verhaak-lab/GLASS-analysis/results/gistic2/recurrence.seg
+MK=/projects/verhaak-lab/GLASS-analysis/results/gistic2/markers.txt
 REFGENE=/projects/verhaak-lab/FRONTIER/data/ref/hg19_v19.mat
 CNV=/home/barthf/opt/GISTIC_2_0_22/ref/CNV.hg19.bypos.111213.txt
 
-/home/barthf/opt/GISTIC_2_0_23/gistic_run -b $BD -seg $SEG -mk $MK -cnv $CNV -refgene $REFGENE -genegistic 1 -smallmem 1 -broad 1 -brlen 0.5 -conf 0.99 -armpeel 1 -savegene 1 -gcm extreme -v 25 -rx 0 -maxspace 1 -js 1 -cap 0.5 -td 0.05 -ta 0.05
+/home/barthf/opt/GISTIC_2_0_23/gistic_run -b $BDP -seg $SEGP -mk $MK -cnv $CNV -refgene $REFGENE -genegistic 1 -smallmem 1 -broad 1 -brlen 0.5 -conf 0.99 -armpeel 1 -savegene 1 -gcm extreme -v 25 -rx 0 -maxspace 1 -js 1 -cap 0.5 -td 0.05 -ta 0.05
+/home/barthf/opt/GISTIC_2_0_23/gistic_run -b $BDR -seg $SEGR -mk $MK -cnv $CNV -refgene $REFGENE -genegistic 1 -smallmem 1 -broad 1 -brlen 0.5 -conf 0.99 -armpeel 1 -savegene 1 -gcm extreme -v 25 -rx 0 -maxspace 1 -js 1 -cap 0.5 -td 0.05 -ta 0.05

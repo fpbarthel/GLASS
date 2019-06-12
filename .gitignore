@@ -21,3 +21,4 @@ tmp/
 .**
 *.pyc
 *.pyo
+figures/**

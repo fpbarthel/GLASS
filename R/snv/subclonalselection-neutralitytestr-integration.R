@@ -269,6 +269,12 @@ silver_all_evolution %>%
 table(silver_all_evolution$classification_p)
 table(silver_all_evolution$classification_r)
 
+# Write out the initial submission results.
+silver_evolution_out = silver_all_evolution %>% 
+  select(tumor_pair_barcode, classification_p, classification_r, bay_evo_mode, freq_evo_mode, binary_mode)
+write.table(silver_evolution_out, "/Users/johnsk/Documents/Life-History/glass-analyses/data/SubClonalSelection/silver_neutrality_submitted.txt", sep="\t", row.names = F, col.names = T, quote = F)
+
+
 # Stacked barplot for Bayesian neutral evolution.
 stacked_neutrality = silver_all_evolution %>% 
   group_by(idh_codel_subtype, bay_evo_mode) %>%

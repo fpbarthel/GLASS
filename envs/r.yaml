@@ -1,187 +1,136 @@
-name: R
+name: r
 channels:
   - r
-  - anaconda
+  - http://conda.anaconda.org/dranew
   - bioconda
   - conda-forge
   - defaults
 dependencies:
-  - r-base=3.4.3
-  - bioconductor-variantannotation
-  #- bioconductor-rtracklayer
-  - r-tidyverse
-  #- r-odbc
-#  - icu=58.2=h9c2bf20_1
-  #- libxml2 #=2.9.8=h26e45fe_1
-  # - bioconductor-annotationdbi #=1.42.1=r341_0
-  # - bioconductor-biobase=2.40.0=r341h470a237_0
-  # - bioconductor-biocgenerics=0.26.0=r341_0
-  # - bioconductor-biocparallel=1.14.2=r341h26a2512_0
-  # - bioconductor-biomart=2.36.1=r341_0
-  # - bioconductor-biostrings=2.48.0=r341h470a237_0
-  # - bioconductor-bsgenome=1.48.0=r341_0
-  # - bioconductor-delayedarray=0.6.6=r341_0
-  # - bioconductor-ensemblvep=1.22.1=r341_0
-  # - bioconductor-genomeinfodb=1.16.0=r341_0
-  # - bioconductor-genomeinfodbdata=1.1.0=r341_0
-  # - bioconductor-genomicalignments=1.16.0=r341h470a237_0
-  # - bioconductor-genomicfeatures=1.32.3=r341_0
-  # - bioconductor-genomicranges=1.32.7=r341h470a237_0
-  # - bioconductor-iranges=2.14.12=r341h470a237_0
-  # - bioconductor-rsamtools=1.32.3=r341hfc679d8_0
-  # - bioconductor-rtracklayer=1.40.6=r341h470a237_0
-  # - bioconductor-s4vectors=0.18.3=r341h470a237_0
-  # - bioconductor-summarizedexperiment=1.10.1=r341_0
-  #- bioconductor-variantannotation #=1.26.1=r341h470a237_0
-  # - bioconductor-xvector=0.20.0=r341h470a237_0
-  # - bioconductor-zlibbioc=1.26.0=r341h470a237_0
-  # - bzip2=1.0.6=h470a237_2
-  # - ca-certificates=2018.10.15=ha4d7672_0
-  # - cairo=1.14.12=he6fea26_5
-  # - fontconfig=2.13.0=h65d0f4c_5
-  # - freetype=2.9.1=h6debe1e_1
-  # - gettext=0.19.8.1=0
-  # - glib=2.55.0=h464dc38_2
-  # - gmp=6.1.2=hfc679d8_0
-  # - graphite2=1.3.12=hfc679d8_0
-  # - harfbuzz=1.8.8=h08d66d9_0
-  # - jpeg=9c=h470a237_0
-  # - krb5=1.14.6=0
-  # - libgcc-ng=7.2.0=hdf63c60_3
-  # - libgfortran=3.0.0=1
-  # - libiconv=1.15=h470a237_2
-  # - libpng=1.6.34=ha92aebf_1
-  # - libstdcxx-ng=7.2.0=hdf63c60_3
-  # - libtiff=4.0.9=he6b73bb_1
-  # - libuuid=2.32.1=h470a237_0
-  # - libxcb=1.13=h470a237_2
-  # - openssl=1.0.2p=h470a237_1
-  # - pandoc=2.3.1=0
-  # - pango=1.40.14=he752989_2
-  # - pthread-stubs=0.4=h470a237_1
-  # - r-assertthat=0.2.0=r341h6115d3f_1
-  # - r-backports=1.1.2=r341hc070d10_1
-  # - r-base=3.4.1=4
-  # - r-base64enc=0.1_3=r341hc070d10_2
-  # - r-bh=1.66.0_1=r341_1
-  # - r-bindr=0.1.1=r341h6115d3f_1
-  # - r-bindrcpp=0.2.2=r341h9d2a408_1
-  # - r-bit=1.1_12=r341h470a237_2
-  # - r-bit64=0.9_7=r341hc070d10_0
-  # - r-bitops=1.0_6=r341hc070d10_2
-  # - r-blob=1.1.1=r341_1
-  # - r-broom=0.5.0=r341h6115d3f_2
-  # - r-callr=3.0.0=r341h6115d3f_0
-  # - r-cellranger=1.1.0=r341h6115d3f_1
-  # - r-cli=1.0.0=r341h6115d3f_1
-  # - r-clipr=0.4.1=r341h6115d3f_1
-  # - r-colorspace=1.3_2=r341hc070d10_2
-  # - r-crayon=1.3.4=r341h6115d3f_1
-  # - r-curl=3.2=r341hc070d10_2
-  # - r-dbi=1.0.0=r341h6115d3f_1
-  # - r-dbplyr=1.2.2=r341h6115d3f_1
-  # - r-digest=0.6.18=r341hc070d10_0
-  # - r-dplyr=0.7.6=r341h9d2a408_1
-  # - r-evaluate=0.11=r341h6115d3f_0
-  # - r-fansi=0.3.0=r341hc070d10_0
-  # - r-forcats=0.3.0=r341h6115d3f_1
-  # - r-formatr=1.5=r341h6115d3f_1
-  # - r-futile.logger=1.4.3=r341h6115d3f_1
-  # - r-futile.options=1.0.1=r341h6115d3f_0
-  # - r-ggplot2=3.1.0=r341h6115d3f_0
-  # - r-glue=1.3.0=r341h470a237_2
-  # - r-gtable=0.2.0=r341h6115d3f_1
-  # - r-haven=1.1.2=r341h9d2a408_2
-  # - r-highr=0.7=r341h6115d3f_1
-  # - r-hms=0.4.2=r341h6115d3f_0
-  # - r-htmltools=0.3.6=r341hfc679d8_2
-  # - r-httr=1.3.1=r341h6115d3f_1
-  # - r-jsonlite=1.5=r341hc070d10_2
-  # - r-knitr=1.20=r341h6115d3f_1
-  # - r-labeling=0.3=r341h6115d3f_1
-  # - r-lambda.r=1.2.3=r341h6115d3f_0
-  # - r-lattice=0.20_35=r341hc070d10_0
-  # - r-lazyeval=0.2.1=r341hc070d10_2
-  # - r-lubridate=1.7.4=r341h9d2a408_1
-  # - r-magrittr=1.5=r341h6115d3f_1
-  # - r-markdown=0.8=r341hc070d10_3
-  # - r-mass=7.3_50=r341hc070d10_2
-  # - r-matrix=1.2_14=r341hc070d10_2
-  # - r-matrixstats=0.54.0=r341hc070d10_0
-  # - r-memoise=1.1.0=r341h6115d3f_1
-  # - r-mgcv=1.8_24=r341hc070d10_2
-  # - r-mime=0.5=r341hc070d10_2
-  # - r-modelr=0.1.2=r341h6115d3f_1
-  # - r-munsell=0.5.0=r341h6115d3f_1
-  # - r-nlme=3.1_137=r341h364d78e_0
-  # - r-openssl=1.0.1=r3.4.1_0
-  # - r-pillar=1.3.0=r341h6115d3f_0
-  # - r-pkgconfig=2.0.2=r341h6115d3f_1
-  # - r-plogr=0.2.0=r341h6115d3f_1
-  # - r-plyr=1.8.4=r341h9d2a408_2
-  # - r-prettyunits=1.0.2=r341h6115d3f_1
-  # - r-processx=3.2.0=r341hc070d10_1
-  # - r-progress=1.2.0=r341h6115d3f_2
-  # - r-ps=1.1.0=r341hc070d10_1
-  # - r-purrr=0.2.5=r341hc070d10_1
-  # - r-r6=2.2.2=r341h6115d3f_1
-  # - r-rcolorbrewer=1.1_2=r341h6115d3f_1
-  # - r-rcpp=0.12.17=r341h9d2a408_2
-  # - r-rcurl=1.95_4.8=r3.4.1_0
-  # - r-readr=1.1.1=r341h9d2a408_2
-  # - r-readxl=1.1.0=r341h9d2a408_2
-  # - r-rematch=1.0.1=r341h6115d3f_1
-  # - r-reprex=0.2.0=r341h6115d3f_1
-  # - r-reshape2=1.4.3=r341h9d2a408_2
-  # - r-rlang=0.3.0.1=r341h470a237_0
-  # - r-rmarkdown=1.10=r341h6115d3f_1
-  # - r-rprojroot=1.3_2=r341h6115d3f_1
-  # - r-rsqlite=2.1.1=r341h9d2a408_0
-  # - r-rstudioapi=0.7=r341h6115d3f_1
-  # - r-rvest=0.3.2=r341h6115d3f_1
-  # - r-scales=1.0.0=r341h9d2a408_1
-  # - r-selectr=0.4_1=r341h6115d3f_0
-  # - r-snow=0.4_3=r341h6115d3f_0
-  # - r-stringi=1.2.4=r341h9d2a408_1
-  # - r-stringr=1.3.1=r341h6115d3f_1
-  # - r-tibble=1.4.2=r341hc070d10_2
-  # - r-tidyr=0.8.1=r341h9d2a408_2
-  # - r-tidyselect=0.2.4=r341h9d2a408_2
-  # - r-tidyverse=1.2.1=r341h6115d3f_1
-  # - r-tinytex=0.8=r341h6115d3f_0
-  # - r-utf8=1.1.4=r341hc070d10_0
-  # - r-viridislite=0.3.0=r341h6115d3f_1
-  # - r-whisker=0.3_2=r341h6115d3f_1
-  # - r-withr=2.1.2=r341h6115d3f_0
-  # - r-xfun=0.3=r341h6115d3f_1
-  # - r-xml=3.98_1.11=r341_0
-  # - r-xml2=1.2.0=r341h9d2a408_2
-  # - r-yaml=2.2.0=r341hc070d10_1
-  # - readline=7.0=0
-  # - tk=8.6.8=0
-  # - xorg-kbproto=1.0.7=h470a237_2
-  # - xorg-libice=1.0.9=h470a237_4
-  # - xorg-libsm=1.2.2=h8c8a85c_6
-  # - xorg-libx11=1.6.6=h470a237_0
-  # - xorg-libxau=1.0.8=h470a237_6
-  # - xorg-libxdmcp=1.1.2=h470a237_7
-  # - xorg-libxext=1.3.3=h470a237_4
-  # - xorg-libxrender=0.9.10=h470a237_2
-  # - xorg-libxt=1.1.5=h470a237_2
-  # - xorg-renderproto=0.11.1=h470a237_2
-  # - xorg-xextproto=7.3.0=h470a237_2
-  # - xorg-xproto=7.0.31=h470a237_7
-  # - xz=5.2.4=h470a237_1
-  # - curl=7.52.1=0
-  # - gsl=2.2.1=0
-  # - jbig=2.1=0
-  # - libffi=3.2.1=1
-  # - libgcc=5.2.0=0
-  # - libssh2=1.8.0=0
-  # - ncurses=5.9=10
-  # - pcre=8.39=1
-  # - pixman=0.34.0=0
-  # - wget=1.18=0
-  # - zlib=1.2.11=0
-  # - _r-mutex=1.0.0=anacondar_1
+  - _r-mutex=1.0.0=anacondar_1
+  - bioconductor-annotationdbi=1.40.0=r3.4.1_0
+  - bioconductor-biobase=2.38.0=r341h219a75b_1
+  - bioconductor-biocgenerics=0.26.0=r341_0
+  - bioconductor-biocparallel=1.12.0=r341h219a75b_1
+  - bioconductor-biomart=2.34.2=r3.4.1_0
+  - bioconductor-biostrings=2.46.0=r3.4.1_0
+  - bioconductor-bsgenome=1.46.0=r3.4.1_0
+  - bioconductor-delayedarray=0.4.1=r3.4.1_0
+  - bioconductor-genomeinfodb=1.14.0=r3.4.1_0
+  - bioconductor-genomeinfodbdata=1.1.0=r341_0
+  - bioconductor-genomicalignments=1.14.1=r3.4.1_0
+  - bioconductor-genomicfeatures=1.28.5=r3.4.1_0
+  - bioconductor-genomicranges=1.30.3=r3.4.1_0
+  - bioconductor-iranges=2.12.0=r3.4.1_0
+  - bioconductor-rsamtools=1.30.0=r3.4.1_0
+  - bioconductor-rtracklayer=1.38.3=r3.4.1_0
+  - bioconductor-s4vectors=0.16.0=r3.4.1_0
+  - bioconductor-summarizedexperiment=1.8.0=r3.4.1_0
+  - bioconductor-variantannotation=1.24.1=r3.4.1_0
+  - bioconductor-xvector=0.18.0=r3.4.1_0
+  - bioconductor-zlibbioc=1.24.0=r3.4.1_0
+  - bzip2=1.0.6=1
+  - ca-certificates=2019.3.9=hecc5488_0
+  - cairo=1.14.8=0
+  - curl=7.60.0=0
+  - fontconfig=2.12.1=3
+  - freetype=2.5.5=2
+  - glib=2.50.2=1
+  - gsl=2.1=2
+  - harfbuzz=0.9.39=2
+  - icu=54.1=0
+  - jpeg=9b=2
+  - krb5=1.14.6=0
+  - libffi=3.2.1=3
+  - libgcc=5.2.0=0
+  - libgfortran=3.0.0=1
+  - libiconv=1.14=4
+  - libpng=1.6.34=0
+  - libssh2=1.8.0=2
+  - libtiff=4.0.8=0
+  - libxml2=2.9.4=0
+  - ncurses=5.9=10
+  - openssl=1.0.2o=0
+  - pango=1.40.3=1
+  - pcre=8.39=0
+  - pixman=0.34.0=2
+  - r-assertthat=0.2.0=r3.4.1_0
+  - r-base=3.4.1=1
+  - r-bh=1.62.0_1=r3.4.1_0
+  - r-bindr=0.1=r3.4.1_0
+  - r-bindrcpp=0.2=r3.4.1_0
+  - r-bit=1.1_12=r3.4.1_0
+  - r-bit64=0.9_7=r3.4.1_0
+  - r-bitops=1.0_6=r3.4.1_2
+  - r-blob=1.1.1=r341_1
+  - r-broom=0.4.2=r3.4.1_0
+  - r-cellranger=1.1.0=r3.4.1_0
+  - r-colorspace=1.3_2=r3.4.1_0
+  - r-crayon=1.3.2=r3.4.1_0
+  - r-curl=2.6=r3.4.1_0
+  - r-dbi=0.6_1=r3.4.1_0
+  - r-dichromat=2.0_0=r3.4.1_2
+  - r-digest=0.6.12=r3.4.1_0
+  - r-dplyr=0.7.0=r3.4.1_0
+  - r-forcats=0.2.0=r3.4.1_0
+  - r-foreign=0.8_68=r3.4.1_0
+  - r-formatr=1.5=r3.4.1_0
+  - r-futile.logger=1.4.3=r341h6115d3f_1
+  - r-futile.options=1.0.1=r341h6115d3f_0
+  - r-ggplot2=2.2.1=r3.4.1_0
+  - r-glue=1.1.1=r3.4.1_0
+  - r-gtable=0.2.0=r3.4.1_0
+  - r-haven=1.0.0=r3.4.1_0
+  - r-hms=0.3=r3.4.1_0
+  - r-httr=1.2.1=r3.4.1_0
+  - r-jsonlite=1.5=r3.4.1_0
+  - r-labeling=0.3=r3.4.1_2
+  - r-lambda.r=1.2.3=r341h6115d3f_0
+  - r-lattice=0.20_35=r3.4.1_0
+  - r-lazyeval=0.2.0=r3.4.1_0
+  - r-lubridate=1.6.0=r3.4.1_0
+  - r-magrittr=1.5=r3.4.1_2
+  - r-mass=7.3_47=r3.4.1_0
+  - r-matrix=1.2_10=r3.4.1_0
+  - r-matrixstats=0.53.1=r341_0
+  - r-memoise=1.1.0=r3.4.1_0
+  - r-mime=0.5=r3.4.1_0
+  - r-mnormt=1.5_5=r3.4.1_0
+  - r-modelr=0.1.0=r3.4.1_0
+  - r-munsell=0.4.3=r3.4.1_0
+  - r-nlme=3.1_131=r3.4.1_0
+  - r-openssl=0.9.6=r3.4.1_0
+  - r-pkgconfig=2.0.1=r3.4.1_0
+  - r-plogr=0.1_1=r3.4.1_0
+  - r-plyr=1.8.4=r3.4.1_0
+  - r-prettyunits=1.0.2=r341h6115d3f_1
+  - r-progress=1.2.0=r341h6115d3f_2
+  - r-psych=1.7.5=r3.4.1_0
+  - r-purrr=0.2.2.2=r3.4.1_0
+  - r-r6=2.2.1=r3.4.1_0
+  - r-rcolorbrewer=1.1_2=r3.4.1_3
+  - r-rcpp=0.12.11=r3.4.1_0
+  - r-rcurl=1.95_4.8=r3.4.1_0
+  - r-readr=1.1.1=r3.4.1_0
+  - r-readxl=1.0.0=r3.4.1_0
+  - r-rematch=1.0.1=r3.4.1_0
+  - r-reshape2=1.4.2=r3.4.1_0
+  - r-rlang=0.1.1=r3.4.1_0
+  - r-rsqlite=2.0=r3.4.1_0
+  - r-rvest=0.3.2=r3.4.1_0
+  - r-scales=0.4.1=r3.4.1_0
+  - r-selectr=0.3_1=r3.4.1_0
+  - r-snow=0.4_3=r341h6115d3f_0
+  - r-stringi=1.1.5=r3.4.1_0
+  - r-stringr=1.2.0=r3.4.1_0
+  - r-tibble=1.3.3=r3.4.1_0
+  - r-tidyr=0.6.3=r3.4.1_0
+  - r-tidyverse=1.1.1=r3.4.1_0
+  - r-xml=3.98_1.7=r3.4.1_0
+  - r-xml2=1.1.1=r3.4.1_0
+  - readline=7.0=0
+  - tk=8.6.8=0
+  - wget=1.18=0
+  - xz=5.2.3=0
+  - zlib=1.2.11=0
+prefix: /projects/barthf/opt/miniconda3/envs/r
 

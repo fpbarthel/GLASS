@@ -102,7 +102,7 @@ rule createpon:
         idx = protected("results/mutect2/pon/{aliquot_batch}.vcf.idx")
     params:
         mem = CLUSTER_META["createpon"]["mem"],
-        vcfs = lambda _, input: " ".join(["--vcfs=" + s for s in input])
+        vcfs = lambda _, input: " ".join(["-V " + s for s in input])
     conda:
         "../envs/gatk4.yaml"
     threads:
@@ -117,7 +117,6 @@ rule createpon:
     shell:
         "gatk --java-options -Xmx{params.mem}g CreateSomaticPanelOfNormals \
             {params.vcfs} \
-            --duplicate-sample-strategy THROW_ERROR \
             --output {output.vcf} \
             > {log} 2>&1"
 
