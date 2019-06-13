@@ -1,3 +1,18 @@
+/*
+Create materialized view that fractionates neoantigens into primary (P), recurrent (R), or shared (S) for a specific tumor pair (analysis.neoantigens_by_pair)
+- Uses the analysis.neoantigens_by_aliquot materialized view
+- All neoantigens included in this table have been filtered based on their ssm2_pass_calls
+	- Samples where ssm2_pass_call is true for primary and not true for recurrent are in the 'P' fraction
+	- Samples where ssm2_pass_call is not true for primary and true for recurrent are in the 'R' fraction
+	- Samples where ssm2_pass_call is true for primary and true for recurrent are in the 'S' fraction
+- All neoantigens included in this table are also filtered by depth, where:
+	- P fraction neoantigens must have at least 15 read counts in the primary
+	- R fraction neoantigens must have at least 15 read counts in the recurrent
+	- S fraction neoantigens must have at least 15 read counts in both
+- Genomic locations in the analysis.neoantigens_by_aliquot table reflect those in the variants.anno table (which are used in the rest of GLASS)
+*/
+
+
 WITH pairs AS
 (
 	SELECT tp.tumor_pair_barcode,

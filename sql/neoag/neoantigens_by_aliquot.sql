@@ -1,3 +1,15 @@
+/*
+Create materialized view that links neoantigens to specific aliquots (analysis.neoantigens_by_aliquot)
+- Uses the analysis.neoantigens_by_patient table, which was created from running pvacseq on multi-allelic Mutect2 calls
+- Table includes all variables in the variants.passgeno table + all relevant neoantigen information output by pvacseq
+- Table lists all aliquots in GLASS as having all neoantigens from their case, must be filtered using ssm2_pass_call
+- Separate criteria to joining neoantigen calls to variants.anno table: 
+	-  variants.anno lists mutations arising from SNPs as starting at the pvacseq stop and stopping at pvacseq stop + 1
+	-  variants.anno lists mutations arising from (INS, DEL, DNP, TNP) as starting at the same place as pvacseq start but stopping at the pvacseq start + length of variant -1
+- Genomic locations in the analysis.neoantigens_by_aliquot table reflect those in the variants.anno table (which are used in the rest of GLASS)
+*/
+
+
 WITH var_neo AS
 (
 	SELECT
