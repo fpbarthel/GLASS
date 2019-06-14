@@ -1,4 +1,6 @@
-#Code for Figure 4C: Compares neoantigen depletion ratio between subclonal and clonal neoantigens
+#Code for Figure 4D: Compares neoantigen depletion ratio between subclonal and clonal neoantigens
+#Also performs statistical tests between groups (no differences)
+#Query at the top joins analysis.neoantigen_depletion_clonality materialized view with other tables to get timepoint, hypermutator, and subtype information
 #-----------------------------------------------------
 
 library(DBI)

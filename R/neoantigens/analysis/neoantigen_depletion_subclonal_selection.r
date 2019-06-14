@@ -1,5 +1,9 @@
-#Subclonal selection
-#-------------------------
+#Code to that compares each the observed-to-expected neoantigen ratios between samples marked as "selected" and "neutral" evolution using the subclonalSelection method
+#Query at the top joins analysis.neoantigen_depletion table to analysis.subclonalselection table (and others)
+#Comparisons are made for initial tumors and for recurrent tumors
+#No significant associations
+#This analysis is reported in the manuscript
+#------------------------------------------------------------------------------
 
 library(odbc)
 library(DBI)

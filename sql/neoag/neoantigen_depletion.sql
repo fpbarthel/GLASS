@@ -6,6 +6,15 @@ See https://www.ncbi.nlm.nih.gov/pubmed/25594174
 Authors: Fred Varn, Floris barthel
 -----------------------------------------------------------------------------------
 
+Makes analysis.neoantigen_depletion materialized view
+- Results from this query are directly used to make Figures 4B and 4C
+
+## NOTES FOR RE-RESUBMISSION
+- In this iteration, we only use missense mutations rather than all non-silent mutations (personal decision, shouldn't matter much but can change)
+- More importantly, the missense and silent mutations are defined here by funcotator while neoantigens are defined using VEP
+- For resubmission, this query should be rerun using the VEP definitions for missense and silent mutations
+- These changes will affect the variant_context_counts subquery in this query
+
 ## TERMS ##
 
 Nbar: the expected number of non-silent mutations per silent mutation

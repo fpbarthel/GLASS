@@ -1,3 +1,8 @@
+/*
+Creates Supplementary Table 6 (?): List of all unique neoantigens in the GLASS cohort and the number of initial/recurrent tumors harboring each one
+A separate R script is used to save the table for publication: R/neoag/analysis/SuppTable6_writetottext.r
+*/
+
 WITH neoag_by_ali AS
 (
 	SELECT aliquot_barcode, variant_id, gene_name, mutation, pvacseq_protein_position, peptide_length, sub_peptide_position, mt_epitope_seq 

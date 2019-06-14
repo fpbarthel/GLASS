@@ -1,5 +1,9 @@
 #Code for Figure 4B,4C: Compares neoantigen depletion rates between subtypes and timepoints
 #Code for Extended Data Figure 12B: Hypermutator analyses
+#Also performs other exploratory analyses and statistical tests between groups
+#Code making Figures is labelled clearly
+#Query at the top joins analysis.neoantigen_depletion materialized view with other tables to get timepoint, hypermutator, and subtype information
+#All samples in these analyses were required to have at least 3 missense mutations in their initial and recurrent tumors (avoid overfitting ratio)
 #-----------------------------------------------------
 
 library(odbc)
@@ -29,7 +33,9 @@ rle(tmp)
 #Scatterplot of primary vs recurrent correlations with depletion
 cor.test(res[,"nd_a"],res[,"nd_b"])
 
+#******************************
 #Figure 4C
+#******************************
 gtsize = 7/(14/5)
 pdf("/projects/varnf/GLASS/Figures/resubmission/depletion_correlation_scatterplot.pdf",width=2,height=2)
 ggplot(res, aes(x = nd_a, y = nd_b,colour=subtype)) + 
@@ -135,7 +141,9 @@ ggplot(plot_res, aes(y = rneo, x = timepoint,fill=subtype)) +
 	legend.position="none")
 dev.off()
 
+#******************************
 #Figure 4B
+#******************************
 wilcox.test(plot_res[which(plot_res[,"subtype"]=="IDHwt"),"rneo"],plot_res[which(plot_res[,"subtype"]=="IDHmut-noncodel"),"rneo"]) #0.67
 pdf("/projects/varnf/GLASS/Figures/resubmission/depletion_subtype_box.pdf",width=3.25,height=2)
 ggplot(plot_res, aes(y = rneo, x = subtype,colour=subtype)) + 
@@ -171,9 +179,9 @@ ggplot(plot_res, aes(x = timepoint, y = rneo, group = pair,colour=subtype)) +
 	legend.position="none")
 dev.off()
 
-
-#Extended Data Figure 12B: Hypermutator figures
-#-----------------------------------------------------
+#**********************************************************
+#Extended Data Figure 12B: Hypermutator figures (two panels)
+#**********************************************************
 
 samp <- res[,"tumor_barcode_b"]
 rneo <- res[,"nd_b"]
@@ -181,6 +189,7 @@ subtype <- res[,"subtype"]
 hm <- as.factor(res[,"hm_b"])
 plot_res_hm <- data.frame(samp,rneo,subtype,hm)
 wilcox.test(plot_res_hm[which(plot_res_hm[,"hm"]==1),"rneo"],plot_res_hm[which(plot_res_hm[,"hm"]==0),"rneo"]) #0.67
+
 
 pdf("/projects/varnf/GLASS/Figures/resubmission/EDF12_depletion_hypermutator_recur_box.pdf",width=2,height=2)
 ggplot(plot_res_hm, aes(y = rneo, x = hm, colour=hm)) + 

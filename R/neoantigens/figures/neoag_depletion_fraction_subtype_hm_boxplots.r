@@ -1,3 +1,8 @@
+#Code that makes boxplots of observed-to-expected neoantigen ratio by fraction and subtype
+#Did not make it into the original manuscript, have not thoroughly reviewed this code
+#May be useful as an Extended Data Figure down the road
+#-----------------------------------------------------
+
 library(odbc)
 library(DBI)
 library(ggplot2)

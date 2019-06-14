@@ -1,3 +1,10 @@
+#Code to correlate each sample's number of unique HLA alleles with their neoantigen depletion values
+#Query at the top counts each patient's total number of HLA loci from the analysis.neoantigens_by_aliquot table
+#First correlation: All samples (reported in manuscript)
+#Second correlation: initial only samples
+#Third correlation: recurrent only samples
+#-----------------------------------------------------
+
 library(DBI)
 library(odbc)
 library(ggplot2)

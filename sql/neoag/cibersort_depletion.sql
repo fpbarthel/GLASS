@@ -1,3 +1,9 @@
+/*
+Creates query that includes each aliquot's observed to expected neoantigen ratio (from analysis.neoantigen_depletion) to their CIBERSORT values from the Wang et al Cancer Cell paper (PMID: 28697342)
+- Results from this query are directly used to make Extended Data Figure 12C
+- Collapses the CIBERSORT values from 22 cells into 11 based on lineage (annotated below)
+	- Collapsing was similar to PRECOG paper (PMID: 26193342)
+*/
 WITH deplete AS
 (
 	SELECT gs.* , nd1.rneo AS nd_a, nd2.rneo AS nd_b, clin.idh_codel_subtype AS subtype

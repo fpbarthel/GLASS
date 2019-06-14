@@ -1,3 +1,12 @@
+/*
+Query that creates table of all shared variants with their pyclone ccfs and clonality by pair, as well as their neoantigen status
+- This table is directly used to make Extended Data Figure 12A
+- Only examines variants that are not labelled as MODIFIER, (coding variants), as neoantigens can only come from coding variants
+- Like other queries, this query needs to be redesigned to use VEP classifications once VEP calls for all variants exist
+- Each variant is marked as immunogenic if it gives rise to at least one neoantigen
+- No coverage filters are applied in this query, only mutect2 calls
+*/
+
 WITH start_tab AS
 (
 	SELECT 

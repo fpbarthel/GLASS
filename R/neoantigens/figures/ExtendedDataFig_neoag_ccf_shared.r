@@ -1,3 +1,8 @@
+#Code to make several figures that compare the changes in ccf of shared neoantigens and shared variants when going from initial to recurren tumors
+#Adapted from one of Floris's previous exploratory figures
+#Last part of this script makes Extended Data Figure 12A and is labelled clearly
+#-----------------------------------------------------
+
 library(DBI)
 library(tidyverse)
 library(ggplot2)
@@ -270,7 +275,9 @@ for(i in 1:length(subtypes))
 	pval[i] <- chisq.test(test)$p.value
 }
 
-#Final figure: Extended Data Figure CCF clonality bar
+#**********************************************************
+#Extended Data Figure 12A: CCF clonality bar
+#**********************************************************
 gtsize = 6/(14/5)
 pdf("/projects/varnf/GLASS/Figures/resubmission/final/EDF_CCF_clonality_bar.pdf", width=6, height = 4)
 g6 <- ggplot(tmp4, aes(x=1, fill=clonality)) + 

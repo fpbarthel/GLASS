@@ -6,6 +6,15 @@ See https://www.ncbi.nlm.nih.gov/pubmed/25594174
 Authors: Fred Varn, Floris barthel
 -----------------------------------------------------------------------------------
 
+Makes analysis.neoantigen_depletion_fraction materialized view
+- This table is not currently used in the manuscript, but would make a good addition to Extended Data Figure 12
+
+## NOTES FOR RE-RESUBMISSION
+- In this iteration, we only use missense mutations rather than all non-silent mutations (personal decision, shouldn't matter much but can change)
+- More importantly, the missense and silent mutations are defined here by funcotator while neoantigens are defined using VEP
+- For resubmission, this query should be rerun using the VEP definitions for missense and silent mutations
+- These changes will affect the variant_context_counts subquery in this query
+
 ## TERMS ##
 
 Nbar: the expected number of non-silent mutations per silent mutation
@@ -26,6 +35,7 @@ Rneo: the ratio between the observed and expected rate of neo-peptides
 - Lower values of this score can be interpreted as evidence of higher neoantigen depletion relative to other samples in the dataset
 
 */
+
 WITH selected_tumor_pairs AS 
 (
 	SELECT gold_set.tumor_pair_barcode,

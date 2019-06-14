@@ -1,3 +1,10 @@
+#Code to make Extended Data Figure 12C: Average CIBERSORT profiles of depleted (<1) and non-depleted (>1) initial and recurrent tumors
+#Creates 4 stacked barplots total
+#Coloring of bars was inspired by original paper that collapsed CIBERSORT fractions into 11 groups (PMID: 26193342)
+#Also performs statistical tests of each fraction between the groups
+#Potential plan for re-resubmission: Make this figure larger and include every sample in the EDF rather than average profile
+#-----------------------------------------------------
+
 library(odbc)
 library(DBI)
 library(ggplot2)

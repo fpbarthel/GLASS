@@ -1,3 +1,10 @@
+/*
+Creates query that includes each aliquot's fractional observed to expected neoantigen ratio (from analysis.neoantigen_depletion) to their CIBERSORT values from the Wang et al Cancer Cell paper (PMID: 28697342)
+- Similar to cibersort_depletion.sql, just for fractions
+- Collapses the CIBERSORT values from 22 cells into 11 based on lineage (annotated below)
+	- Collapsing was similar to PRECOG paper (PMID: 26193342)
+- Not currently used, but may be used as an extended data figure later (no interesting associations here relative to the sample-specific analyses)
+*/
 WITH deplete AS
 (
 	SELECT gs.tumor_pair_barcode , gs.tumor_barcode_a, gs.tumor_barcode_b, nd.fraction, nd.rneo, clin.idh_codel_subtype AS subtype
@@ -137,3 +144,4 @@ INNER JOIN dendriticcells dc2 ON dc2.sample_barcode = al2.sample_barcode
 INNER JOIN mastcells mc2 ON mc2.sample_barcode = al2.sample_barcode
 INNER JOIN eosinophils eo2 ON eo2.sample_barcode = al2.sample_barcode
 INNER JOIN pmns pmn2 ON pmn2.sample_barcode = al2.sample_barcode
+ORDER BY 1,2

@@ -1,5 +1,11 @@
-#Survival analyses
-#-------------------------
+#Code that uses Cox PH models to associate observed-to-expected neoantigen ratio in initial or recurent tumors with overall survival and surgical interval
+#Cox PH models that associate overall survival with observed-to-expected neoantigen ratio are reported in the manuscript
+#Query at the top adapted from Kevin, joins neoantigen depletion with other tables to perform survival analyses
+#Other analyses (not reported in manuscript): 
+#	Correlates surgical interval with observed-to-expected neoantigen ratio (no association)
+#	Query and then Cox model to examine association between neoantigen load with overall survival (no association, reviewer request)
+#	Query to look at observed-to-expected neoantigen ratio in samples treated with immunotherapy (nothing of note)
+#------------------------------------------------------------------------------
 
 library(odbc)
 library(DBI)

@@ -1,4 +1,6 @@
 #Code for Figure 4A: Compares neoantigens/nonsynonymous mutation rates
+#Also provides correlation between mutation and neoantigen load (used in manuscript)
+#Query at the top joins analysis.neoag_freq materialized view to other tables to make figure that shows subtype and timepoint-specific fractions
 #-----------------------------------------------------
 library(DBI)
 library(odbc)

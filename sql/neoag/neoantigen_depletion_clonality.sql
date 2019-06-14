@@ -6,6 +6,15 @@ See https://www.ncbi.nlm.nih.gov/pubmed/25594174
 Authors: Fred Varn, Floris barthel
 -----------------------------------------------------------------------------------
 
+Makes analysis.neoantigen_depletion_clonality materialized view
+- Results from this query are directly used to make Figure 4D
+
+## NOTES FOR RE-RESUBMISSION
+- In this iteration, we only use missense mutations rather than all non-silent mutations (personal decision, shouldn't matter much but can change)
+- More importantly, the missense and silent mutations are defined here by funcotator while neoantigens are defined using VEP
+- For resubmission, this query should be rerun using the VEP definitions for missense and silent mutations
+- These changes will affect the variant_context_counts subquery in this query
+
 ## TERMS ##
 
 Nbar: the expected number of non-silent mutations per silent mutation
@@ -26,6 +35,7 @@ Rneo: the ratio between the observed and expected rate of neo-peptides
 - Lower values of this score can be interpreted as evidence of higher neoantigen depletion relative to other samples in the dataset
 
 */
+
 WITH selected_tumor_pairs AS 
 (
 	SELECT gold_set.tumor_pair_barcode,
@@ -200,5 +210,5 @@ SELECT obs.aliquot_barcode,
 FROM obs
 JOIN bpred ON bpred.aliquot_barcode = obs.aliquot_barcode AND bpred.clonality = obs.clonality
 JOIN npred ON npred.aliquot_barcode = obs.aliquot_barcode AND npred.clonality = obs.clonality
-WHERE nobs >= 3
+--WHERE nobs >= 3
 ORDER BY (COALESCE(obs.bobs, 0::numeric) / NULLIF(obs.nobs, 0::numeric) / NULLIF(COALESCE(bpred.bpred, 0::numeric) / NULLIF(npred.npred, 0::numeric), 0::numeric)) DESC;
