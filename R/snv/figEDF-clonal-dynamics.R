@@ -78,7 +78,7 @@ locidf <- loci %>%
   mutate(sample_id = gsub("-", "_", substr(sample_id, 14, 18)),
          cluster = cluster_id + 1,
          variant_allele_frequency = variant_allele_frequency*100) %>%
-  select(-cluster_id) %>%
+  dplyr::select(-cluster_id) %>%
   # Avoid alphabetical ordering.
   mutate(sample_id = gsub("TP", "S1", sample_id)) %>%
   mutate(sample_id = gsub("R1", "S2", sample_id)) %>%
