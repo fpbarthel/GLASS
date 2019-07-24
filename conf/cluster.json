@@ -271,7 +271,25 @@
         "name" : "{rule}",
         "stdout" : "logs/drmaa/{rule}.out",
         "stderr" : "logs/drmaa/{rule}.err"
+    },    
+	"annotate_vep" :
+    {
+        "ppn" : 12,
+        "mem" : 72,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.out",
+        "stderr" : "logs/drmaa/{rule}.err"
     },
+    "vep2db" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.out",
+        "stderr" : "logs/drmaa/{rule}.err"
+	},
     "genotypesample" :
     {
         "ppn" : 1,

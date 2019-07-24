@@ -36,10 +36,10 @@ res <- dbGetQuery(con,q)
 
 res[,"hla_num"] <- as.numeric(res[,"hla_num"])
 
-cor.test(res[,"rneo"],res[,"hla_num"],method="s")		#R = 0.29	P = 5.1e-10
+cor.test(res[,"rneo"],res[,"hla_num"],method="s")		#R = 0.29	P = 2.1e-9
 
 pri <- res[grep("-TP-",res[,1]),]
 rec <- res[grep("-R1-|-R2-|-R3-|-R4-",res[,1]),]
 
-cor.test(pri[,"rneo"],pri[,"hla_num"],method="s")		#R = 0.24	P = 4e-4
-cor.test(rec[,"rneo"],rec[,"hla_num"],method="s")		#R = 0.34	P = 1.3e-7
+cor.test(pri[,"rneo"],pri[,"hla_num"],method="s")		#R = 0.23	P = 5e-4
+cor.test(rec[,"rneo"],rec[,"hla_num"],method="s")		#R = 0.32	P = 5.6-7

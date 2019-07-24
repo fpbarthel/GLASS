@@ -36,7 +36,7 @@ tmp <- tmp[order(tmp)]
 rle(tmp)
 
 #get average proportion of mutations giving rise to neoantigens
-mean(c(neo[,"prop_immunogenic_a"],neo[,"prop_immunogenic_b"]))		#43%
+mean(c(neo[,"prop_immunogenic_a"],neo[,"prop_immunogenic_b"]))		#42%
 
 #get correlation between mutation and neoantigen load
 cor(c(neo[,"neoag_count_a"],neo[,"neoag_count_b"]),c(neo[,"mt_count_a"],neo[,"mt_count_b"]),method="s")	#0.89
@@ -69,17 +69,17 @@ g4 <- res[which(res[,"timepoint"]=="Recurrent" & res[,"subtype"] == "IDHmut-code
 g5 <- res[which(res[,"timepoint"]=="Recurrent" & res[,"subtype"] == "IDHmut-noncodel"),"prop"]
 g6 <- res[which(res[,"timepoint"]=="Recurrent" & res[,"subtype"] == "IDHwt"),"prop"]
 
-wilcox.test(g1,g4)		#0.52
-wilcox.test(g2,g5)		#0.64
-wilcox.test(g3,g6)		#0.92
+wilcox.test(g1,g4)		#0.35
+wilcox.test(g2,g5)		#0.82
+wilcox.test(g3,g6)		#0.90
 
-wilcox.test(g1,g2)		#0.27
-wilcox.test(g1,g3)		#0.41
-wilcox.test(g2,g3)		#0.56
+wilcox.test(g1,g2)		#0.19
+wilcox.test(g1,g3)		#0.38
+wilcox.test(g2,g3)		#0.61
 
-wilcox.test(g4,g5)		#0.45
-wilcox.test(g4,g6)		#0.97
-wilcox.test(g5,g6)		#0.21
+wilcox.test(g4,g5)		#0.66
+wilcox.test(g4,g6)		#0.92
+wilcox.test(g5,g6)		#0.26
 
 #Plot A
 plot_res <- data.frame(c(prop_pri,prop_rec),

@@ -1,6 +1,6 @@
 #This script takes the output of the Snakemake pvacseq module for each patient and combines it into one large table to upload to the db (analysis.neoantigens_by_patient table)
 #Additionally generates a .txt file for backup
-#First it labels each sample's table with the proper case barcode, then it combines the labelled tables into one large table and uplaods 
+#First it labels each sample's table with the proper case barcode, then it combines the labelled tables into one large table and uploads 
 #-----------------------------------------------------
 library(DBI)
 library(odbc)

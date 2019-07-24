@@ -9,12 +9,6 @@ Authors: Fred Varn, Floris barthel
 Makes analysis.neoantigen_depletion_fraction materialized view
 - This table is not currently used in the manuscript, but would make a good addition to Extended Data Figure 12
 
-## NOTES FOR RE-RESUBMISSION
-- In this iteration, we only use missense mutations rather than all non-silent mutations (personal decision, shouldn't matter much but can change)
-- More importantly, the missense and silent mutations are defined here by funcotator while neoantigens are defined using VEP
-- For resubmission, this query should be rerun using the VEP definitions for missense and silent mutations
-- These changes will affect the variant_context_counts subquery in this query
-
 ## TERMS ##
 
 Nbar: the expected number of non-silent mutations per silent mutation
@@ -62,8 +56,8 @@ variant_context_counts AS
 		ELSE NULL::text
 	END AS fraction,
 	CASE
-		WHEN pa.variant_classification::text = 'MISSENSE'::text THEN 'non'::text
-		WHEN pa.variant_classification::text = 'SILENT'::text THEN 'syn'::text
+		WHEN pv.variant_classification::text = 'Missense_Mutation'::text THEN 'non'::text
+		WHEN pv.variant_classification::text = 'Silent'::text THEN 'syn'::text
 		ELSE NULL::text
 	END AS variant_class,
 	CASE
@@ -72,13 +66,14 @@ variant_context_counts AS
 		ELSE NULL::text
 	END AS immune_fraction,
 	pa.trinucleotide_context,
-	pa.alt,
+	pv.alt,
 	count(*) AS mut_n
 	FROM variants.pgeno pg
 	JOIN selected_tumor_pairs stp ON stp.tumor_pair_barcode = pg.tumor_pair_barcode
+	JOIN variants.passvep pv ON pv.variant_id = pg.variant_id	
 	JOIN variants.passanno pa ON pa.variant_id = pg.variant_id
 	LEFT JOIN filtered_neoag nag ON nag.aliquot_barcode = pg.tumor_barcode_a AND nag.variant_id = pg.variant_id
-	WHERE pg.variant_type = 'SNP'::bpchar AND (pg.mutect2_call_a AND NOT pg.mutect2_call_b AND (pg.ref_count_a + pg.alt_count_a) > 14 OR pg.mutect2_call_b AND NOT pg.mutect2_call_a AND (pg.ref_count_b + pg.alt_count_b) > 14 OR pg.mutect2_call_a AND pg.mutect2_call_b AND (pg.ref_count_a + pg.alt_count_a) > 14 AND (pg.ref_count_b + pg.alt_count_b) > 14) AND (pa.variant_classification::text = ANY (ARRAY['MISSENSE'::character varying, 'SILENT'::character varying]::text[]))
+	WHERE pg.variant_type = 'SNP'::bpchar AND (pg.mutect2_call_a AND NOT pg.mutect2_call_b AND (pg.ref_count_a + pg.alt_count_a) > 14 OR pg.mutect2_call_b AND NOT pg.mutect2_call_a AND (pg.ref_count_b + pg.alt_count_b) > 14 OR pg.mutect2_call_a AND pg.mutect2_call_b AND (pg.ref_count_a + pg.alt_count_a) > 14 AND (pg.ref_count_b + pg.alt_count_b) > 14) AND (pv.variant_classification::text = ANY (ARRAY['Missense_Mutation'::character varying, 'Silent'::character varying]::text[]))
 	GROUP BY pg.tumor_pair_barcode, (
 		CASE
 			WHEN pg.mutect2_call_a AND pg.mutect2_call_b THEN 'S'::text
@@ -87,8 +82,8 @@ variant_context_counts AS
 			ELSE NULL::text
 		END), (
 		CASE
-			WHEN pa.variant_classification::text = 'MISSENSE'::text THEN 'non'::text
-			WHEN pa.variant_classification::text = 'SILENT'::text THEN 'syn'::text
+			WHEN pv.variant_classification::text = 'Missense_Mutation'::text THEN 'non'::text
+			WHEN pv.variant_classification::text = 'Silent'::text THEN 'syn'::text
 			ELSE NULL::text
 		END), (
 		CASE
@@ -96,7 +91,7 @@ variant_context_counts AS
 			WHEN nag.count IS NULL OR nag.count <= 0 THEN 'non'::text
 			ELSE NULL::text
 		END), 
-		pa.trinucleotide_context, pa.alt
+		pa.trinucleotide_context, pv.alt
 ), 
 mis AS 
 (

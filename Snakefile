@@ -59,8 +59,8 @@ include: "snakemake/mutect2-post.smk"
 # include: "snakemake/manta.smk"
 #include: "snakemake/cnv.smk"
 #include: "snakemake/sequenza.smk"
-include: "snakemake/optitype.smk"
-include: "snakemake/pvacseq.smk"
+#include: "snakemake/optitype.smk"
+#include: "snakemake/pvacseq.smk"
 #include: "snakemake/cnv-post.smk"
 include: "snakemake/titan.smk"
 include: "snakemake/pyclone.smk"
@@ -178,6 +178,7 @@ rule ssmutect2:
 rule m2db:
     input:
         #"results/mutect2/consensusvcf/consensus.normalized.sorted.funcotated.tsv",
+        "results/mutect2/consensusvcf/consensus.normalized.sorted.vep.vcf",
         expand("results/mutect2/geno2db/{case_barcode}.info.tsv", case_barcode = manifest.getSelectedCases()),
         expand("results/mutect2/geno2db/{case_barcode}.geno.tsv", case_barcode = manifest.getSelectedCases())
 

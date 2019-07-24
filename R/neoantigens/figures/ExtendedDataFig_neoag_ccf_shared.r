@@ -9,7 +9,7 @@ library(ggplot2)
 library(RColorBrewer)
 
 con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB")  
-res <- dbGetQuery(con, read_file("/projects/varnf/GLASS/GLASS/sql/neoag_ccf_shared.sql"))
+res <- dbGetQuery(con, read_file("/projects/varnf/GLASS/GLASS/sql/neoag/neoag_ccf_shared.sql"))
 
 ############################################################################################################################################
 ## Plot ladder plot comparing initial and recurrence CCF
