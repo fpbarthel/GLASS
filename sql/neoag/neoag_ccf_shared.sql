@@ -20,9 +20,8 @@ WITH start_tab AS
 			pg.pos,
 			pg.variant_id,
 			pg.gene_symbol,
-			pg.variant_classification,
+			pv.variant_classification,
 			vc.variant_effect,
-			vc.variant_classification_vep,
 			neo.hla_allele,
 			neo.netmhcpan_mt_score,
 			pl1.cellular_prevalence AS cellular_prevalence_a, 
@@ -34,9 +33,10 @@ WITH start_tab AS
 			rank() OVER (PARTITION BY pg.tumor_pair_barcode, pg.gene_symbol ORDER BY variant_classification_priority, pl1.cellular_prevalence + pl2.cellular_prevalence DESC),
 			row_number() OVER w AS var_number
 		FROM variants.pgeno pg
+		LEFT JOIN variants.passvep pv ON pv.variant_id = pg.variant_id
 		LEFT JOIN variants.pyclone_loci pl1 ON pl1.variant_id = pg.variant_id AND pl1.aliquot_barcode = pg.tumor_barcode_a 
 		LEFT JOIN variants.pyclone_loci pl2 ON pl2.variant_id = pg.variant_id AND pl2.aliquot_barcode= pg.tumor_barcode_b
-		LEFT JOIN variants.variant_classifications vc ON vc.variant_classification = pg.variant_classification
+		LEFT JOIN variants.variant_classifications vc ON vc.variant_classification_vep = pv.variant_classification
 		LEFT JOIN analysis.neoantigens_by_pair neo ON neo.tumor_pair_barcode = pg.tumor_pair_barcode AND neo.variant_id = pg.variant_id
 		INNER JOIN analysis.gold_set ss ON pg.tumor_pair_barcode = ss.tumor_pair_barcode
 		INNER JOIN analysis.tumor_mut_comparison_anno tmc ON tmc.tumor_pair_barcode = ss.tumor_pair_barcode

@@ -118,9 +118,8 @@ rule consensusvcf:
     output:
         merged = temp("results/mutect2/consensusvcf/consensus.vcf.gz"),
         normalized = temp("results/mutect2/consensusvcf/consensus.normalized.vcf.gz"),
-        final = temp("results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz"),
-        tbi = temp("results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz.tbi"),
-        
+        final = "results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz",
+        tbi = "results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz.tbi",
     params:
         mem = CLUSTER_META["consensusvcf"]["mem"]
     threads:
@@ -230,10 +229,82 @@ rule maf2db:
     script:
         "../R/snakemake/snv2db.R"
 
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## Annotate consensus variant set (with VEP via vcf2maf)
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
+rule annotate_vep:
+    input:
+        vcf = "results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz"
+    output:
+        vcf_uncompressed = temp("results/mutect2/annoconsensusvcf/consensus.normalized.sorted.uncompressed.vcf"),
+        vcf_reformatted = temp("results/mutect2/annoconsensusvcf/consensus.normalized.sorted.vcf"),
+        maf = protected("results/mutect2/annoconsensusvcf/consensus.normalized.sorted.vep.maf")
+    params:
+        mem = CLUSTER_META["annoconsensusvcf"]["mem"]
+    threads:
+        CLUSTER_META["annoconsensusvcf"]["ppn"]
+    conda:
+        "../envs/vcf2maf.yaml"
+    log:
+        "logs/mutect2/annoconsensusvcf/annoconsensusvcf.log"
+    benchmark:
+        "benchmarks/mutect2/annoconsensusvcf/annoconsensusvcf.txt"
+    message:
+        "Annotate consensus variants using VEP"
+    shell:
+        "bcftools view \
+            -Ov \
+            -o {output.vcf_uncompressed} {input.vcf} \
+            > {log} 2>&1;"
+
+        "vcf2vcf.pl \
+            --input-vcf {output.vcf_uncompressed} \
+            --output-vcf {output.vcf_reformatted} \
+            --ref-fasta {config[reference_fasta]} \
+            >> {log} 2>&1;"
+        
+        "vcf2maf.pl \
+            --input-vcf {output.vcf_reformatted} \
+            --output-maf {output.maf} \
+            --vep-path {config[veppath]} \
+            --vep-data {config[vepdata]} \
+            --vep-forks 8 \
+            --ref-fasta {config[reference_fasta]} \
+            --filter-vcf {config[gnomad_vcf]} \
+            --tumor-id TUMOR \
+            --normal-id NORMAL \
+            --species homo_sapiens \
+            --ncbi-build GRCh37 \
+            >> {log} 2>&1"
+            
+#Manually performing this step using vep_upload R script
+#
+#rule vep2db:
+#    input:
+#        maf = "results/mutect2/annoconsensusvcf/consensus.normalized.sorted.vep.maf",
+#        vcf = "results/mutect2/consensusvcf/consensus.normalized.sorted.vcf.gz"
+#    output:
+#        tsv = "results/mutect2/maf2db/consensus.normalized.sorted.vep.tsv"
+#    params:
+#        mem = CLUSTER_META["vep2db"]["mem"]
+#    threads:
+#        CLUSTER_META["vep2db"]["ppn"]
+#    conda:
+#        "../envs/vep2db.yaml"
+#    log:
+#        "logs/mutect2/vep2db/vep2db.log"
+#    benchmark:
+#        "benchmarks/mutect2/vep2db/vep2db.txt"
+#    message:
+#        "Copy variants to remote"
+#    script:
+#        "../R/snakemake/vep_upload.R"
+            
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## Upload genotype to database
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 
 rule geno2db:
     input:
@@ -258,5 +329,5 @@ rule geno2db:
         "Aliquot: {wildcards.case_barcode}"
     script:
         "../R/snakemake/geno2db.R"
-
+        
 # ## END ##

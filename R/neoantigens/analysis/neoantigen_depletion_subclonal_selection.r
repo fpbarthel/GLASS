@@ -36,10 +36,10 @@ for(i in 1:length(subtypes))
 	rec_s <- sub_res[which(sub_res[,"neut2"]=="S"),"nd_b"]
 	rec_n <- sub_res[which(sub_res[,"neut2"]=="N"),"nd_b"]
 	
-	wilcox.test(pri_s,pri_n)
-	wilcox.test(rec_s,rec_n)
+	t.test(pri_s,pri_n)
+	t.test(rec_s,rec_n)
 	
 	s1 <- c(pri_s,rec_s)
 	n1 <- c(pri_n,rec_n)
-	wilcox.test(s1,n1)	
+	t.test(s1,n1)	
 }

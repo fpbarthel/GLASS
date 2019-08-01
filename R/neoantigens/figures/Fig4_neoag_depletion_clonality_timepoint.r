@@ -31,12 +31,12 @@ tmp <- tmp[order(tmp)]
 rle(tmp)
 
 #Clonal vs subclonal in each tumor
-wilcox.test(res[,"nd_a_c"],res[,"nd_a_s"],paired=TRUE)
-wilcox.test(res[,"nd_b_c"],res[,"nd_b_s"],paired=TRUE)
+t.test(res[,"nd_a_c"],res[,"nd_a_s"],paired=TRUE)		#0.59
+t.test(res[,"nd_b_c"],res[,"nd_b_s"],paired=TRUE)		#0.55
 
 #Clonality status by timepoint
-wilcox.test(res[,"nd_a_c"],res[,"nd_b_c"],paired=TRUE)
-wilcox.test(res[,"nd_a_s"],res[,"nd_b_s"],paired=TRUE)
+t.test(res[,"nd_a_c"],res[,"nd_b_c"],paired=TRUE)		#0.52
+t.test(res[,"nd_a_s"],res[,"nd_b_s"],paired=TRUE)		#0.75
 
 subtypes <- unique(res[,"subtype"])
 pvals <- matrix(0, ncol=4,nrow=3)
@@ -47,12 +47,12 @@ for(i in 1:length(subtypes))
 	sub_res <- res[which(res[,"subtype"]==subtypes[i]),]
 	
 	#Clonal vs subclonal in each tumor
-	pvals[i,1] <- wilcox.test(sub_res[,"nd_a_c"],sub_res[,"nd_a_s"],paired=TRUE)$p.value
-	pvals[i,2] <- wilcox.test(sub_res[,"nd_b_c"],sub_res[,"nd_b_s"],paired=TRUE)$p.value
+	pvals[i,1] <- t.test(sub_res[,"nd_a_c"],sub_res[,"nd_a_s"],paired=TRUE)$p.value
+	pvals[i,2] <- t.test(sub_res[,"nd_b_c"],sub_res[,"nd_b_s"],paired=TRUE)$p.value
 
 	#Clonality status by timepoint
-	pvals[i,3] <- wilcox.test(sub_res[,"nd_a_c"],sub_res[,"nd_b_c"],paired=TRUE)$p.value
-	pvals[i,4] <- wilcox.test(sub_res[,"nd_a_s"],sub_res[,"nd_b_s"],paired=TRUE)$p.value	
+	pvals[i,3] <- t.test(sub_res[,"nd_a_c"],sub_res[,"nd_b_c"],paired=TRUE)$p.value
+	pvals[i,4] <- t.test(sub_res[,"nd_a_s"],sub_res[,"nd_b_s"],paired=TRUE)$p.value	
 	
 }
 
@@ -65,13 +65,13 @@ clonality <- c(rep("Clonal",nrow(res)*2),rep("Subclonal",nrow(res)*2))
 plot_res <- data.frame(pair,samp,rneo,subtype,timepoint,clonality)
 
 pval <- rep("",nrow(plot_res))
-pval[which(plot_res[,"timepoint"]=="Initial")] <- "P = 0.44"
-pval[which(plot_res[,"timepoint"]=="Recurrent")] <- "P = 0.81"
+pval[which(plot_res[,"timepoint"]=="Initial")] <- "P = 0.59"
+pval[which(plot_res[,"timepoint"]=="Recurrent")] <- "P = 0.55"
 p_text <- cbind(plot_res,pval)
 
 gtsize = 7/(14/5)
 
-pdf("/projects/varnf/GLASS/Figures/resubmission/clonality_ladderplot.pdf",width=3.25,height=2)
+pdf("/projects/varnf/GLASS/Figures/resubmission/Figure4D.pdf",width=3.25,height=2)
 ggplot(plot_res, aes(y = rneo, x = clonality, group=pair, colour=subtype)) + 
 	geom_line(size=0.45,alpha=0.4) +
 	geom_point(size=1,colour="black") +

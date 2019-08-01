@@ -9,12 +9,6 @@ Authors: Fred Varn, Floris barthel
 Makes analysis.neoantigen_depletion materialized view
 - Results from this query are directly used to make Figures 4B and 4C
 
-## NOTES FOR RE-RESUBMISSION
-- In this iteration, we only use missense mutations rather than all non-silent mutations (personal decision, shouldn't matter much but can change)
-- More importantly, the missense and silent mutations are defined here by funcotator while neoantigens are defined using VEP
-- For resubmission, this query should be rerun using the VEP definitions for missense and silent mutations
-- These changes will affect the variant_context_counts subquery in this query
-
 ## TERMS ##
 
 Nbar: the expected number of non-silent mutations per silent mutation
@@ -67,8 +61,8 @@ variant_context_counts AS
 (
 	SELECT pg.aliquot_barcode,
 	CASE
-		WHEN pa.variant_classification::text = 'MISSENSE'::text THEN 'non'::text --ANY (ARRAY['MISSENSE'::character varying::text, 'START_CODON_SNP'::character varying::text, 'NONSTOP'::character varying::text]) THEN 'non'::text
-		WHEN pa.variant_classification::text = 'SILENT'::text THEN 'syn'::text
+		WHEN pv.variant_classification::text = 'Missense_Mutation'::text THEN 'non'::text --ANY (ARRAY['Missense_Mutation'::character varying::text, 'START_CODON_SNP'::character varying::text, 'NONSTOP'::character varying::text]) THEN 'non'::text
+		WHEN pv.variant_classification::text = 'Silent'::text THEN 'syn'::text
 		ELSE NULL::text
 		END AS variant_class,
 	CASE
@@ -77,17 +71,18 @@ variant_context_counts AS
 		ELSE NULL::text
 		END AS immune_fraction,
 	pa.trinucleotide_context,
-	pa.alt,
+	pv.alt,
 	count(*) AS mut_n
 	FROM variants.passgeno pg
 	JOIN selected_aliquots sa ON sa.aliquot_barcode = pg.aliquot_barcode
+	JOIN variants.passvep pv ON pv.variant_id = pg.variant_id
 	JOIN variants.passanno pa ON pa.variant_id = pg.variant_id
 	LEFT JOIN filtered_neoag nag ON nag.aliquot_barcode = pg.aliquot_barcode AND nag.variant_id = pg.variant_id
-	WHERE pg.ssm2_pass_call IS TRUE AND pa.variant_type = 'SNP'::bpchar AND (pg.ad_alt + pg.ad_ref) >= 15 AND (pa.variant_classification::text = ANY(ARRAY['MISSENSE'::character varying::text,'SILENT'::character varying::text])) --ANY (ARRAY['MISSENSE'::character varying::text, 'SILENT'::character varying::text, 'START_CODON_SNP'::character varying::text, 'NONSTOP'::character varying::text]))
+	WHERE pg.ssm2_pass_call IS TRUE AND pv.variant_type = 'SNP'::bpchar AND (pg.ad_alt + pg.ad_ref) >= 15 AND (pv.variant_classification::text = ANY(ARRAY['Missense_Mutation'::character varying::text,'Silent'::character varying::text])) --ANY (ARRAY['Missense_Mutation'::character varying::text, 'Silent'::character varying::text, 'START_CODON_SNP'::character varying::text, 'NONSTOP'::character varying::text]))
 	GROUP BY pg.aliquot_barcode, (
 		CASE
-			WHEN pa.variant_classification::text = 'MISSENSE'::text THEN 'non'::text --ANY (ARRAY['MISSENSE'::character varying::text, 'START_CODON_SNP'::character varying::text, 'NONSTOP'::character varying::text]) THEN 'non'::text
-			WHEN pa.variant_classification::text = 'SILENT'::text THEN 'syn'::text
+			WHEN pv.variant_classification::text = 'Missense_Mutation'::text THEN 'non'::text --ANY (ARRAY['Missense_Mutation'::character varying::text, 'START_CODON_SNP'::character varying::text, 'NONSTOP'::character varying::text]) THEN 'non'::text
+			WHEN pv.variant_classification::text = 'Silent'::text THEN 'syn'::text
 			ELSE NULL::text
 		END), (
 		CASE
@@ -95,7 +90,7 @@ variant_context_counts AS
 			WHEN nag.count IS NULL OR nag.count <= 0 THEN 'non'::text
 			ELSE NULL::text
 		END), 
-		pa.trinucleotide_context, pa.alt
+		pa.trinucleotide_context, pv.alt
 ),
 mis AS 
 (

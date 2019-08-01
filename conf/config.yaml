@@ -130,11 +130,11 @@ hla_ref:   "/projects/verhaak-lab/verhaak_ref/hla_ref/optitype/hla_reference_dna
 vcf2maf:          "/projects/verhaak-lab/mskcc-vcf2maf-747a1bb/vcf2maf.pl"
 
 ## VEP installation
-veppath:          "/projects/barthf/opt/ensembl-vep"
+veppath:          "/projects/varnf/SofWar/ensembl-vep"        #"/projects/barthf/opt/ensembl-vep"
 
 ## VEP cache directory
-vepdata:          "/projects/verhaak-lab/verhaak_ref/vep" #"/projects/barthf/opt/.vep"
-vepplugindata:    "/projects/varnf/SofWar/ensembl-vep/reference/"   #need to reconcile
+#vepdata:          "/projects/verhaak-lab/verhaak_ref/vep" #"/projects/barthf/opt/.vep"
+vepdata:    "/projects/varnf/SofWar/ensembl-vep/reference/"   #need to reconcile
 
 ## VEP plugin directory
 vepplugins:       "/projects/varnf/SofWar/VEP_plugins/"
