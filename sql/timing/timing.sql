@@ -87,7 +87,7 @@ timing_all AS
 	UNION
 	SELECT case_barcode, idh_codel_subtype, sample_type, (CASE direction WHEN -2 THEN 'Deletion' WHEN 2 THEN 'Amplification' ELSE NULL END) AS variant_classification, gene_symbol || (CASE direction WHEN -2 THEN ' del' WHEN 2 THEN ' amp' ELSE NULL END) AS evnt, cellular_prevalence AS ccf FROM timing_cnv WHERE cellular_prevalence IS NOT NULL
 	UNION
-	SELECT case_barcode, idh_codel_subtype, sample_type, (CASE direction WHEN -1 THEN 'Loss' WHEN 1 THEN 'Gain' ELSE NULL END) AS variant_classification, arm || (CASE direction WHEN -1 THEN ' del' WHEN 1 THEN ' amp' ELSE NULL END) AS evnt, arm_ccf AS ccf FROM timing_arm WHERE arm_ccf IS NOT NULL
+	SELECT case_barcode, idh_codel_subtype, sample_type, (CASE direction WHEN -1 THEN 'Deletion' WHEN 1 THEN 'Amplification' ELSE NULL END) AS variant_classification, arm || (CASE direction WHEN -1 THEN ' del' WHEN 1 THEN ' amp' ELSE NULL END) AS evnt, arm_ccf AS ccf FROM timing_arm WHERE arm_ccf IS NOT NULL
 ),
 timing_all_ranked AS
 (

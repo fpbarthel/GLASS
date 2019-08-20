@@ -49,7 +49,7 @@ WGS_SCATTERLIST = ["temp_{num}_of_50".format(num=str(j+1).zfill(4)) for j in ran
 
 # include: "snakemake/haplotype-map.smk"
 #include: "snakemake/fingerprinting.smk"
-# include: "snakemake/telseq.smk"
+include: "snakemake/telseq.smk"
 #include: "snakemake/mutect2.smk"
 include: "snakemake/mutect2-post.smk"
 # include: "snakemake/varscan2.smk"

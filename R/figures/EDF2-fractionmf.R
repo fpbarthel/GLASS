@@ -48,6 +48,83 @@ plot(g)
 dev.off()
 
 
+## Private MF vs age
+
+lm_stats = function(df){
+  m = lm(log10(mf) ~ idh_codel_subtype + time_initial, data = df)
+  n = nrow(df)
+  
+  eq = sprintf("Slope: %s mut/Mb per year", round(10^(coef(m)['time_initial']),2))
+  praw = coef(summary(m))[,4]['time_initial']
+  p = ifelse(praw < 0.0001, "P<0.0001", ifelse(praw > 0.05, sprintf("P=%s", round(praw, 2)), sprintf("P=%s", round(praw, 4))))
+  
+  cortxt = sprintf("n=%s\n%s\n%s", n, p, ifelse(praw < 0.05, eq, ''))
+  
+  if(is.na(p))
+    p = "P = 1.00"
+  
+  return(data.frame(eq,cortxt,n,p))
+}
+
+testres <- tmp %>% group_by(hypermutator_status, fraction) %>% do(lm_stats(.))
+
+
+g <- ggplot(tmp, aes(x=time_initial, y = mf)) +
+  geom_point(aes(color = idh_codel_subtype), alpha = 0.3) +
+  geom_smooth(method = "lm", aes(color = fraction)) +
+  scale_y_log10(breaks = c(0.1,1,10,100)) +
+  geom_text(data=testres, aes(x=50, y=10^(-1.8), label = cortxt, color = fraction)) +
+  facet_wrap(hypermutator_status~fraction) +
+  scale_color_manual(values=c("IDHmut-codel" = "#F8766D", "IDHmut-noncodel" = "#00BA38", "IDHwt" = "#619CFF", "R" = "#2FB3CA", "P" ="#CA2F66", "S"="#CA932F")) +
+  theme_bw(base_size = 12) +
+  labs(x = "Age (years)", y = "Mutations per Megabase", color = "Fraction") +
+  guides(color = FALSE)
+
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/EDF2/mf-age.pdf", height = 7, width = 10, useDingbats = FALSE)
+plot(g)
+dev.off()
+
+## Private MF vs interval
+
+tmp$interval = (tmp$time_recurrence - tmp$time_initial)*12
+
+lm_stats = function(df){
+  m = lm(log10(mf) ~ idh_codel_subtype + log10(interval), data = df)
+  n = nrow(df)
+  
+  eq = sprintf("Slope: %s mut/Mb per log10(month)", round((coef(m)['log10(interval)']),4))
+  praw = coef(summary(m))[,4]['log10(interval)']
+  p = ifelse(praw < 0.0001, "P<0.0001", ifelse(praw > 0.05, sprintf("P=%s", round(praw, 2)), sprintf("P=%s", round(praw, 4))))
+  
+  cortxt = sprintf("n=%s\n%s", n, p)
+  
+  if(is.na(p))
+    p = "P = 1.00"
+  
+  return(data.frame(eq,cortxt,n,p))
+}
+
+testres <- tmp %>% group_by(hypermutator_status, fraction) %>% do(lm_stats(.))
+
+
+g <- ggplot(tmp, aes(x=interval, y = mf)) +
+  geom_point(aes(color = idh_codel_subtype), alpha = 0.3) +
+  geom_smooth(method = "lm", aes(color = fraction)) +
+  scale_y_log10(breaks = c(0.1,1,10,100)) +
+  scale_x_log10(breaks = c(1,10,100)) +
+  geom_text(data=testres, aes(x=10, y=10^(-1.8), label = cortxt, color = fraction)) +
+  facet_wrap(hypermutator_status~fraction) +
+  scale_color_manual(values=c("IDHmut-codel" = "#F8766D", "IDHmut-noncodel" = "#00BA38", "IDHwt" = "#619CFF", "R" = "#2FB3CA", "P" ="#CA2F66", "S"="#CA932F")) +
+  theme_bw(base_size = 12) +
+  labs(x = "Surgical Interval (months)", y = "Mutations per Megabase", color = "Fraction") +
+  guides(color = FALSE)
+
+g
+
+pdf(file = "~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/EDF2/mf-interval.pdf", height = 7, width = 10, useDingbats = FALSE)
+plot(g)
+dev.off()
+
 ## Plot primary vs recurrent MF scatter plot
 
 tmp2 <- res %>% mutate(received_alk = factor(case_when(received_alk == "1" ~ "Yes",

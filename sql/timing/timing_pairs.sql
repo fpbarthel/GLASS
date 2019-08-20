@@ -23,6 +23,14 @@ arm_pairs AS
 	WHERE t1.arm < t2.arm
 	ORDER BY 5,1,2
 ),
+arm_cnv_pairs AS
+(
+	SELECT t1.arm || (CASE t1.direction WHEN -1 THEN ' del' WHEN 1 THEN ' amp' ELSE NULL END) AS evnt_a, t2.gene_symbol || (CASE t2.direction WHEN -2 THEN ' del' WHEN 2 THEN ' amp' ELSE NULL END) AS evnt_b, t1.idh_codel_subtype AS idh_codel_subtype
+	FROM ref.arm_drivers_subtype t1
+	INNER JOIN ref.cnv_drivers_subtype t2 ON t1.idh_codel_subtype = t2.idh_codel_subtype
+	--WHERE t1.arm < t2.arm
+	ORDER BY 3,1,2
+),
 pairs AS
 (
 	SELECT gene_symbol_a  || ' mut' AS evnt_a, gene_symbol_b  || ' mut' AS evnt_b, idh_codel_subtype FROM snv_pairs
@@ -30,6 +38,8 @@ pairs AS
 	SELECT gene_symbol_a || (CASE direction_a WHEN -2 THEN ' del' WHEN 2 THEN ' amp' ELSE NULL END) AS evnt_a, gene_symbol_b || (CASE direction_b WHEN -2 THEN ' del' WHEN 2 THEN ' amp' ELSE NULL END) AS evnt_b, idh_codel_subtype FROM cnv_pairs
 	UNION
 	SELECT arm_a || (CASE direction_a WHEN -1 THEN ' del' WHEN 1 THEN ' amp' ELSE NULL END) AS evnt_a, arm_b || (CASE direction_b WHEN -1 THEN ' del' WHEN 1 THEN ' amp' ELSE NULL END) AS evnt_b, idh_codel_subtype FROM arm_pairs
+	UNION
+	SELECT evnt_a, evnt_b, idh_codel_subtype FROM arm_cnv_pairs
 )
 SELECT * FROM pairs
 ORDER BY 3,1,2

@@ -4,6 +4,7 @@
 library(DBI)
 library(tidyverse)
 library(ggplot2)
+library(gridExtra)
 library(RColorBrewer)
 
 con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")  
@@ -340,6 +341,7 @@ dev.off()
 
 ############################################################################################################################################
 ## CCF compare between events within a tumor
+## Visualize using ladder plot
 ############################################################################################################################################
 
 res <- dbGetQuery(con, read_file('sql/timing/timing.sql'))
@@ -389,7 +391,76 @@ grobs <- lapply(1:nrow(pairs), function(i) {
 
 grobs = grobs[which(!sapply(grobs,is.null))]
 
-pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/timing3.pdf", width=9, height = 12, useDingbats = FALSE)
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/timing4.pdf", width=9, height = 12, useDingbats = FALSE)
+marrangeGrob(grobs = grobs, nrow = 4, ncol = 3)
+dev.off()
+
+############################################################################################################################################
+## CCF compare between events within a tumor
+## Visualize using bar plots
+############################################################################################################################################
+
+res <- dbGetQuery(con, read_file('sql/timing/timing.sql'))
+pairs <- dbGetQuery(con, read_file('sql/timing/timing_pairs.sql'))
+
+testWilcoxGroup <- function(df) {
+  wtest = wilcox.test(df$ccf ~ df$evnt, paired = TRUE, conf.int = TRUE)
+  data.frame(n = nrow(df)/2,
+             statistic = wtest$statistic,
+             estimate = wtest$estimate,
+             lcl = wtest$conf.int[1],
+             ucl = wtest$conf.int[2],
+             wilcox_p = wtest$p.value,
+             test_str = sprintf("n=%s\n%s",
+                                nrow(df)/2,
+                                case_when(wtest$p.value < 0.0001 ~ "P<0.0001",
+                                          wtest$p.value > 0.05 ~ sprintf("P=%s", format(round(wtest$p.value, 2),scientific=F)),
+                                          TRUE ~ sprintf("P=%s", format(round(wtest$p.value, 4),scientific=F)))),
+             stringsAsFactors = FALSE)
+}
+
+grobs <- lapply(1:nrow(pairs), function(i) {
+  tmp <- res %>% filter(num_samples==2,idh_codel_subtype == pairs$idh_codel_subtype[i], evnt %in% c(pairs$evnt_a[i], pairs$evnt_b[i])) %>% 
+    group_by(case_barcode,sample_type) %>% 
+    mutate(n=n()) %>% 
+    ungroup() %>%
+    filter(n==2) 
+  
+  tmp2 = tmp %>%
+    select(case_barcode,idh_codel_subtype,sample_type,variant_classification,evnt,ccf) %>%
+    spread(key = evnt, value = ccf) 
+  
+  tmp2$A = tmp2[,pairs$evnt_a[i]]
+  tmp2$B = tmp2[,pairs$evnt_b[i]]
+  
+  tmp3 = tmp2 %>%
+    mutate(ccf_change = case_when(abs(B-A) < 0.1 ~ "No Change",
+                                  B-A < 0 ~ sprintf("%s < %s", pairs$evnt_b[i], pairs$evnt_a[i]),
+                                  B-A > 0 ~ sprintf("%s < %s", pairs$evnt_a[i], pairs$evnt_b[i]),
+                                  TRUE ~ NA_character_))
+  
+  if(nrow(tmp)/2 < 4)
+    return()
+  
+  wtest_all <- testWilcoxGroup(tmp)
+  wtest_sam <- tmp %>% group_by(sample_type) %>% do(testWilcoxGroup(.)) %>% ungroup()
+  
+  ggplot(tmp, aes(x=evnt, y=ccf, group = sprintf("%s%s",case_barcode,sample_type), color = sample_type)) + 
+    geom_point() +
+    geom_line() + 
+    theme_bw() +
+    coord_cartesian(ylim = c(0,1), xlim = c(1,2)) +
+    geom_text(data = wtest_all, aes(x=1.5, y=0.05, label = test_str), group = NA, color = "black", size = 3) +
+    geom_text(data = filter(wtest_sam, sample_type == "P"), aes(x=1, y=0.05, label = test_str), group = NA, color = "#007C80", size = 3) +
+    geom_text(data = filter(wtest_sam, sample_type == "R"), aes(x=2, y=0.05, label = test_str), group = NA, color = "#CE8014", size = 3) +
+    guides(color = FALSE) +
+    labs(x = "Event", y = "Cancer Cell Fraction", title = pairs$idh_codel_subtype[i]) +
+    scale_color_manual(values = c("P" = "#007C80", "R" = "#CE8014"))
+})
+
+grobs = grobs[which(!sapply(grobs,is.null))]
+
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/timing4.pdf", width=9, height = 12, useDingbats = FALSE)
 marrangeGrob(grobs = grobs, nrow = 4, ncol = 3)
 dev.off()
 
@@ -400,7 +471,16 @@ dev.off()
 ## Revised 05/28/2019
 ############################################################################################################################################
 
-res <- res %>% filter(num_samples == 2)
+res2 <- res %>% 
+  filter(num_samples == 2) %>%
+  group_by(evnt, idh_codel_subtype, sample_type) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  filter(n>2) %>%
+  mutate(evnt = factor(evnt, levels = c("1p del", "19q del", "7p amp", "7q amp", "10p del", "10q del",
+                                        "CDKN2A del", "EGFR amp", "CDK4 amp", "PDGFRA amp", "CDK6 amp",
+                                        "IDH1 mut", "TP53 mut", "ATRX mut","CIC mut",
+                                        "EGFR mut", "NF1 mut", "PTEN mut", "PIK3CA mut", "PIK3R1 mut")))
 
 ## Perform statistical testing
 testWilcoxGroup <- function(df) {
@@ -421,56 +501,56 @@ testWilcoxGroup <- function(df) {
              stringsAsFactors = FALSE)
 }
 
-test_case <- res %>% 
+test_case <- res2 %>% 
   group_by(case_barcode,idh_codel_subtype) %>%
   do(testWilcoxGroup(.)) %>%
   ungroup()
 
-test_gene <- res %>% 
+test_gene <- res2 %>% 
   group_by(evnt) %>% 
   do(testWilcoxGroup(.)) %>%
   ungroup()
 
-test_gene_subtype <- res %>% 
+test_gene_subtype <- res2 %>% 
   filter(evnt %in% c("TP53 mut","IDH1 mut")) %>%
   group_by(evnt,idh_codel_subtype) %>% 
   do(testWilcoxGroup(.)) %>%
   ungroup()
 
 ## Plot faceted for each gene seperately
-g <- res %>% 
+g <- res2 %>% 
   ggplot() + 
   geom_point(aes(x=sample_type, y=ccf, group=case_barcode, color = variant_classification)) + 
   geom_line(aes(x=sample_type, y=ccf, group=case_barcode, color = variant_classification), na.rm = TRUE) + 
   geom_text(data=test_gene, aes(x=1.5, y=0.1, label = test_str)) +
-  facet_wrap(~evnt, ncol = 4) 
+  facet_wrap(~evnt, ncol = 4) +
+  scale_color_manual(values=c("5'Flank" = brewer.pal(9, "Paired")[9],
+                              "Frame_Shift_Del" = brewer.pal(7, "Paired")[1],
+                              "Frame_Shift_Ins" = brewer.pal(7, "Paired")[2],
+                              "In_Frame_Del" = brewer.pal(7, "Paired")[3],
+                              "In_Frame_Ins" = brewer.pal(7, "Paired")[4],
+                              "Missense_Mutation" = brewer.pal(7, "Paired")[5],
+                              "Nonsense_Mutation" = brewer.pal(7, "Paired")[6],
+                              "Splice_Site" = brewer.pal(9, "Paired")[7],
+                              "Translation_Start_Site" = brewer.pal(9, "Paired")[8],
+                              "Amplification" = "red",
+                              "Deletion" = "blue")) +
+  theme_bw(base_size = 12) +
+  labs(x = "Sample Type", y = "Cancer Cell Fraction", color = "Variant Classification") +
+  coord_cartesian(ylim = c(0,1))
 
-# +
-#   scale_color_manual(values=c("5'Flank" = brewer.pal(9, "Paired")[9],
-#                               "Frame_Shift_Del" = brewer.pal(7, "Paired")[1],
-#                               "Frame_Shift_Ins" = brewer.pal(7, "Paired")[2],
-#                               "In_Frame_Del" = brewer.pal(7, "Paired")[3],
-#                               "In_Frame_Ins" = brewer.pal(7, "Paired")[4],
-#                               "Missense_Mutation" = brewer.pal(7, "Paired")[5],
-#                               "Nonsense_Mutation" = brewer.pal(7, "Paired")[6],
-#                               "Splice_Site" = brewer.pal(9, "Paired")[7],
-#                               "Translation_Start_Site" = brewer.pal(9, "Paired")[8])) +
-#   theme_bw(base_size = 12) +
-#   labs(x = "Sample Type", y = "Cancer Cell Fraction", color = "Variant Classification") +
-#   coord_cartesian(ylim = c(0,1))
+g
 
-g2
-
-pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/shared_ccf_paired_ladderplot_gene.pdf", width=12, height = 6, useDingbats = FALSE)
-plot(g2)
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/EDF9/a-shared_ccf_paired_ladderplot_gene.pdf", width=12, height = 12, useDingbats = FALSE)
+plot(g)
 dev.off()
 
-## Plot for TP53 between subtypes
-g2b <- tmp %>% filter(gene_label=="TP53") %>%
+ ## Plot for TP53 between subtypes
+g2b <- res2 %>% filter(evnt=="TP53 mut") %>%
   ggplot() + 
-  geom_point(aes(x=sample_type, y=ccf, group=plot_id, color = variant_classification_vep)) + 
-  geom_line(aes(x=sample_type, y=ccf, group=plot_id, color = variant_classification_vep), na.rm = TRUE) + 
-  geom_text(data=filter(test_gene_subtype, gene_symbol == "TP53"), aes(x=1.5, y=0.1, label = test_str)) +
+  geom_point(aes(x=sample_type, y=ccf, group=case_barcode, color = variant_classification)) + 
+  geom_line(aes(x=sample_type, y=ccf, group=case_barcode, color = variant_classification), na.rm = TRUE) + 
+  geom_text(data=filter(test_gene_subtype, evnt == "TP53 mut"), aes(x=1.5, y=0.1, label = test_str)) +
   facet_wrap(~idh_codel_subtype) +
   scale_color_manual(values=c("5'Flank" = brewer.pal(9, "Paired")[9],
                               "Frame_Shift_Del" = brewer.pal(7, "Paired")[1],
@@ -487,16 +567,16 @@ g2b <- tmp %>% filter(gene_label=="TP53") %>%
 
 g2b
 
-pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/shared_ccf_paired_ladderplot_TP53.pdf", width=6, height = 3, useDingbats = FALSE)
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/EDF9/c-shared_ccf_paired_ladderplot_TP53.pdf", width=6, height = 3, useDingbats = FALSE)
 plot(g2b)
 dev.off()
 
 ## Plot for IDH1 between subtypes
-g2c <- tmp %>% filter(gene_label=="IDH1") %>%
+g2c <- res2 %>% filter(evnt=="IDH1 mut") %>%
   ggplot() + 
-  geom_point(aes(x=sample_type, y=ccf, group=plot_id, color = variant_classification_vep)) + 
-  geom_line(aes(x=sample_type, y=ccf, group=plot_id, color = variant_classification_vep), na.rm = TRUE) + 
-  geom_text(data=filter(test_gene_subtype, gene_symbol == "IDH1"), aes(x=1.5, y=0.1, label = test_str)) +
+  geom_point(aes(x=sample_type, y=ccf, group=case_barcode, color = variant_classification)) + 
+  geom_line(aes(x=sample_type, y=ccf, group=case_barcode, color = variant_classification), na.rm = TRUE) + 
+  geom_text(data=filter(test_gene_subtype, evnt == "IDH1 mut"), aes(x=1.5, y=0.1, label = test_str)) +
   facet_wrap(~idh_codel_subtype) +
   scale_color_manual(values=c("5'Flank" = brewer.pal(9, "Paired")[9],
                               "Frame_Shift_Del" = brewer.pal(7, "Paired")[1],
@@ -513,6 +593,7 @@ g2c <- tmp %>% filter(gene_label=="IDH1") %>%
 
 g2c
 
-pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/shared_ccf_paired_ladderplot_IDH1.pdf", width=6, height = 3, useDingbats = FALSE)
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/EDF9/b-shared_ccf_paired_ladderplot_IDH1.pdf", width=6, height = 3, useDingbats = FALSE)
 plot(g2c)
 dev.off()
+ 

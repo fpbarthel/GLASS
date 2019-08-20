@@ -55,17 +55,18 @@ sig_chisq <- lapply(split(res, res$idh_codel_subtype), function(df) {
 
 sig_chisq <- data.table::rbindlist(sig_chisq) %>%
   mutate(signature = factor(signature, levels = c("Signature 1\nAging","Signature 3\nDNA DSB repair by HR","Signature 8\nUnknown","Signature 11\nAlkylating Agent","Signature 15\nDNA mismatch repair","Signature 16\nUnknown")),
-         idh_codel_subtype = sprintf("%s\np%s x2=%s", idh_codel_subtype, ifelse(idh_codel_subtype == "IDHmut-codel", sprintf("=%s",round(p,2)), "<0.0001"), round(statistic,2)))
+         idh_codel_subtype = sprintf("%s\np%s x2=%s", idh_codel_subtype, ifelse(idh_codel_subtype == "IDHmut-codel", sprintf("=%s",round(p,2)), "<0.0001"), round(statistic,2)),
+         resid = ifelse(resid > 4, 4, ifelse(resid < -4, -4, resid)))
 
 gg_sig_chisq <- ggplot(sig_chisq, aes(x = fraction, y = signature)) +
   geom_point(aes(color = resid, size = contrib)) + 
   facet_wrap(~idh_codel_subtype) +
-  scale_color_distiller(palette = "RdBu", direction = 1) +
+  scale_color_distiller(palette = "RdBu", direction = 1, limits = c(-4,4)) +
   theme_bw() + 
   labs(x = "Fraction", y = "Signature", color = "Residuals", size = "Contribution (%)") + 
   scale_size(range = c(1,12))
 
-pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/F1/mutsigs_residuals.pdf", width = 7, height = 4, useDingbats = FALSE)
+pdf("~/The Jackson Laboratory/GLASS - Documents/Resubmission/Figures/EDF3/mutsigs_residuals.pdf", width = 7, height = 4, useDingbats = FALSE)
 plot(gg_sig_chisq)
 dev.off()
 
