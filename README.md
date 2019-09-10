@@ -1,4 +1,4 @@
-![glass-logo](https://user-images.githubusercontent.com/9220167/48782377-13789600-ecac-11e8-8598-771b6e5d75c6.png)
+![GLASS_logo_072219_08](https://user-images.githubusercontent.com/6731211/64618915-2ed59e80-d3af-11e9-8983-d41414379ad3.png)
 
 ## The GLASS consortium
 
@@ -6,10 +6,10 @@
 The Glioma Longitudinal AnalySiS (GLASS) consortium consists of clinical, bioinformaticians, and basic science researchers from leading institutions across the world striving to better understand glioma tumor evolution and to expose its therapeutic vulnerabilities. For more information, please read our position paper: **The Glioma Longitudinal Analysis Consortium. Glioma Through the Looking GLASS: Molecular Evolution of Diffuse Gliomas and the Glioma Longitudinal AnalySiS Consortium.** *Neuro Oncol. 2018* PMID: 29432615. 
 
 #### Analytical contributors
-*In no particular order*: Floris Barthel, Kevin Johnson, Samir Amin, Fred Varn, Anzhela Moskalik, Hoon Kim, Roel Verhaak
+*In no particular order*: Floris Barthel, Kevin Johnson, Fred Varn, Gerogette Tanner, Emre Kocakavuk, Anzhela Moskalik, Samir Amin, Hoon Kim, Roel Verhaak
 
 #### Data contributors
-*In no particular order*: Mustafa Khasraw (U Sydney), Joe Costello (UCSF), Tom Mikkelsen (Henry Ford Hospital), Dohyun Nam (Samsung Medical Center), Pieter Wesseling (VUMC), Antonio Iavarone (Columbia), Gaetano Finochiaro (Instituto Besta), Lucy Stead (Leeds U), Adelheid Wöhrer (Vienna), Hiromichi Suzuki (Kyoto U), Priscilla Brastianos (MGH), Jason Huse (MD Anderson), John de Groot (MD Anderson), Kristin Alfaro-Munoz (MD Anderson), and NIH/NCI The Cancer Genome Atlas.
+*In no particular order*: Mustafa Khasraw (U Sydney), Joe Costello (UCSF), Tom Mikkelsen (Henry Ford Hospital), Dohyun Nam (Samsung Medical Center), Pieter Wesseling (VUMC), Antonio Iavarone (Columbia), Gaetano Finochiaro (Instituto Besta), Lucy Stead (Leeds U), Adelheid Wöhrer (Vienna), Hiromichi Suzuki (Kyoto U), Rameen Beroukhim (DFCI), Bernhard Radlwimmer (DKFZ), Jill S. Barnholtz-Sloan (CWRU), Priscilla Brastianos (MGH), Jason Huse (MD Anderson), John de Groot (MD Anderson), Kristin Alfaro-Munoz (MD Anderson), and NIH/NCI The Cancer Genome Atlas.
 
 ### The GLASS Data Model
 
@@ -29,16 +29,14 @@ The GLASS barcodes are inspired by the TCGA barcodes and are constructed in a re
 
 Key parts of the data model are represented in the barcode.
 
-### Data Release version 2018-11-15
-The data available here marks the initial release of the GLASS project dataset, which is managed internally using the PostgreSQL database management system. The data available here represents the `2018-11-15` snapshot of our dataset. These data are under active curation so future versions will include additional data as well as correct potential errors. Please report any inconsistencies you find on the discussion board here or on our Github issue tracker https://github.com/TheJacksonLaboratory/GLASS.
+### Data Release version March 2019.
+The data available here marks the second release of the GLASS project dataset, which is managed internally using the PostgreSQL database management system. The data available here represents the `March-2019` snapshot of our dataset. These data are under active curation so future versions will include additional data as well as correct potential errors. Please report any inconsistencies you find on the discussion board here or on our Github issue tracker https://github.com/TheJacksonLaboratory/GLASS.
 
 #### Current Data by the Numbers
 
-The following infographic shows the some summary statistics of the `2018-11-15` release of the GLASS dataset.
+The following infographic shows the some summary statistics of the `March-2019` release of the GLASS dataset.
 
-![glass-numbers](https://user-images.githubusercontent.com/9220167/48782498-53d81400-ecac-11e8-807a-45f9b67e0e5f.png)
+![glass-numbers](https://user-images.githubusercontent.com/6731211/64620380-c0461000-d3b1-11e9-8ecf-ec3d10487784.jpg)
 
 #### Data Download
 The GLASS data can be downloaded from the `Tables` page [here](https://www.synapse.org/#!Synapse:syn17038081/tables/). It is also possible to query the data directly using the the API by using queries. You can read more about that [here](https://docs.synapse.org/articles/tables.html).
-
-Royalty-free icon made by Darius Dan of <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
