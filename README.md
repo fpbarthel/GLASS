@@ -6,7 +6,8 @@
 The Glioma Longitudinal AnalySiS (GLASS) consortium consists of clinical, bioinformaticians, and basic science researchers from leading institutions across the world striving to better understand glioma tumor evolution and to expose its therapeutic vulnerabilities. For more information, please read our position paper: **The Glioma Longitudinal Analysis Consortium. Glioma Through the Looking GLASS: Molecular Evolution of Diffuse Gliomas and the Glioma Longitudinal AnalySiS Consortium.** *Neuro Oncol. 2018* PMID: 29432615. 
 
 #### Analytical contributors
-*In no particular order*: Floris Barthel, Kevin Johnson, Fred Varn, Gerogette Tanner, Emre Kocakavuk, Anzhela Moskalik, Samir Amin, Hoon Kim, Roel Verhaak
+Floris Barthel*, Kevin Johnson*, Frederick Varn, Anzhela Moskalik, Georgette Tanner, Emre Kocakavuk, Hoon Kim, Roel Verhaak
+
 
 #### Data contributors
 *In no particular order*: Mustafa Khasraw (U Sydney), Joe Costello (UCSF), Tom Mikkelsen (Henry Ford Hospital), Dohyun Nam (Samsung Medical Center), Pieter Wesseling (VUMC), Antonio Iavarone (Columbia), Gaetano Finochiaro (Instituto Besta), Lucy Stead (Leeds U), Adelheid Wöhrer (Vienna), Hiromichi Suzuki (Kyoto U), Rameen Beroukhim (DFCI), Bernhard Radlwimmer (DKFZ), Jill S. Barnholtz-Sloan (CWRU), Priscilla Brastianos (MGH), Jason Huse (MD Anderson), John de Groot (MD Anderson), Kristin Alfaro-Munoz (MD Anderson), and NIH/NCI The Cancer Genome Atlas.
