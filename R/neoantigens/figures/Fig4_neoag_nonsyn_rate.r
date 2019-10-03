@@ -29,7 +29,6 @@ ORDER BY gs.tumor_pair_barcode"
 
 neo <- dbGetQuery(con,q)
 
-
 #get the n's for this plot
 tmp <- neo[,"subtype"]
 tmp <- tmp[order(tmp)]
@@ -47,6 +46,22 @@ pair <- rep(neo[,"tumor_pair_barcode"],2)
 subtype <- rep(neo[,"subtype"],2)
 timepoint <- c(rep("Initial",nrow(neo)),rep("Recurrent",nrow(neo)))
 res <- data.frame(pair,prop,subtype,timepoint)
+
+#Figure 4A
+pdf("/projects/varnf/GLASS/Figures/resubmission/final/Figure4A_points.pdf",width=2,height=2)
+p1 <- ggplot(res,aes(y = prop, x = timepoint, fill = subtype)) +
+	geom_bar(position="dodge",stat="summary",fun.y="mean",color="black") +
+	geom_point(position=position_dodge(width = .9),size=0.01) +
+	geom_errorbar(stat="summary",fun.data="mean_sdl", fun.args=list(mult=1) ,size=0.4,width=0.35, position=position_dodge(.9))+
+	theme_bw() +
+	labs(x = "", y = "Neoantigens/nonsynonymous") +
+	theme(axis.text.x=element_text(size=7),axis.text.y = element_text(size=7),
+	axis.title.x = element_blank(),axis.title.y = element_text(size=7),
+	panel.grid.major=element_blank(),panel.grid.minor=element_blank(),
+	legend.position="none") +
+	coord_cartesian(ylim=c(0,0.9))
+p1
+dev.off()
 
 subtypes <- unique(neo[,"subtype"])
 prop_pri <- prop_rec <- neoag_sd_pri <- neoag_sd_rec <- rep(0,length(subtypes))
@@ -81,7 +96,7 @@ wilcox.test(g4,g5)		#0.66
 wilcox.test(g4,g6)		#0.92
 wilcox.test(g5,g6)		#0.26
 
-#Plot A
+#Plot A (old)
 plot_res <- data.frame(c(prop_pri,prop_rec),
 			c(neoag_sd_pri,neoag_sd_rec),
 			c(rep("Initial",3),rep("Recurrent",3)),
@@ -89,9 +104,10 @@ plot_res <- data.frame(c(prop_pri,prop_rec),
 			rep(subtypes,2))
 colnames(plot_res) <- c("fraction","sd","status","neoag","subtypes")
 
-pdf("/projects/varnf/GLASS/Figures/resubmission/final/Figure4A.pdf",width=2,height=2)
+pdf("/projects/varnf/GLASS/Figures/resubmission/final/Figure4A_old.pdf",width=2,height=2)
 p1 <- ggplot(plot_res,aes(y = fraction, x = status, fill = subtypes)) +
 	geom_bar(position="dodge",stat="identity",color="black") +
+	geom_point(size=0.5,position="dodge") +
 	geom_errorbar(aes(ymin=fraction-sd,ymax=fraction+sd),size=0.4,width=0.35,position=position_dodge(.9))+
 	theme_bw() +
 	labs(x = "", y = "Neoantigens/nonsynonymous") +
@@ -102,7 +118,6 @@ p1 <- ggplot(plot_res,aes(y = fraction, x = status, fill = subtypes)) +
 	coord_cartesian(ylim=c(0,0.60))
 p1
 dev.off()
-
 
 #Other analyses
 #-------------------------------------
