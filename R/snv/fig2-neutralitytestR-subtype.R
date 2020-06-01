@@ -22,7 +22,7 @@ library(RColorBrewer)
 
 ##################################################
 # Establish connection with database.
-con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB2")
+con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")
 
 # Load additional tables.
 silver_set = dbReadTable(con,  Id(schema="analysis", table="silver_set"))
@@ -266,8 +266,8 @@ x_y_plot_values = all_samples %>%
             min_inv_f = 1/0.25)
 
 # Create text data.frame to be plotted.
-txt_df <- as.data.frame(matrix(ncol=6, nrow=12))
-colnames(txt_df) <- c("rsq", "pvalue", "idh_codel_subtype", "fraction", "selection", "y")
+txt_df <- as.data.frame(matrix(ncol=7, nrow=12))
+colnames(txt_df) <- c("rsq", "pvalue", "idh_codel_subtype", "fraction", "selection", "y", "n")
 txt_df$fraction <- as.factor(rep(unique(all_samples$fraction), 3))
 txt_df$idh_codel_subtype <- as.factor(c(rep("IDHmut-codel", 4), rep("IDHmut-noncodel", 4), rep("IDHwt", 4)))
 
@@ -276,6 +276,12 @@ txt_df$rsq = c(formatC(out_primary_1$rsq$metric, digits = 2), formatC(out_recur_
                formatC(out_shared_b_1$rsq$metric, digits = 2), formatC(out_primary_2$rsq$metric, digits = 2), formatC(out_recur_2$rsq$metric, digits = 2), formatC(out_shared_a_2$rsq$metric, digits = 2),
                formatC(out_shared_b_2$rsq$metric, digits = 2), formatC(out_primary_3$rsq$metric, digits = 2), formatC(out_recur_3$rsq$metric, digits = 2), formatC(out_shared_a_3$rsq$metric, digits = 2),
                formatC(out_shared_b_3$rsq$metric, digits = 2))
+
+# Retrieve the N values
+txt_df$n = c(formatC(length(out_primary_1$VAF), digits = 2, format = "e"), formatC(length(out_recur_1$VAF), digits = 2, format = "e"), formatC(length(out_shared_a_1$VAF), digits = 2, format = "e"),
+               formatC(length(out_shared_b_1$VAF), digits = 2, format = "e"), formatC(length(out_primary_2$VAF), digits = 2, format = "e"), formatC(length(out_recur_2$VAF), digits = 2, format = "e"), formatC(length(out_shared_a_2$VAF), digits = 2, format = "e"),
+               formatC(length(out_shared_b_2$VAF), digits = 2, format = "e"), formatC(length(out_primary_3$VAF), digits = 2, format = "e"), formatC(length(out_recur_3$VAF), digits = 2, format = "e"), formatC(length(out_shared_a_3$VAF), digits = 2, format = "e"),
+               formatC(length(out_shared_b_3$VAF), digits = 2, format = "e"))
 
 # Retrieve the p-value values.
 txt_df$pvalue = c(formatC(out_primary_1$rsq$pval, format = "e", digits = 2), formatC(out_recur_1$rsq$pval, format = "e", digits = 2), formatC(out_shared_a_1$rsq$pval, format = "e", digits = 2),
@@ -297,6 +303,7 @@ pdf(file = "/Users/johnsk/Documents/f2b-kcj.pdf", height = 6, width = 9, bg = "t
 p + geom_text(data=txt_df, aes(x = 0.5, y= 1.1*y, label=rsquared, family="serif"), hjust=0) +
   geom_text(data=txt_df, aes(x = 0.5, y = y, label=pval, family="serif"), hjust=0) +
   geom_text(data=txt_df, aes(x = 0.5, y = 0.9*y, label=selection, family="serif"), hjust=0) +
+  geom_text(data=txt_df, aes(x = 0.5, y = 0.8*y, label=n, family="serif"), hjust=0) +
   facet_wrap(idh_codel_subtype~fraction, scales = "free") 
 dev.off()
 

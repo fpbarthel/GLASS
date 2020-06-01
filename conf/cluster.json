@@ -352,7 +352,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "480:00:00",
+        "walltime" : "504:00:00",
         "queu" : "long"
     },
     "extractdiscordant" :
@@ -761,19 +761,38 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00"
+        "walltime" : "4:00:00"
     },
     "lumpy_call" :
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "480:00:00",
-        "queu" : "long",
+        "walltime" : "72:00:00",
+        "queu" : "batch",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
+    },
+    "sslumpy_call" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "72:00:00",
+        "queu" : "batch",
         "name" : "{rule}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
     },
     "svtyper_run" :
+    {
+        "ppn" : 8,
+        "mem" : 48,
+        "walltime" : "72:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
+    },
+    "sssvtyper_run" :
     {
         "ppn" : 8,
         "mem" : 48,
@@ -786,7 +805,16 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "12:00:00",
+        "name" : "{rule}",
+        "stdout" : "logs/drmaa/{rule}.{wildcards.case_barcode}.out",
+        "stderr" : "logs/drmaa/{rule}.{wildcards.case_barcode}.err"
+    },
+    "sslumpy_libstat" :
+    {
+        "ppn" : 2,
+        "mem" : 12,
+        "walltime" : "12:00:00",
         "name" : "{rule}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"
@@ -795,7 +823,7 @@
     {
         "ppn" : 2,
         "mem" : 12,
-        "walltime" : "72:00:00",
+        "walltime" : "12:00:00",
         "name" : "{rule}",
         "stdout" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.out",
         "stderr" : "logs/drmaa/{rule}.{wildcards.pair_barcode}.err"

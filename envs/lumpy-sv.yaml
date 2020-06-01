@@ -5,14 +5,14 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - bcftools=1.9=h4da6232_0
-  - htslib=1.7=0
-  - libdeflate=1.0=h470a237_0
-  - lumpy-sv=0.2.14a=py27_1
-  - pysam=0.14.1=py27hae42fb6_1
-  - sambamba=0.6.6=2
-  - samblaster=0.1.24=h2d50403_1
-  - samtools=1.7=1
-  - svtyper=0.6.1=py27h24bf2e0_1
+  - bcftools
+  - htslib
+  - libdeflate
+  - lumpy-sv
+  - pysam
+  - sambamba
+  - samblaster
+  - samtools
+  - svtyper
   - cytoolz
   - r-jsonlite

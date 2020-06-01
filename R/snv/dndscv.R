@@ -58,6 +58,7 @@ result_list <- lapply(na.omit(unique(res_fraction$subtype)), function(st) {
     qres_subset = res_fraction %>% filter(fraction == fr, subtype == st) %>% select(case_barcode,chrom,pos,ref,mut) %>% distinct()
     dnds_subset = dndscv(qres_subset, refdb = "hg19", outmats = TRUE, max_coding_muts_per_sample = NULL)
     message(".. Ran dNdSCV for ", n_distinct(qres_subset$case_barcode) - length(dnds_subset$exclsamples))
+    message(".. Found ", nrow(dnds_subset$annotmuts), " mutations")
     globaldnds <- cbind(fraction = fr, subtype = st, dnds_subset$globaldnds)
     sel_cv <- cbind(fraction = fr, subtype = st, dnds_subset$sel_cv)
     gene_ci <- cbind(fraction = fr, subtype = st, geneci(dnds_subset, gene_list = known_cancergenes))

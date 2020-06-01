@@ -12,8 +12,8 @@ rule telseq_run:
         mem = CLUSTER_META["telseq_run"]["mem"]
     threads:
         CLUSTER_META["telseq_run"]["ppn"]
-    conda:
-        "../envs/telseq.yaml"
+    #conda:
+    #    "../envs/telseq.yaml"
     log:
         "logs/telseq/{aliquot_barcode}.log"
     benchmark:
@@ -21,10 +21,12 @@ rule telseq_run:
     message:
         "Telomere content estimates from BAM file\n"
         "Sample: {wildcards.aliquot_barcode}"
-    shell:
-        "telseq -o {output} \
+    shell:"""
+        module load telseq
+        telseq -o {output} \
             -r {config[telseq_r]} \
             {input} \
-            > {log} 2>&1"
+            > {log} 2>&1
+        """
 
 ## END ##

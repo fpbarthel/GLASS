@@ -24,10 +24,10 @@ tmp <- res %>% select(case_barcode, idh_codel_subtype, hypermutator_status, time
 testAOV <- function(df) {
   fit <- aov(log10(df$mf) ~ df$idh_codel_subtype)
   p <- summary(fit)[[1]][["Pr(>F)"]][1]
-  p <- case_when(p < 0.0001 ~ "P<0.0001",
+  p <- case_when(p < 0.0001 ~ sprintf("P = %s", formatC(p, digits = 2)),
                  p > 0.05 ~ sprintf("P=%s", format(round(p, 2),scientific=F)),
                  TRUE ~ sprintf("P=%s", format(round(p, 4),scientific=F)))
-  return(data.frame(p=p))
+  return(data.frame(p=p,n=nrow(df)))
 }
 
 testres <- tmp %>% group_by(hypermutator_status, fraction) %>% do(testAOV(.))
@@ -56,7 +56,7 @@ lm_stats = function(df){
   
   eq = sprintf("Slope: %s mut/Mb per year", round(10^(coef(m)['time_initial']),2))
   praw = coef(summary(m))[,4]['time_initial']
-  p = ifelse(praw < 0.0001, "P<0.0001", ifelse(praw > 0.05, sprintf("P=%s", round(praw, 2)), sprintf("P=%s", round(praw, 4))))
+  p = ifelse(praw < 0.0001, sprintf("P = %s", formatC(praw, digits = 2)), ifelse(praw > 0.05, sprintf("P=%s", round(praw, 2)), sprintf("P=%s", round(praw, 4))))
   
   cortxt = sprintf("n=%s\n%s\n%s", n, p, ifelse(praw < 0.05, eq, ''))
   
@@ -94,7 +94,7 @@ lm_stats = function(df){
   
   eq = sprintf("Slope: %s mut/Mb per log10(month)", round((coef(m)['log10(interval)']),4))
   praw = coef(summary(m))[,4]['log10(interval)']
-  p = ifelse(praw < 0.0001, "P<0.0001", ifelse(praw > 0.05, sprintf("P=%s", round(praw, 2)), sprintf("P=%s", round(praw, 4))))
+  p = ifelse(praw < 0.0001, sprintf("P = %s", formatC(praw, digits = 2)), ifelse(praw > 0.05, sprintf("P=%s", round(praw, 2)), sprintf("P=%s", round(praw, 4))))
   
   cortxt = sprintf("n=%s\n%s", n, p)
   

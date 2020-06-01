@@ -41,6 +41,8 @@ dev.off()
 sig_chisq <- lapply(split(res, res$idh_codel_subtype), function(df) {
   chisq <- chisq.test(table(df$signature, df$fraction))
   
+  n = nrow(df)
+  
   sig_chisq_resid <- as.data.frame(chisq$residuals) %>% 
     select(signature = Var1, fraction = Var2, resid = Freq)
   
@@ -48,14 +50,14 @@ sig_chisq <- lapply(split(res, res$idh_codel_subtype), function(df) {
     select(signature = Var1, fraction = Var2, contrib = Freq)
   
   sig_chisq <- sig_chisq_resid %>% left_join(sig_chisq_contrib) %>%
-    mutate(p = chisq$p.value, statistic = chisq$statistic, idh_codel_subtype = unique(df$idh_codel_subtype))
+    mutate(n, p = chisq$p.value, statistic = chisq$statistic, idh_codel_subtype = unique(df$idh_codel_subtype))
   
   return(sig_chisq)
 })
 
 sig_chisq <- data.table::rbindlist(sig_chisq) %>%
   mutate(signature = factor(signature, levels = c("Signature 1\nAging","Signature 3\nDNA DSB repair by HR","Signature 8\nUnknown","Signature 11\nAlkylating Agent","Signature 15\nDNA mismatch repair","Signature 16\nUnknown")),
-         idh_codel_subtype = sprintf("%s\np%s x2=%s", idh_codel_subtype, ifelse(idh_codel_subtype == "IDHmut-codel", sprintf("=%s",round(p,2)), "<0.0001"), round(statistic,2)),
+         idh_codel_subtype = sprintf("%s\np%s x2=%s", idh_codel_subtype, formatC(p, digits=2), round(statistic,2)),
          resid = ifelse(resid > 4, 4, ifelse(resid < -4, -4, resid)))
 
 gg_sig_chisq <- ggplot(sig_chisq, aes(x = fraction, y = signature)) +

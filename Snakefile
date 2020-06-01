@@ -53,8 +53,8 @@ include: "snakemake/telseq.smk"
 #include: "snakemake/mutect2.smk"
 include: "snakemake/mutect2-post.smk"
 # include: "snakemake/varscan2.smk"
-# include: "snakemake/cnvnator.smk"
-# include: "snakemake/lumpy.smk"
+include: "snakemake/cnvnator.smk"
+include: "snakemake/lumpy.smk"
 # include: "snakemake/delly.smk"
 # include: "snakemake/manta.smk"
 #include: "snakemake/cnv.smk"
@@ -218,6 +218,27 @@ rule titancna:
 # rule genodb:
 #     input:
 #         expand("results/mutect2/geno2db/{aliquot_barcode}.normalized.sorted.tsv", aliquot_barcode = manifest.getSelectedAliquots())
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+## CNVnator/LUMPY
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
+rule cnvnator:
+    input:
+        expand("results/cnvnator/vcf/{aliquot_barcode}.call.vcf", aliquot_barcode = manifest.getSelectedAliquots())
+
+rule preparelumpy:
+    input:
+        expand("results/lumpy/discordant/{aliquot_barcode}.realn.mdup.bqsr.discordant.sorted.bam", aliquot_barcode = manifest.getSelectedAliquots()),
+        expand("results/lumpy/split/{aliquot_barcode}.realn.mdup.bqsr.splitters.sorted.bam", aliquot_barcode = manifest.getSelectedAliquots())
+
+rule lumpy:
+    input:
+        expand("results/lumpy/libstat/{case_barcode}.libstat.pdf", case_barcode = manifest.getSelectedCases())
+
+rule sslumpy:
+    input:
+        expand("results/lumpy/sslibstat/{pair_barcode}.libstat.pdf", pair_barcode = manifest.getSelectedPairs())
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 ## PON rule (Mutect2)

@@ -71,7 +71,7 @@ test_subgroup <- function(df) {
 tmp_str <- tumor_pair_mf %>% group_by(idh_codel_subtype,hypermutator_status) %>% do(test_subgroup(.)) %>% ungroup() %>%
   mutate(str = sprintf("n=%s\n%s", n,
                  case_when(n <= 3 ~ "P=NA",
-                           wilcox_p < 0.0001 ~ "P<0.0001",
+                           wilcox_p < 0.0001 ~ sprintf("P = %s", formatC(wilcox_p, digits = 2)),
                            wilcox_p > 0.05 ~ sprintf("P=%s", format(round(wilcox_p, 2),scientific=F)),
                            TRUE ~ sprintf("P=%s", format(round(wilcox_p, 4),scientific=F)))),
          x = recode(hypermutator_status, `0` = 1.5, `1` = 1),

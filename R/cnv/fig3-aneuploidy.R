@@ -22,7 +22,7 @@ library(cowplot)
 
 ##################################################
 # Establish connection with database.
-con <- DBI::dbConnect(odbc::odbc(), "VerhaakDB2")
+con <- DBI::dbConnect(odbc::odbc(), "GLASSv2")
 
 # Load in the necessary data tables as they relate to aneuploidy.
 mutation_freq = dbGetQuery(con, "SELECT * FROM analysis.mut_freq")
